@@ -107,21 +107,31 @@ A layered layout in the Sugiyama tradition, in these steps:
 
 ### Route
 
-Edges are routed after all boxes are placed, so routing can see every
-obstacle.
+Edges are routed after the layout has placed the cards and the bends of
+long edges, using the layered structure itself (as ELK's layered router
+does) rather than a general search:
 
-- An orthogonal visibility graph is built from the boxes, grown by a
-  margin: the horizontal and vertical lines that run from box edges until
-  they hit another box.
-- Each edge is found with A* over that graph. The cost is length plus a
-  penalty per bend and a penalty per crossing of an already routed edge.
-  Edges are routed in spec order.
-- The side an edge leaves and enters a box is chosen from the boxes'
-  relative position.
-- Nudging separates segments that share a channel, ordered by where they
-  come from and go to, so parallel edges do not overlap and do not cross
-  needlessly.
-- An edge label sits on the edge's longest straight segment.
+- Every edge is a chain of hops between adjacent layers. A hop runs through
+  the gap between two layers, where no card stands, so an edge cannot pass
+  through a card by construction.
+- A hop whose two ends are level is one straight segment; otherwise it is a
+  symmetric Z: out of its start, onto a vertical segment (a track) in the
+  gap, and into its end. A long edge runs straight through the layers it
+  crosses, at the place the layout kept for it, `spacing.edge-edge` clear of
+  the cards beside it.
+- Each card's edges on one side get ports: the side's middle for one edge,
+  spread `spacing.edge-edge` apart around it for several, ordered by where
+  their other ends lie so they do not cross as they leave.
+- Vertical segments that overlap in a gap get separate tracks. For each
+  overlapping pair, the order that crosses fewer of the other hop's
+  horizontal segments wins; each segment then takes the lowest track clear
+  of those it overlaps. A gap needing more tracks than it holds widens.
+- An edge label sits on the edge's longest straight segment, on a patch of
+  canvas colour.
+
+A general orthogonal router (visibility graph and A*, as in libavoid) is
+not needed while every edge follows the layers; it stays an option should
+frames or free placement ever call for it.
 
 ### Render
 

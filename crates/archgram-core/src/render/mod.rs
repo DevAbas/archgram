@@ -75,13 +75,7 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
     ));
     // Arrowhead: an open chevron in the connector colour (DESIGN.md, Components: Connector).
     svg.line(r#"<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M2 1L9 5L2 9"/></marker></defs>"#);
-    let shift = |r: &Rect| Rect {
-        x: r.x + SPACING_MARGIN,
-        y: r.y + SPACING_MARGIN,
-        ..*r
-    };
     svg.open(r#"<g class="edges">"#);
-    let index = |id: &str| spec.nodes.iter().position(|n| n.id == id).expect("validated id");
     for (e, path) in spec.edges.iter().zip(&placement.edges) {
         let path: Vec<crate::geometry::Point> = path
             .iter()
@@ -90,13 +84,7 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
                 y: p.y + SPACING_MARGIN,
             })
             .collect();
-        edge::edge(
-            &mut svg,
-            e,
-            &path,
-            &shift(&placement.nodes[index(&e.from)]),
-            &shift(&placement.nodes[index(&e.to)]),
-        );
+        edge::edge(&mut svg, e, &path);
     }
     svg.close("</g>");
     for (node, r) in spec.nodes.iter().zip(&placement.nodes) {
@@ -164,6 +152,7 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         dash(crate::tokens::DASH_EXTERNAL)
     ));
     svg.line(".badge { fill: var(--badge); }");
+    svg.line(".label-patch { fill: var(--canvas); }");
     svg.line(&format!(
         ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linejoin: round; }}",
         num(crate::tokens::STROKE_CONNECTOR)

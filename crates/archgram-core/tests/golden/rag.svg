@@ -13,9 +13,10 @@
     .card { fill: var(--card); stroke: var(--card-edge); stroke-width: 1; }
     .card.external { fill: var(--canvas); stroke: var(--connector); stroke-dasharray: 5 4; }
     .badge { fill: var(--badge); }
-    .edge { fill: none; stroke: var(--connector); stroke-width: 1.3; stroke-linejoin: round; }
+    .label-patch { fill: var(--canvas); }
+    .edge { fill: none; stroke: var(--connector); stroke-width: 1; stroke-linejoin: round; }
     .edge.dashed { stroke-dasharray: 4 4; }
-    .arrowhead { fill: none; stroke: var(--connector); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+    .arrowhead { fill: none; stroke: var(--connector); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
     .icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .icon.core { stroke: var(--icon-core); }
     .icon.ai { stroke: var(--icon-ai); }
@@ -25,19 +26,23 @@
   <rect class="canvas" width="1206" height="384" rx="16"/>
   <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M2 1L9 5L2 9"/></marker></defs>
   <g class="edges">
-    <path class="edge" d="M459 77.34 L526 66.66" marker-end="url(#arrow)"/>
+    <path class="edge" d="M459 86 L491.33 86 L491.33 52 L526 52" marker-end="url(#arrow)"/>
     <path class="edge" d="M710 52 L762 52" marker-end="url(#arrow)"/>
-    <path class="edge" d="M946 75.39 L998 88.61" marker-end="url(#arrow)"/>
-    <path class="edge" d="M459 106.66 L526 117.34" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 132 L854 132 L998 168.61" marker-end="url(#arrow)"/>
-    <path class="edge" d="M208 277.34 L260 269.05" marker-end="url(#arrow)"/>
+    <path class="edge" d="M946 52 L963.33 52 L963.33 106 L998 106" marker-end="url(#arrow)"/>
+    <path class="edge" d="M459 98 L508.67 98 L508.67 132 L526 132" marker-end="url(#arrow)"/>
+    <path class="edge" d="M710 132 L963.33 132 L963.33 186 L998 186" marker-end="url(#arrow)"/>
+    <path class="edge" d="M208 286 L225.33 286 L225.33 252 L260 252" marker-end="url(#arrow)"/>
     <path class="edge" d="M474 252 L526 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M700.6 224 L771.4 200" marker-end="url(#arrow)"/>
+    <path class="edge" d="M710 240 L727.33 240 L727.33 172 L762 172" marker-end="url(#arrow)"/>
     <path class="edge" d="M710 252 L762 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M946 148.61 L998 135.39" marker-end="url(#arrow)"/>
-    <path class="edge" d="M946 228.61 L998 215.39" marker-end="url(#arrow)"/>
-    <path class="edge" d="M700.6 280 L771.4 304" marker-end="url(#arrow)"/>
-    <path class="edge" d="M762 332 L618 332 L367 332 L208 306.66" marker-end="url(#arrow)"/>
+    <path class="edge" d="M946 172 L980.67 172 L980.67 118 L998 118" marker-end="url(#arrow)"/>
+    <path class="edge" d="M946 252 L980.67 252 L980.67 198 L998 198" marker-end="url(#arrow)"/>
+    <path class="edge" d="M710 264 L727.33 264 L727.33 326 L762 326" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="700.8" y="287.8" width="53.07" height="14.4" rx="5"/>
+    <text class="sub" x="727.33" y="299.26" text-anchor="middle">present</text>
+    <path class="edge" d="M762 338 L744.67 338 L744.67 332 L242.67 332 L242.67 298 L208 298" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="465.87" y="324.8" width="55.6" height="14.4" rx="5"/>
+    <text class="sub" x="493.67" y="336.26" text-anchor="middle">streams</text>
   </g>
   <g data-node="cvs">
     <rect class="card" x="275" y="64" width="184" height="56" rx="10"/>

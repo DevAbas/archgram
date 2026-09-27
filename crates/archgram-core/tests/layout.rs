@@ -1,6 +1,7 @@
 //! The layout's invariants (ARCHITECTURE.md, Invariants) on specs from a
-//! seeded generator: no two cards overlap, every edge spans layers, and the
-//! same spec lays out the same way. The generator is a fixed xorshift, so a
+//! seeded generator: no two cards overlap, every edge spans layers, every
+//! edge is orthogonal, starts and ends on its cards and passes through no
+//! card, and the same spec lays out the same way. The generator is a fixed xorshift, so a
 //! failing seed reproduces.
 
 use archgram_core::layout::place;
@@ -75,11 +76,46 @@ fn random_spec(seed: u64, nodes: usize) -> String {
     )
 }
 
+/// Whether `p` lies on the border of `r`, to within half a pixel.
+fn on_border(r: &archgram_core::geometry::Rect, p: archgram_core::geometry::Point) -> bool {
+    let within = |v: f64, lo: f64, hi: f64| v >= lo - 0.5 && v <= hi + 0.5;
+    let near = |v: f64, edge: f64| (v - edge).abs() <= 0.5;
+    (within(p.x, r.x, r.right()) && (near(p.y, r.y) || near(p.y, r.bottom())))
+        || (within(p.y, r.y, r.bottom()) && (near(p.x, r.x) || near(p.x, r.right())))
+}
+
+/// Whether the axis-aligned segment `a`-`b` passes through the inside of `r`
+/// (running along its border, or ending on it, does not count).
+fn crosses_interior(
+    r: &archgram_core::geometry::Rect,
+    a: archgram_core::geometry::Point,
+    b: archgram_core::geometry::Point,
+) -> bool {
+    let (x0, x1) = (a.x.min(b.x), a.x.max(b.x));
+    let (y0, y1) = (a.y.min(b.y), a.y.max(b.y));
+    let e = 0.5;
+    x0 < r.right() - e && x1 > r.x + e && y0 < r.bottom() - e && y1 > r.y + e
+}
+
 #[test]
 fn random_specs_keep_the_invariants() {
-    for seed in 1..=150u64 {
+    check_random(150, "right");
+}
+
+#[test]
+fn random_specs_flowing_down_keep_the_invariants() {
+    check_random(60, "down");
+}
+
+fn check_random(seeds: u64, direction: &str) {
+    for seed in 1..=seeds {
         let nodes = 2 + usize::try_from(seed % 40).unwrap();
-        let spec = parse_spec(&random_spec(seed, nodes)).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
+        let json = random_spec(seed, nodes).replacen(
+            r#""archgram": 1,"#,
+            &format!(r#""archgram": 1, "direction": "{direction}","#),
+            1,
+        );
+        let spec = parse_spec(&json).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
         let sizes = card_sizes(&spec);
         let p = place(&spec, &sizes).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
         for (i, a) in p.nodes.iter().enumerate() {
@@ -100,6 +136,35 @@ fn random_specs_keep_the_invariants() {
                 e.from,
                 e.to
             );
+        }
+        for (k, (e, path)) in spec.edges.iter().zip(&p.edges).enumerate() {
+            let idx = |id: &str| spec.nodes.iter().position(|n| n.id == id).unwrap();
+            let (from, to) = (p.nodes[idx(&e.from)], p.nodes[idx(&e.to)]);
+            assert!(path.len() >= 2, "seed {seed}: edge {k} has no path");
+            assert!(
+                on_border(&from, path[0]),
+                "seed {seed}: edge {k} does not start on its card: {:?} {from:?}",
+                path[0]
+            );
+            assert!(
+                on_border(&to, path[path.len() - 1]),
+                "seed {seed}: edge {k} does not end on its card"
+            );
+            for w in path.windows(2) {
+                let (a, b) = (w[0], w[1]);
+                assert!(
+                    (a.x - b.x).abs() < 1e-6 || (a.y - b.y).abs() < 1e-6,
+                    "seed {seed}: edge {k} has a slanted segment {a:?} {b:?}"
+                );
+                for (i, r) in p.nodes.iter().enumerate() {
+                    assert!(
+                        !crosses_interior(r, a, b),
+                        "seed {seed}: edge {k} ({} -> {}) runs through node {i}",
+                        e.from,
+                        e.to
+                    );
+                }
+            }
         }
         assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
     }

@@ -271,7 +271,10 @@ with `dash.frame` in `color.frame`, no fill, its name at the top left
 
 An edge (`connector`): an orthogonal line in `color.connector` with an open
 chevron arrowhead in the same colour. It leaves and enters a card at the
-middle of a side and never passes through a card. An edge label, when
+middle of a side, or, when several edges share the side, `spacing.edge-edge`
+apart around the middle; it never passes through a card. Where it must
+change level between two layers it turns twice in the gap between them, a
+symmetric step, never a slant. An edge label, when
 there is one, uses `typography.subtitle` on the line's longest straight
 segment.
 

@@ -13,9 +13,10 @@
     .card { fill: var(--card); stroke: var(--card-edge); stroke-width: 1; }
     .card.external { fill: var(--canvas); stroke: var(--connector); stroke-dasharray: 5 4; }
     .badge { fill: var(--badge); }
-    .edge { fill: none; stroke: var(--connector); stroke-width: 1.3; stroke-linejoin: round; }
+    .label-patch { fill: var(--canvas); }
+    .edge { fill: none; stroke: var(--connector); stroke-width: 1; stroke-linejoin: round; }
     .edge.dashed { stroke-dasharray: 4 4; }
-    .arrowhead { fill: none; stroke: var(--connector); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+    .arrowhead { fill: none; stroke: var(--connector); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
     .icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .icon.core { stroke: var(--icon-core); }
     .icon.ai { stroke: var(--icon-ai); }

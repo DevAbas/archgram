@@ -8,6 +8,8 @@
 //! 4. Crossing reduction (`order`), keeping `order` hints.
 //! 5. Coordinates across the layers (`position`, Brandes and Köpf); along
 //!    them, each layer is as deep as its deepest card, cards centred in it.
+//! 6. Routing (`route`): each edge runs orthogonally through the gaps between
+//!    layers, which widen when their tracks need the room.
 //!
 //! The layout is computed as if the flow ran right: "main" is along the
 //! flow, "cross" across it. A flow running down swaps the two at the end.
@@ -17,20 +19,20 @@ mod acyclic;
 mod order;
 mod position;
 mod rank;
+mod route;
 
 use crate::error::SpecError;
 use crate::geometry::{Point, Rect, Size};
 use crate::spec::{Direction, Spec};
-use crate::tokens::{SPACING_EDGE_EDGE, SPACING_LAYER_LAYER, SPACING_NODE_NODE};
+use crate::tokens::{ROUNDED_CARD, SPACING_EDGE_EDGE, SPACING_LAYER_LAYER, SPACING_NODE_NODE};
 
 /// Where everything goes.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
     /// Each node's card, in spec order.
     pub nodes: Vec<Rect>,
-    /// Each edge's path in spec order, from its `from` node's centre through
-    /// the bends of the layout to its `to` node's centre. The router (M5)
-    /// turns these into orthogonal lines; until then they are drawn as is.
+    /// Each edge's path in spec order: an orthogonal line from a side of its
+    /// `from` node to a side of its `to` node.
     pub edges: Vec<Vec<Point>>,
     /// The layer of each node, in spec order.
     pub layers: Vec<usize>,
@@ -198,13 +200,101 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
                 .fold(0.0, f64::max)
         })
         .collect();
+
+    // 6. Routing: ports on each card's sides, then each hop between two layers
+    //    straight or as a Z through a track in the gap (`route`).
+    let hops: Vec<(usize, usize, usize)> = chains
+        .iter()
+        .enumerate()
+        .flat_map(|(e, chain)| chain.windows(2).map(move |w| (e, w[0], w[1])))
+        .collect();
+    // For a card, its hops on one side, ordered by where their other ends lie
+    // across the layers, get ports spread around the side's middle.
+    let mut out_port = vec![0.0; hops.len()];
+    let mut in_port = vec![0.0; hops.len()];
+    for v in 0..total {
+        for (outgoing, ports_of) in [(true, &mut out_port), (false, &mut in_port)] {
+            let mut mine: Vec<usize> = (0..hops.len())
+                .filter(|&h| if outgoing { hops[h].1 == v } else { hops[h].2 == v })
+                .collect();
+            if v >= n {
+                for h in mine {
+                    ports_of[h] = cross[v];
+                }
+                continue;
+            }
+            mine.sort_by(|&a, &b| {
+                let other = |h: usize| {
+                    if outgoing {
+                        cross[hops[h].2]
+                    } else {
+                        cross[hops[h].1]
+                    }
+                };
+                other(a).total_cmp(&other(b)).then(a.cmp(&b))
+            });
+            let places = route::ports(
+                mine.len(),
+                cross[v],
+                cross_size[v],
+                SPACING_EDGE_EDGE,
+                ROUNDED_CARD,
+            );
+            for (h, p) in mine.into_iter().zip(places) {
+                ports_of[h] = p;
+            }
+        }
+    }
+    // Tracks per gap; a gap with more tracks than its width holds is widened.
+    let level = |h: usize| (out_port[h] - in_port[h]).abs() < 0.5;
+    let gaps = layers.len().saturating_sub(1);
+    let mut track = vec![0usize; hops.len()];
+    let mut track_count = vec![0usize; gaps];
+    for (g, count) in track_count.iter_mut().enumerate() {
+        let here: Vec<usize> = (0..hops.len())
+            .filter(|&h| vertex_layer[hops[h].1] == g && !level(h))
+            .collect();
+        let risers: Vec<route::Riser> = here
+            .iter()
+            .map(|&h| route::Riser {
+                from: out_port[h],
+                to: in_port[h],
+            })
+            .collect();
+        let (t, c) = route::tracks(&risers, SPACING_EDGE_EDGE);
+        for (&h, t) in here.iter().zip(t) {
+            track[h] = t;
+        }
+        *count = c;
+    }
+    #[allow(clippy::cast_precision_loss)] // track counts are small
+    let gap_width: Vec<f64> = track_count
+        .iter()
+        .map(|&c| SPACING_LAYER_LAYER.max((c + 1) as f64 * SPACING_EDGE_EDGE))
+        .collect();
     let mut start = Vec::with_capacity(layers.len());
     let mut at = 0.0;
-    for d in &depth {
+    for (i, d) in depth.iter().enumerate() {
         start.push(at);
-        at += d + SPACING_LAYER_LAYER;
+        at += d + gap_width.get(i).copied().unwrap_or(0.0);
     }
     let centre_main = |v: usize| start[vertex_layer[v]] + depth[vertex_layer[v]] / 2.0;
+    // Where a hop leaves and enters, along the flow: a card's far or near
+    // side; a dummy's centre, so a long edge runs straight through its layers.
+    let leave_main = |v: usize| {
+        if v < n {
+            centre_main(v) + main_size[v] / 2.0
+        } else {
+            centre_main(v)
+        }
+    };
+    let enter_main = |v: usize| {
+        if v < n {
+            centre_main(v) - main_size[v] / 2.0
+        } else {
+            centre_main(v)
+        }
+    };
 
     // Into the drawing's frame, the smallest coordinate at 0.
     let cross_min = (0..total)
@@ -231,17 +321,26 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             }
         })
         .collect();
-    let paths: Vec<Vec<Point>> = chains
-        .iter()
-        .zip(&reversed)
-        .map(|(chain, &r)| {
-            let mut p: Vec<Point> = chain.iter().map(|&v| point(centre_main(v), cross[v])).collect();
-            if r {
-                p.reverse();
-            }
-            p
-        })
-        .collect();
+    let mut paths: Vec<Vec<Point>> = vec![Vec::new(); chains.len()];
+    for (h, &(e, a, b)) in hops.iter().enumerate() {
+        let g = vertex_layer[a];
+        let mut pts = vec![(leave_main(a), out_port[h])];
+        if !level(h) {
+            #[allow(clippy::cast_precision_loss)]
+            let t = start[g] + depth[g] + gap_width[g] * (track[h] + 1) as f64 / (track_count[g] + 1) as f64;
+            pts.push((t, out_port[h]));
+            pts.push((t, in_port[h]));
+        }
+        pts.push((enter_main(b), if level(h) { out_port[h] } else { in_port[h] }));
+        for (m, c) in pts {
+            push_point(&mut paths[e], point(m, c));
+        }
+    }
+    for (path, &r) in paths.iter_mut().zip(&reversed) {
+        if r {
+            path.reverse();
+        }
+    }
     let w = nodes.iter().map(Rect::right).fold(0.0, f64::max);
     let h = nodes.iter().map(Rect::bottom).fold(0.0, f64::max);
     Ok(Placement {
@@ -250,4 +349,25 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         layers: layer,
         size: Size { w, h },
     })
+}
+
+/// Appends `p` to an orthogonal path, dropping repeats and merging a point
+/// that only continues the previous segment in a straight line.
+fn push_point(path: &mut Vec<Point>, p: Point) {
+    const EPS: f64 = 1e-6;
+    if path
+        .last()
+        .is_some_and(|q| (q.x - p.x).abs() < EPS && (q.y - p.y).abs() < EPS)
+    {
+        return;
+    }
+    if path.len() >= 2 {
+        let (a, b) = (path[path.len() - 2], path[path.len() - 1]);
+        let straight = ((a.x - b.x).abs() < EPS && (b.x - p.x).abs() < EPS)
+            || ((a.y - b.y).abs() < EPS && (b.y - p.y).abs() < EPS);
+        if straight {
+            path.pop();
+        }
+    }
+    path.push(p);
 }
