@@ -30,14 +30,23 @@ The repository is one Cargo workspace.
 
 | Crate | Holds | Depends on |
 |---|---|---|
-| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the embedded font | `serde`, `serde_json`, `skrifa` |
+| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr` |
 | `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the three above |
 | `archgram-wasm` | The npm package for Node and the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
+| `xtask` | Repository tasks run with `cargo xtask`, such as the dependency check; never shipped | `serde_json` |
 
 `archgram-core` does no I/O. Anything that touches the file system or the
 terminal lives in `archgram-cli`.
+
+### Design tokens in the build
+
+`archgram-core`'s build script reads `design-system/tokens/` at compile
+time: it follows the resolver, resolves every alias, and writes one table
+of values per palette and theme into the crate. The tokens stay the only
+place a value is written; changing one rebuilds the crate, and no colour
+or size is typed by hand in the code.
 
 ## The pipeline, stage by stage
 
@@ -62,10 +71,11 @@ is the first half of determinism.
 
 ### Measure
 
-Labels are measured with the advance widths of the embedded font, read
-with `skrifa`. A box's size comes from its kind's template (icon area,
-padding) and its measured label. Because the font ships inside the
-binary, measurements do not depend on the fonts installed on a machine.
+Labels are measured with the advance widths of Geist, read with
+`skrifa`. The static Regular and Medium TTF files ship inside the binary
+under their OFL licence, so measurements do not depend on the fonts
+installed on a machine. A box's size comes from its kind's template (icon
+area, padding) and its measured label.
 
 ### Layout
 
@@ -118,6 +128,15 @@ the dark values under `prefers-color-scheme`, or one file per theme on
 request. The legend is generated from the kinds and variants the diagram
 uses. Technology logos come from a vendored subset of Simple Icons.
 
+The text is drawn in the same font it was measured with. archgram's own
+subsetter cuts Geist down to the glyphs the diagram uses (keeping the
+tables a renderer needs: `head`, `hhea`, `maxp`, `hmtx`, `cmap`, `loca`,
+`glyf`, `post`, `name`, `OS/2`, with composite glyphs followed to their
+parts) and embeds the result as a data URI in an `@font-face` rule, so
+the text looks the same on every machine. The subsetter handles static
+TrueType outlines only; variable fonts are out of scope. `--system-font`
+skips the embedding and falls back to the system font stack.
+
 ### Animate
 
 Flows turn into a timeline: each hop lasts in proportion to its path
@@ -156,19 +175,27 @@ These hold for every output and are checked by tests on every change.
 | `resvg`, `tiny-skia` | PNG, in the optional module | Apache-2.0 or MIT; BSD-3-Clause |
 | `wasm-bindgen` | The WASM package | MIT or Apache-2.0 |
 
-- `Cargo.lock` is committed and versions are pinned; no dependency
-  updates itself.
+- `Cargo.lock` is committed and versions are pinned; builds run with
+  `--locked`, so no dependency updates itself.
 - Each crate enables only the features it needs.
-- `cargo-audit` checks every dependency against the RustSec database.
-- `cargo-deny` enforces the licence list and the allowed sources.
-- `cargo-vet` requires an audit for every dependency, importing the
-  audits Google, Mozilla and the Bytecode Alliance publish.
-- `cargo-fuzz` fuzzes the spec parser and the YAML mapping.
+- Adding or updating a dependency needs the owner's approval, after reading
+  its licence, its owner and its advisories.
+- `cargo xtask deps` checks the whole tree without third-party tools: the
+  licence of every package, from `cargo metadata`, against the allowed
+  list (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-3.0,
+  OFL-1.1 for fonts); and every version in `Cargo.lock` against the RustSec
+  advisory database, fetched as a git repository. Either finding fails the
+  check.
+- Cargo's own `cargo tree` shows where each indirect dependency comes from.
 
 ## Testing
 
+There are no test dependencies. Golden-file comparison and a seeded random
+spec generator are small helpers inside the workspace.
+
 - Unit tests per stage, each on small hand-made graphs.
-- Property tests of the invariants above on generated specs.
+- Property tests of the invariants above on specs from the seeded
+  generator.
 - Snapshot tests of the SVG for a fixed set of example specs, including
   the two diagrams of ai-powered-cv-screener.
 - A determinism job that renders every example on macOS, Linux and

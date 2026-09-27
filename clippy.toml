@@ -1,0 +1,2 @@
+# Proper names clippy would otherwise want in backticks; ".." keeps its defaults.
+doc-valid-idents = ["RustSec", "TrueType", "OpenType", ".."]

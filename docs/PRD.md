@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.2        |
+| Version | 0.3        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -161,8 +161,6 @@ diagram chooses: the card's corner or a chip on the icon.
 
 ## 10. Open questions
 
-- The embedded font: an open-licence (OFL) sans with good figures at small
-  sizes.
 - How the Simple Icons logos are used within each brand's trademark
   guidelines.
 - A trademark check of the name before the public release.
@@ -173,3 +171,4 @@ diagram chooses: the card's corner or a chip on the icon.
 |---------|------------|--------|
 | 0.1     | 2026-09-27 | First draft: problem, users, principles, scope by version, node vocabulary, success criteria, non-goals. |
 | 0.2     | 2026-09-27 | The mono palette, colour only in icon lines; horizontal and vertical cards; logos in the corner or on a chip (§5, §6.3, §7). Palettes removed from the open questions. |
+| 0.3     | 2026-09-27 | The font is Geist, measured and embedded as a subset; removed from the open questions. |

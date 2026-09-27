@@ -1,0 +1,42 @@
+{
+  "archgram": 1,
+  "title": "How an answer comes to be",
+  "description": "Before use, the index script has a model extract a profile from each CV, checks every field against the text and embeds each chunk. At question time the chat sends the question to the ask route; the model calls tools over the index and the vectors, ends with present, and the app checks every candidate and page before the answer streams back.",
+  "direction": "right",
+  "nodes": [
+    { "id": "cvs", "kind": "file", "label": "CV PDFs", "note": "30 files", "frame": "prep" },
+    { "id": "extract", "kind": "model", "label": "Gemini", "note": "extracts profile", "tech": "googlegemini", "variant": "external", "frame": "prep" },
+    { "id": "fieldcheck", "kind": "check", "label": "Field check", "note": "page per fact", "frame": "prep" },
+    { "id": "embed", "kind": "model", "label": "Embedding", "note": "each chunk", "variant": "external", "frame": "prep" },
+    { "id": "index", "kind": "storage", "label": "data/index", "note": "JSON, in memory" },
+    { "id": "vectors", "kind": "vector-store", "label": "Pinecone", "note": "chunk vectors", "variant": "external" },
+    { "id": "chat", "kind": "browser", "label": "Chat screen", "frame": "ask" },
+    { "id": "route", "kind": "service", "label": "POST /api/ask", "note": "no CV text in the prompt", "frame": "ask" },
+    { "id": "llm", "kind": "model", "label": "Gemini", "note": "tool-calling loop", "tech": "googlegemini", "variant": "external", "frame": "ask" },
+    { "id": "tools", "kind": "tool", "label": "Exact tools", "note": "find, count, get", "frame": "ask" },
+    { "id": "search", "kind": "tool", "label": "search_cv_text", "note": "BM25 + vectors", "frame": "ask" },
+    { "id": "answercheck", "kind": "check", "label": "Answer check", "note": "ids and pages", "frame": "ask" }
+  ],
+  "frames": [
+    { "id": "prep", "label": "Before use" },
+    { "id": "ask", "label": "At question time" }
+  ],
+  "edges": [
+    { "from": "cvs", "to": "extract" },
+    { "from": "extract", "to": "fieldcheck" },
+    { "from": "fieldcheck", "to": "index" },
+    { "from": "cvs", "to": "embed" },
+    { "from": "embed", "to": "vectors" },
+    { "from": "chat", "to": "route" },
+    { "from": "route", "to": "llm" },
+    { "from": "llm", "to": "tools" },
+    { "from": "llm", "to": "search" },
+    { "from": "tools", "to": "index" },
+    { "from": "search", "to": "vectors" },
+    { "from": "llm", "to": "answercheck", "label": "present" },
+    { "from": "answercheck", "to": "chat", "label": "streams" }
+  ],
+  "flows": [
+    { "name": "a question", "steps": ["chat", "route", "llm", "answercheck", "chat"] }
+  ]
+}

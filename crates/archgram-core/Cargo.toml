@@ -1,0 +1,14 @@
+[package]
+name = "archgram-core"
+description = "archgram's engine: spec, validation, layout, routing and SVG. No I/O."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

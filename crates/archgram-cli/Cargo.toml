@@ -1,0 +1,17 @@
+[package]
+name = "archgram-cli"
+description = "The archgram command-line tool."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "archgram"
+path = "src/main.rs"
+
+[dependencies]
+archgram-core = { path = "../archgram-core" }
+
+[lints]
+workspace = true

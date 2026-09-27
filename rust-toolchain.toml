@@ -1,0 +1,6 @@
+# Pinned so every machine builds with the same compiler: archgram promises
+# byte-identical output (ARCHITECTURE.md, Invariants). Updated on purpose,
+# one stable release at a time.
+[toolchain]
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]

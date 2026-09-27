@@ -1,0 +1,23 @@
+{
+  "archgram": 1,
+  "title": "linkshort",
+  "description": "The API creates short links and redirects. A redirect reads the URL from the Redis cache, falls back to Postgres on a miss, adds the click to a Redis stream and returns. A worker drains the stream in batches and adds the counts to Postgres, where the stats route reads them.",
+  "nodes": [
+    { "id": "browser", "kind": "browser", "label": "Visitor" },
+    { "id": "api", "kind": "service", "label": "API", "note": "FastAPI, port 8000", "tech": "fastapi" },
+    { "id": "cache", "kind": "cache", "label": "URL cache", "note": "1-day TTL", "tech": "redis", "frame": "redis" },
+    { "id": "clicks", "kind": "queue", "label": "Click stream", "tech": "redis", "frame": "redis" },
+    { "id": "worker", "kind": "service", "label": "Worker", "note": "up to 500 per read" },
+    { "id": "postgres", "kind": "database", "label": "links", "note": "source of truth", "tech": "postgresql" }
+  ],
+  "frames": [ { "id": "redis", "label": "Redis" } ],
+  "edges": [
+    { "from": "browser", "to": "api" },
+    { "from": "api", "to": "cache" },
+    { "from": "api", "to": "postgres", "label": "on a miss", "style": "dashed" },
+    { "from": "api", "to": "clicks" },
+    { "from": "clicks", "to": "worker" },
+    { "from": "worker", "to": "postgres" }
+  ],
+  "flows": [ { "name": "a visit", "steps": ["browser", "api", "clicks", "worker", "postgres"] } ]
+}
