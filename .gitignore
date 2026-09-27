@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Node and WASM packaging
+node_modules/
+/pkg/
+
+# Editors
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "name": "archgram",
+  "version": "2025.10",
+  "description": "archgram's design values. Three tiers: palettes hold values, themes map roles onto a palette, DESIGN.md's components name the roles. The palette modifier picks the palette, the theme modifier picks light or dark; they vary independently.",
+  "sets": {
+    "foundation": {
+      "description": "Type, shape and motion: the same in every palette and theme.",
+      "sources": [
+        {
+          "$ref": "foundation/typography.tokens.json"
+        },
+        {
+          "$ref": "foundation/shape.tokens.json"
+        },
+        {
+          "$ref": "foundation/motion.tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "palette": {
+      "description": "The palette. A new palette is one file under palettes/ defining the same entries.",
+      "contexts": {
+        "mono": [
+          {
+            "$ref": "palettes/mono.tokens.json"
+          }
+        ]
+      },
+      "default": "mono"
+    },
+    "theme": {
+      "description": "Light or dark. Only colour roles change.",
+      "contexts": {
+        "light": [
+          {
+            "$ref": "themes/light.tokens.json"
+          }
+        ],
+        "dark": [
+          {
+            "$ref": "themes/dark.tokens.json"
+          }
+        ]
+      },
+      "default": "light"
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/foundation"
+    },
+    {
+      "$ref": "#/modifiers/palette"
+    },
+    {
+      "$ref": "#/modifiers/theme"
+    }
+  ]
+}

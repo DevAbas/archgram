@@ -1,0 +1,43 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "Colour roles in the light theme. The renderer reads only these.",
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{palette.light.neutral-25}"
+    },
+    "card": {
+      "$value": "{palette.light.neutral-0}"
+    },
+    "card-edge": {
+      "$value": "{palette.light.neutral-250}"
+    },
+    "badge": {
+      "$value": "{palette.light.neutral-60}"
+    },
+    "text": {
+      "$value": "{palette.light.neutral-900}"
+    },
+    "text-muted": {
+      "$value": "{palette.light.neutral-600}"
+    },
+    "connector": {
+      "$value": "{palette.light.neutral-450}"
+    },
+    "frame": {
+      "$value": "{palette.light.neutral-450}"
+    },
+    "icon-core": {
+      "$value": "{palette.light.blue}"
+    },
+    "icon-ai": {
+      "$value": "{palette.light.violet}"
+    },
+    "icon-build": {
+      "$value": "{palette.light.amber}"
+    },
+    "icon-client": {
+      "$value": "{palette.light.teal}"
+    }
+  }
+}

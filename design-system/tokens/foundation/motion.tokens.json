@@ -1,0 +1,62 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "The flow signal and its timing.",
+  "motion": {
+    "ease": {
+      "$type": "cubicBezier",
+      "$value": [
+        0.2,
+        0,
+        0,
+        1
+      ]
+    },
+    "hop-min": {
+      "$type": "duration",
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      }
+    },
+    "hop-max": {
+      "$type": "duration",
+      "$value": {
+        "value": 800,
+        "unit": "ms"
+      }
+    },
+    "hop-gap": {
+      "$type": "duration",
+      "$value": {
+        "value": 150,
+        "unit": "ms"
+      }
+    },
+    "rest": {
+      "$type": "duration",
+      "$value": {
+        "value": 1000,
+        "unit": "ms"
+      }
+    }
+  },
+  "signal": {
+    "$type": "dimension",
+    "dot": {
+      "$value": {
+        "value": 3.6,
+        "unit": "px"
+      }
+    },
+    "ring": {
+      "$value": {
+        "value": 7,
+        "unit": "px"
+      }
+    },
+    "ring-opacity": {
+      "$type": "number",
+      "$value": 0.35
+    }
+  }
+}
