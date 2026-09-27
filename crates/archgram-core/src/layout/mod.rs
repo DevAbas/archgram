@@ -24,9 +24,11 @@
 //!
 //! The layout is computed as if the flow ran right: "main" is along the
 //! flow, "cross" across it. A flow running down swaps the two at the end.
-//! Frames are not laid out yet (v0.2); their nodes are placed like any other.
+//! Frames are laid out within these steps (`frames`, ARCHITECTURE.md,
+//! Layout, step 5): border vertices keep each one a rectangle.
 
 mod acyclic;
+pub(crate) mod frames;
 mod order;
 mod pack;
 mod position;
@@ -38,7 +40,7 @@ use crate::geometry::{Point, Rect, Size};
 use crate::spec::{Direction, Spec, Variant};
 use crate::tokens::{
     ARROWHEAD_GAP, ARROWHEAD_LENGTH, CARD_MULTI_OFFSET, ROUNDED_CARD, ROUNDED_CONNECTOR, SPACING_EDGE_EDGE,
-    SPACING_LAYER_LAYER, SPACING_NODE_NODE,
+    SPACING_FRAME_LABEL, SPACING_FRAME_PADDING, SPACING_LAYER_LAYER, SPACING_NODE_NODE,
 };
 
 /// Where everything goes.
@@ -57,6 +59,11 @@ pub struct Placement {
     /// The unit each node belongs to, in spec order: parts of the diagram
     /// that share nothing are laid out apart (`pack`).
     pub units: Vec<usize>,
+    /// Each frame's box in spec order; `None` for a frame this placement
+    /// does not hold.
+    pub frames: Vec<Option<Rect>>,
+    /// Each frame's name box, at its top left, in spec order.
+    pub frame_labels: Vec<Option<Rect>>,
     /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
@@ -228,6 +235,9 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         }
         chains.push(chain);
     }
+    // Frames: the frame of each dummy, and border vertices on every layer a
+    // frame spans (`frames`).
+    let fr = frames::build(spec, &layer, &chains, &mut vertex_layer);
     let total = vertex_layer.len();
     // Each label's extent along and across the flow.
     let label_extent: Vec<Option<(f64, f64)>> = spec
@@ -293,19 +303,70 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         .iter()
         .map(|g| g.iter().map(|m| index(m)).collect())
         .collect();
-    let layers = order::order(&layers, &short, total, &groups);
+    let layers = order::order(
+        &layers,
+        &short,
+        total,
+        &groups,
+        &order::Clusters {
+            frame_of: &fr.frame_of,
+            parent: &fr.parent,
+            border: &fr.border,
+        },
+    );
 
     // 5. Coordinates.
-    let dummy: Vec<bool> = (0..total).map(|v| v >= n).collect();
+    let kind: Vec<position::Kind> = (0..total)
+        .map(|v| match fr.border[v] {
+            Some((f, true)) => position::Kind::First(f),
+            Some((f, false)) => position::Kind::Last(f),
+            None if v < n => position::Kind::Card,
+            None => position::Kind::Dummy,
+        })
+        .collect();
+    // A frame's name sits at its top: across the layers when the flow runs
+    // right, so the padding before its contents makes room for it; along
+    // them when the flow runs down (the gaps make room, below).
+    let name_width: Vec<f64> = spec.frames.iter().map(|f| frames::name_width(&f.label)).collect();
+    let name_room = SPACING_FRAME_LABEL;
+    let pad_lo: Vec<f64> = spec
+        .frames
+        .iter()
+        .map(|_| match spec.direction {
+            Direction::Right => SPACING_FRAME_PADDING + name_room,
+            Direction::Down => SPACING_FRAME_PADDING,
+        })
+        .collect();
+    let pad_hi = vec![SPACING_FRAME_PADDING; spec.frames.len()];
+    let mut border_up = vec![None; total];
+    let mut border_down = vec![None; total];
+    let mut extra = Vec::new();
+    for (f, pairs) in fr.borders.iter().enumerate() {
+        for w in pairs.windows(2) {
+            border_up[w[1].0] = Some(w[0].0);
+            border_up[w[1].1] = Some(w[0].1);
+            border_down[w[0].0] = Some(w[1].0);
+            border_down[w[0].1] = Some(w[1].1);
+        }
+        // Flowing down, the frame is at least as wide as its name.
+        if let (Some(&(first, last)), Direction::Down) = (pairs.first(), spec.direction) {
+            extra.push((first, last, name_width[f] + 2.0 * SPACING_FRAME_PADDING));
+        }
+    }
     let cross = position::coordinates(
         &layers,
         &short,
         &position::Vertices {
             lo: &cross_lo,
             hi: &cross_hi,
-            dummy: &dummy,
+            kind: &kind,
             node_gap: SPACING_NODE_NODE,
             edge_gap: SPACING_EDGE_EDGE,
+            pad_lo: &pad_lo,
+            pad_hi: &pad_hi,
+            border_up: &border_up,
+            border_down: &border_down,
+            extra: &extra,
         },
     );
     // Along the flow, a stack of several instances reaches past its front
@@ -504,22 +565,80 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     // the card it points at a bend's radius, twice the arrowhead's length
     // and its gap, so the last bend is whole and the arrowhead sits on a
     // straight run as long as itself.
-    let depart: Vec<f64> = lead.iter().map(|&l| l.max(ROUNDED_CONNECTOR)).collect();
+    //
+    // Frames along the flow: a frame keeps its padding before its first
+    // layer (and its name, when the flow runs down) and after its last, in
+    // the gaps; a frame nested in one that starts or ends on the same layer
+    // adds its own inside. Flowing right, a frame shorter than its name
+    // grows at its end. Tracks stay outside the frames starting and ending
+    // in their gap.
     let approach = ROUNDED_CONNECTOR + 2.0 * ARROWHEAD_LENGTH + ARROWHEAD_GAP;
-    #[allow(clippy::cast_precision_loss)] // track counts are small
-    let gap_width: Vec<f64> = track_count
-        .iter()
-        .zip(&depart)
-        .map(|(&c, &a)| {
-            let tracks = c.saturating_sub(1) as f64 * SPACING_EDGE_EDGE;
-            SPACING_LAYER_LAYER.max(a + tracks + approach)
-        })
-        .collect();
-    let mut start = Vec::with_capacity(layers.len());
-    let mut at = 0.0;
-    for (i, d) in depth.iter().enumerate() {
-        start.push(at);
-        at += d + gap_width.get(i).copied().unwrap_or(0.0);
+    let mut inner_first: Vec<usize> = (0..spec.frames.len()).filter(|&f| fr.present[f]).collect();
+    inner_first.sort_by_key(|&f| (std::cmp::Reverse(fr.depth(f)), f));
+    let mut stretch = vec![0.0f64; spec.frames.len()];
+    let (mut start, mut gap_width, mut depart, mut approach_to) =
+        (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    let mut start_depth = vec![0.0f64; spec.frames.len()];
+    let mut end_depth = vec![0.0f64; spec.frames.len()];
+    for _ in 0..3 {
+        start_depth.fill(0.0);
+        end_depth.fill(0.0);
+        for &f in &inner_first {
+            let name = if spec.direction == Direction::Down {
+                name_room
+            } else {
+                0.0
+            };
+            start_depth[f] += SPACING_FRAME_PADDING + name;
+            end_depth[f] += SPACING_FRAME_PADDING + stretch[f];
+            if let Some(p) = fr.parent[f] {
+                if fr.span[p].0 == fr.span[f].0 {
+                    start_depth[p] = start_depth[p].max(start_depth[f]);
+                }
+                if fr.span[p].1 == fr.span[f].1 {
+                    end_depth[p] = end_depth[p].max(end_depth[f]);
+                }
+            }
+        }
+        let mut start_region = vec![0.0f64; layers.len()];
+        let mut end_region = vec![0.0f64; layers.len()];
+        for &f in &inner_first {
+            start_region[fr.span[f].0] = start_region[fr.span[f].0].max(start_depth[f]);
+            end_region[fr.span[f].1] = end_region[fr.span[f].1].max(end_depth[f]);
+        }
+        depart = (0..gaps)
+            .map(|g| lead[g].max(ROUNDED_CONNECTOR) + end_region[g])
+            .collect();
+        approach_to = (0..gaps).map(|g| start_region[g + 1] + approach).collect();
+        #[allow(clippy::cast_precision_loss)] // track counts are small
+        let widths: Vec<f64> = (0..gaps)
+            .map(|g| {
+                let tracks = track_count[g].saturating_sub(1) as f64 * SPACING_EDGE_EDGE;
+                SPACING_LAYER_LAYER.max(depart[g] + tracks + approach_to[g])
+            })
+            .collect();
+        gap_width = widths;
+        start = Vec::with_capacity(layers.len());
+        let mut at = start_region.first().copied().unwrap_or(0.0);
+        for (i, d) in depth.iter().enumerate() {
+            start.push(at);
+            at += d + gap_width.get(i).copied().unwrap_or(0.0);
+        }
+        let mut grew = false;
+        if spec.direction == Direction::Right {
+            for &f in &inner_first {
+                let (s0, s1) = fr.span[f];
+                let length = start[s1] + depth[s1] + end_depth[f] - (start[s0] - start_depth[f]);
+                let need = name_width[f] + 2.0 * SPACING_FRAME_PADDING;
+                if length + 0.5 < need {
+                    stretch[f] += need - length;
+                    grew = true;
+                }
+            }
+        }
+        if !grew {
+            break;
+        }
     }
     // A card's front is centred in its layer with its stacks' reach; a
     // dummy (a long edge's bend, or its label) at the layer's middle.
@@ -585,7 +704,7 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             // the only one in the middle of it.
             let (first, room) = (
                 start[g] + depth[g] + depart[g],
-                gap_width[g] - depart[g] - approach,
+                gap_width[g] - depart[g] - approach_to[g],
             );
             #[allow(clippy::cast_precision_loss)] // track counts are small
             let t = if track_count[g] > 1 {
@@ -663,15 +782,50 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             push_point(path, p);
         }
     }
+    // Each frame from its borders across the layers and its room in the gaps
+    // along them, on whole pixels; its name at its top left, centred in the
+    // room kept at its top.
+    let frame_rects: Vec<Option<Rect>> = (0..spec.frames.len())
+        .map(|f| {
+            if !fr.present[f] {
+                return None;
+            }
+            let (s0, s1) = fr.span[f];
+            let lo = fr.borders[f]
+                .iter()
+                .map(|&(a, _)| cross[a])
+                .fold(f64::INFINITY, f64::min);
+            let hi = fr.borders[f]
+                .iter()
+                .map(|&(_, b)| cross[b])
+                .fold(f64::NEG_INFINITY, f64::max);
+            let from = point(start[s0] - start_depth[f], lo);
+            let to = point(start[s1] + depth[s1] + end_depth[f], hi);
+            let (x, y) = (from.x.round(), from.y.round());
+            Some(Rect {
+                x,
+                y,
+                w: to.x.round() - x,
+                h: to.y.round() - y,
+            })
+        })
+        .collect();
+    let frame_labels: Vec<Option<Rect>> = frame_rects
+        .iter()
+        .enumerate()
+        .map(|(f, r)| r.map(|r| frames::name_box(r, name_width[f])))
+        .collect();
     let w = nodes
         .iter()
         .chain(labels.iter().flatten())
+        .chain(frame_rects.iter().flatten())
         .map(Rect::right)
         .chain(paths.iter().flatten().map(|p| p.x))
         .fold(0.0, f64::max);
     let h = nodes
         .iter()
         .chain(labels.iter().flatten())
+        .chain(frame_rects.iter().flatten())
         .map(Rect::bottom)
         .chain(paths.iter().flatten().map(|p| p.y))
         .fold(0.0, f64::max);
@@ -680,6 +834,8 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         edges: paths,
         labels,
         units: vec![0; layer.len()],
+        frames: frame_rects,
+        frame_labels,
         layers: layer,
         size: Size { w, h },
     })

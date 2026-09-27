@@ -2,6 +2,7 @@
 
 mod card;
 mod edge;
+mod frame;
 mod icons;
 pub mod svg;
 
@@ -83,6 +84,37 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         w = num(ARROWHEAD_WIDTH),
         ry = num(ARROWHEAD_WIDTH / 2.0)
     ));
+    // Frames first, the outermost below the ones inside it; their names go
+    // over the edges, below the cards.
+    let at = |r: Rect| Rect {
+        x: r.x + OFFSET,
+        y: r.y + OFFSET,
+        ..r
+    };
+    let depth = |f: usize| {
+        let mut d = 0;
+        let mut p = spec.frames[f].parent.as_deref();
+        while let Some(id) = p {
+            d += 1;
+            p = spec
+                .frames
+                .iter()
+                .find(|g| g.id == id)
+                .and_then(|g| g.parent.as_deref());
+        }
+        d
+    };
+    let mut outer_first: Vec<usize> = (0..spec.frames.len())
+        .filter(|&f| placement.frames[f].is_some())
+        .collect();
+    outer_first.sort_by_key(|&f| (depth(f), f));
+    if !outer_first.is_empty() {
+        svg.open(r#"<g class="frames">"#);
+        for &f in &outer_first {
+            frame::frame(&mut svg, at(placement.frames[f].expect("placed")));
+        }
+        svg.close("</g>");
+    }
     svg.open(r#"<g class="edges">"#);
     for ((e, path), label) in spec.edges.iter().zip(&placement.edges).zip(&placement.labels) {
         let path: Vec<crate::geometry::Point> = path
@@ -100,6 +132,11 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         edge::edge(&mut svg, e, &path, label);
     }
     svg.close("</g>");
+    for &f in &outer_first {
+        if let Some(label) = placement.frame_labels[f] {
+            frame::name(&mut svg, &spec.frames[f].label, at(label));
+        }
+    }
     for (node, r) in spec.nodes.iter().zip(&placement.nodes) {
         let at = Rect {
             x: r.x + OFFSET,
@@ -181,6 +218,15 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         dash(crate::tokens::DASH_EXTERNAL)
     ));
     svg.line(".badge { fill: var(--badge); }");
+    svg.line(&format!(
+        ".frame {{ fill: none; stroke: var(--frame); stroke-width: {}; stroke-dasharray: {}; }}",
+        num(crate::tokens::STROKE_FRAME),
+        dash(crate::tokens::DASH_FRAME)
+    ));
+    svg.line(&format!(
+        ".frame-label {{ {} fill: var(--text-muted); }}",
+        text(&crate::tokens::TYPOGRAPHY_FRAME_LABEL)
+    ));
     svg.line(".label-patch { fill: var(--canvas); }");
     svg.line(&format!(
         ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}",

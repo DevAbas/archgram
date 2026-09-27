@@ -67,7 +67,7 @@ pub fn draw(spec: &Spec, options: render::Options) -> Result<String, Vec<SpecErr
 pub fn uncovered_characters(spec: &Spec) -> Vec<char> {
     let mut out: Vec<char> = Vec::new();
     for (weight, text) in measure::text_runs(spec) {
-        for c in font::uncovered(text, weight) {
+        for c in font::uncovered(&text, weight) {
             if !out.contains(&c) {
                 out.push(c);
             }

@@ -287,6 +287,24 @@ impl<'a> Validator<'a> {
                 }
             }
         }
+        // An order hint sorts nodes side by side; frames keep their nodes
+        // together, so the nodes of one hint must share a frame.
+        for (j, group) in h.order.iter().enumerate() {
+            let frame_of = |id: &String| {
+                self.spec
+                    .nodes
+                    .iter()
+                    .find(|n| &n.id == id)
+                    .map(|n| n.frame.clone())
+            };
+            let frames: Vec<Option<String>> = group.iter().filter_map(frame_of).collect();
+            if frames.windows(2).any(|w| w[0] != w[1]) {
+                self.error(
+                    format!("/hints/order/{j}"),
+                    "the nodes of an order hint must share a frame, or all have none".into(),
+                );
+            }
+        }
     }
 
     /// Checks that `id` names a thing of the wanted sort; the message when it does not.

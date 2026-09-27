@@ -227,17 +227,5 @@
       "to": "pdf",
       "label": "source link"
     }
-  ],
-  "hints": {
-    "order": [
-      [
-        "fieldcheck",
-        "search",
-        "find",
-        "count",
-        "get",
-        "present"
-      ]
-    ]
-  }
+  ]
 }

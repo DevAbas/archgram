@@ -13,10 +13,12 @@
 //! many columns as rows.
 
 use crate::geometry::{Point, Rect, Size};
-use crate::layout::Placement;
+use crate::layout::{Placement, frames};
 use crate::spec::Variant;
 use crate::spec::{Edge, Hints, Spec};
-use crate::tokens::{CARD_MULTI_OFFSET, SPACING_NODE_NODE, SPACING_PACK};
+use crate::tokens::{
+    CARD_MULTI_OFFSET, SPACING_FRAME_LABEL, SPACING_FRAME_PADDING, SPACING_NODE_NODE, SPACING_PACK,
+};
 
 /// The units, each a sorted list of node indices, in order of their first
 /// node.
@@ -169,6 +171,99 @@ fn columns_within(limit: f64, cell: f64) -> usize {
     fit
 }
 
+/// A unit without edges or frames: a grid no wider than `limit`.
+fn plain_grid(spec: &Spec, unit: &[usize], sizes: &[Size], limit: f64) -> Placement {
+    let unit_sizes: Vec<Size> = unit.iter().map(|&v| sizes[v]).collect();
+    let cell = unit_sizes.iter().map(|s| s.w).fold(0.0, f64::max);
+    let (rects, size) = grid(&unit_sizes, &stacks(spec, unit), columns_within(limit, cell));
+    Placement {
+        nodes: rects,
+        edges: Vec::new(),
+        labels: Vec::new(),
+        layers: vec![0; unit.len()],
+        units: vec![0; unit.len()],
+        frames: vec![None; spec.frames.len()],
+        frame_labels: vec![None; spec.frames.len()],
+        size,
+    }
+}
+
+/// A unit without edges whose nodes all sit directly in one frame: a grid
+/// inside that frame, and inside each frame around it, each with its
+/// padding and its name at the top; no frame narrower than its name.
+/// `None` when the nodes do not share one frame.
+fn framed_grid(spec: &Spec, unit: &[usize], sizes: &[Size], limit: f64) -> Option<Placement> {
+    let first = spec.nodes[unit[0]].frame.as_deref()?;
+    if unit
+        .iter()
+        .any(|&v| spec.nodes[v].frame.as_deref() != Some(first))
+    {
+        return None;
+    }
+    let index = |id: &str| {
+        spec.frames
+            .iter()
+            .position(|f| f.id == id)
+            .expect("validated frame")
+    };
+    let mut chain = vec![index(first)];
+    while let Some(p) = &spec.frames[chain[chain.len() - 1]].parent {
+        chain.push(index(p));
+    }
+    #[allow(clippy::cast_precision_loss)] // nesting is shallow
+    let inset = 2.0 * SPACING_FRAME_PADDING * chain.len() as f64;
+    let unit_sizes: Vec<Size> = unit.iter().map(|&v| sizes[v]).collect();
+    let cell = unit_sizes.iter().map(|s| s.w).fold(0.0, f64::max);
+    let (rects, size) = grid(
+        &unit_sizes,
+        &stacks(spec, unit),
+        columns_within(limit - inset, cell),
+    );
+    let top = SPACING_FRAME_PADDING + SPACING_FRAME_LABEL;
+    let mut inner = Rect {
+        x: 0.0,
+        y: 0.0,
+        w: size.w,
+        h: size.h,
+    };
+    let mut boxes = Vec::new();
+    for &f in &chain {
+        let name = frames::name_width(&spec.frames[f].label);
+        inner = Rect {
+            x: inner.x - SPACING_FRAME_PADDING,
+            y: inner.y - top,
+            w: (inner.w + 2.0 * SPACING_FRAME_PADDING).max(name + 2.0 * SPACING_FRAME_PADDING),
+            h: inner.h + top + SPACING_FRAME_PADDING,
+        };
+        boxes.push((f, inner, name));
+    }
+    let shift = |r: Rect| Rect {
+        x: r.x - inner.x,
+        y: r.y - inner.y,
+        ..r
+    };
+    let mut frames_out = vec![None; spec.frames.len()];
+    let mut labels_out = vec![None; spec.frames.len()];
+    for (f, b, name) in boxes {
+        let b = shift(b);
+        frames_out[f] = Some(b);
+        labels_out[f] = Some(frames::name_box(b, name));
+    }
+    Some(Placement {
+        nodes: rects.into_iter().map(shift).collect(),
+        edges: Vec::new(),
+        labels: Vec::new(),
+        layers: vec![0; unit.len()],
+        units: vec![0; unit.len()],
+        frames: frames_out,
+        frame_labels: labels_out,
+        size: Size {
+            w: inner.w,
+            h: inner.h,
+        },
+    })
+}
+
 /// Where each unit goes: the primary at the origin, the others in order,
 /// left to right in rows below it, a row ending before it would pass `limit`.
 fn rows(primary: usize, widths: &[f64], heights: &[f64], limit: f64) -> Vec<Point> {
@@ -205,7 +300,7 @@ fn merge_loose(spec: &Spec, units: &[Vec<usize>]) -> Vec<Vec<usize>> {
     let mut merged: Vec<Vec<usize>> = Vec::new();
     let mut loose: Option<usize> = None;
     for u in units {
-        if u.len() == 1 && !joined(u) {
+        if u.len() == 1 && !joined(u) && spec.nodes[u[0]].frame.is_none() {
             if let Some(i) = loose {
                 merged[i].push(u[0]);
             } else {
@@ -243,11 +338,14 @@ pub fn pack(
         labels: vec![None; spec.edges.len()],
         layers: vec![0; n],
         units: vec![0; n],
+        frames: vec![None; spec.frames.len()],
+        frame_labels: vec![None; spec.frames.len()],
         size: Size::default(),
     };
 
-    // No edges anywhere: one grid, about as many columns as rows.
-    if !has_edges.iter().any(|&e| e) {
+    // No edges and no frames anywhere: one grid, about as many columns as rows.
+    let framed = spec.nodes.iter().any(|node| node.frame.is_some());
+    if !has_edges.iter().any(|&e| e) && !framed {
         #[allow(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
@@ -273,25 +371,26 @@ pub fn pack(
             parts[i] = Some((lay_out(&sub, &sub_sizes), edge_index));
         }
     }
-    let primary_w = parts[primary]
-        .as_ref()
-        .map_or_else(|| sizes[units[primary][0]].w, |(p, _)| p.size.w);
+    // The width the rows below keep within: the primary unit's, or, when it
+    // has no edges either, a square grid's of every node.
+    #[allow(clippy::cast_precision_loss)] // node counts are small
+    let square =
+        (n as f64).sqrt().ceil() * (sizes.iter().map(|s| s.w).fold(0.0, f64::max) + SPACING_NODE_NODE);
+    let primary_w = parts[primary].as_ref().map_or(square, |(p, _)| p.size.w);
     for (i, unit) in units.iter().enumerate() {
         if !has_edges[i] {
-            let unit_sizes: Vec<Size> = unit.iter().map(|&v| sizes[v]).collect();
-            let cell = unit_sizes.iter().map(|s| s.w).fold(0.0, f64::max);
-            let (rects, size) = grid(&unit_sizes, &stacks(spec, unit), columns_within(primary_w, cell));
-            parts[i] = Some((
-                Placement {
-                    nodes: rects,
-                    edges: Vec::new(),
-                    labels: Vec::new(),
-                    layers: vec![0; unit.len()],
-                    units: vec![0; unit.len()],
-                    size,
-                },
-                Vec::new(),
-            ));
+            // Nodes that share one frame: a grid in it. Other framed nodes:
+            // the layered layout, which lays frames out. The rest: a grid.
+            let part = framed_grid(spec, unit, sizes, primary_w).unwrap_or_else(|| {
+                if unit.iter().any(|&v| spec.nodes[v].frame.is_some()) {
+                    let (sub, _) = sub_spec(spec, unit);
+                    let sub_sizes: Vec<Size> = unit.iter().map(|&v| sizes[v]).collect();
+                    lay_out(&sub, &sub_sizes)
+                } else {
+                    plain_grid(spec, unit, sizes, primary_w)
+                }
+            });
+            parts[i] = Some((part, Vec::new()));
         }
     }
     let widths: Vec<f64> = parts
@@ -342,6 +441,12 @@ fn copy_into(
             })
             .collect();
         out.labels[e] = part.labels[k].map(shift);
+    }
+    for (f, (rect, label)) in part.frames.iter().zip(&part.frame_labels).enumerate() {
+        if let Some(r) = rect {
+            out.frames[f] = Some(shift(*r));
+            out.frame_labels[f] = label.map(shift);
+        }
     }
     out.size.w = out.size.w.max(d.x + part.size.w);
     out.size.h = out.size.h.max(d.y + part.size.h);

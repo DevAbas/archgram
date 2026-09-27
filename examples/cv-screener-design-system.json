@@ -74,25 +74,35 @@
       "id": "eslint",
       "kind": "check",
       "label": "ESLint design rules",
-      "note": "checks component code"
+      "note": "checks component code",
+      "frame": "enforce"
     },
     {
       "id": "designlint",
       "kind": "check",
       "label": "design:lint",
-      "note": "contrast, 2 themes"
+      "note": "contrast, 2 themes",
+      "frame": "enforce"
     },
     {
       "id": "exportcheck",
       "kind": "check",
       "label": "design:export --check",
-      "note": "CSS is current"
+      "note": "CSS is current",
+      "frame": "enforce"
     },
     {
       "id": "hooks",
       "kind": "check",
       "label": "Agent hooks",
-      "note": "lint after every edit"
+      "note": "lint after every edit",
+      "frame": "enforce"
+    }
+  ],
+  "frames": [
+    {
+      "id": "enforce",
+      "label": "Enforcement, on every edit and commit"
     }
   ],
   "edges": [

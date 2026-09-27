@@ -151,6 +151,8 @@ its JSON pointer (or its line and column in YAML), when:
 - an id is duplicated, or an edge, flow, frame or hint names an id that
   does not exist;
 - frames nest in a cycle, or a frame is empty;
+- the nodes of an `order` hint do not share a frame (a frame keeps its
+  nodes together, so a hint cannot sort them among others);
 - a flow step is not followed by an edge to the next step;
 - `tech` names a logo archgram does not carry (the error suggests the
   nearest slugs).

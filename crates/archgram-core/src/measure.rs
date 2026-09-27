@@ -7,7 +7,8 @@ use crate::geometry::Size;
 use crate::spec::{CardStyle, Node, Spec, Variant};
 use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_HEIGHT, CARD_HORIZONTAL_MIN_WIDTH, CARD_MULTI_OFFSET,
-    CARD_PADDING, CARD_VERTICAL_HEIGHT, CARD_VERTICAL_MIN_WIDTH, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_PADDING, CARD_VERTICAL_HEIGHT, CARD_VERTICAL_MIN_WIDTH, TYPOGRAPHY_FRAME_LABEL, TYPOGRAPHY_SUBTITLE,
+    TYPOGRAPHY_TITLE,
 };
 
 /// The width of a card's widest line of text.
@@ -73,22 +74,26 @@ pub fn label_size(label: &str) -> Size {
 }
 
 /// Every piece of text the drawing shows, with the weight it is set in, in
-/// drawing order: node titles and notes, then edge labels. The font subset
+/// drawing order: node titles and notes, edge labels, then frame names in
+/// the capitals they are drawn in. The font subset
 /// and the check for characters the font lacks both read this list, so
 /// neither can miss a text the other covers.
 #[must_use]
-pub fn text_runs(spec: &Spec) -> Vec<(u16, &str)> {
+pub fn text_runs(spec: &Spec) -> Vec<(u16, std::borrow::Cow<'_, str>)> {
     let mut runs = Vec::new();
     for node in &spec.nodes {
-        runs.push((TYPOGRAPHY_TITLE.weight, node.label.as_str()));
+        runs.push((TYPOGRAPHY_TITLE.weight, node.label.as_str().into()));
         if let Some(note) = &node.note {
-            runs.push((TYPOGRAPHY_SUBTITLE.weight, note.as_str()));
+            runs.push((TYPOGRAPHY_SUBTITLE.weight, note.as_str().into()));
         }
     }
     for edge in &spec.edges {
         if let Some(label) = &edge.label {
-            runs.push((TYPOGRAPHY_SUBTITLE.weight, label.as_str()));
+            runs.push((TYPOGRAPHY_SUBTITLE.weight, label.as_str().into()));
         }
+    }
+    for frame in &spec.frames {
+        runs.push((TYPOGRAPHY_FRAME_LABEL.weight, frame.label.to_uppercase().into()));
     }
     runs
 }

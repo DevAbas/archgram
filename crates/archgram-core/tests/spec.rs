@@ -165,3 +165,12 @@ fn every_problem_is_reported_in_one_run() {
         ["/nodes/1/id", "/nodes/0/label", "/nodes/1/tech", "/edges/0/to"]
     );
 }
+
+#[test]
+fn an_order_hint_stays_within_one_frame() {
+    let nodes = r#"{ "id": "a", "kind": "service", "label": "A", "frame": "f" }, { "id": "b", "kind": "service", "label": "B" },
+        { "id": "c", "kind": "service", "label": "C", "frame": "f" }"#;
+    let rest = r#", "frames": [{ "id": "f", "label": "F" }], "hints": { "order": [["a", "c"], ["a", "b"]] }"#;
+    let e = errors(&spec_with(nodes, rest));
+    assert_eq!(pointers(&e), ["/hints/order/1"]);
+}

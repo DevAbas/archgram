@@ -119,11 +119,35 @@ the units would find the same errors. The steps:
    vertex at the mean of its two middle values. Blocks are placed by a
    longest-path pass over the graph of blocks rather than the paper's class
    shifts, which its 2020 erratum shows can misplace classes.
-5. Frames. A frame's contents are laid out first, then the frame joins its
-   parent's layout as one node with the size of its contents and its
-   padding. Edges that cross a frame's border are attached to the border
-   during the parent's layout and joined to their inner ends when routed.
-   This is the hardest part of the engine and gets the most tests.
+5. Frames, in the one global layout, as dagre lays out compound graphs
+   (Sander 1996; Forster 2002), not frame by frame: laying each frame out
+   alone and then treating it as one big node (ELK's separate children)
+   makes rigid blocks with long gaps, and edges between frames need ports
+   on their borders. Here nodes keep their global layers and:
+   - a frame spans the layers from its first descendant node to its last;
+     each dummy of a long edge sits in the innermost frame it passes
+     through (dagre's `parentDummyChains`);
+   - on every layer it spans, a frame has a first and a last border
+     vertex, chained across the layers;
+   - crossing reduction sorts a layer frame by frame, a child frame as one
+     item at the mean key of what it holds, between its borders; frames
+     side by side keep the order they had in the layer just placed; a swap
+     only trades two vertices of one frame. An `order` hint must stay
+     within one frame, so it never breaks one apart;
+   - coordinates align each border chain first, as one block, and no other
+     alignment may cross it, so a frame is a rectangle holding its own and
+     nothing else. Its padding (with room for its name on top, across the
+     layers when the flow runs right) separates its borders from what it
+     holds. Should the blocks ever form a cycle, every non-border vertex
+     stands alone and the layout carries on; debug builds stop there, and
+     the tests would;
+   - along the flow, the gaps keep each frame's padding where it starts and
+     ends, nested frames adding theirs inside, and tracks stay outside
+     them. Flowing down, the name's room is part of that padding; a frame
+     is never shorter or narrower than its name.
+   Layering ignores frames, so a frame whose nodes lie far apart spans the
+   layers between them; dagre's nesting edges would pull them together
+   and remain an option.
 6. Direction. The layout is computed left to right; top to bottom is a
    transform of the result.
 
@@ -215,6 +239,8 @@ These hold for every output and are checked by tests on every change.
 - The same spec gives byte-identical output on every platform.
 - No two boxes overlap; no edge passes through a box it does not touch.
 - Every edge is orthogonal.
+- A frame holds its nodes and child frames with its padding around them;
+  nothing else reaches into it, and frames that do not nest stay apart.
 - Every text pair meets WCAG 2.1 AA in both themes.
 - Every `keyTimes` starts at 0, ends at 1 and increases.
 - `archgram-core` performs no I/O.

@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1306 384" width="1306" height="384" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1372 552" width="1372" height="552" role="img" aria-labelledby="title desc">
   <title id="title">How an answer comes to be</title>
   <desc id="desc">Before use, the index script has a model extract a profile from each CV, checks every field against the text and embeds each chunk. At question time the chat sends the question to the ask route; the model calls tools over the index and the vectors, ends with present, and the app checks every candidate and page before the answer streams back.</desc>
   <style>
     :root { --badge: #f1f1f1; --canvas: #fbfbfb; --card: #ffffff; --card-edge: #d4d4d4; --connector: #8f8f8f; --frame: #8f8f8f; --icon-ai: #6f56ad; --icon-build: #9a5b17; --icon-client: #2a7668; --icon-core: #2f6aa8; --text: #1f1f1f; --text-muted: #646464; }
     @media (prefers-color-scheme: dark) { :root { --badge: #252525; --canvas: #111111; --card: #191919; --card-edge: #353535; --connector: #707070; --frame: #707070; --icon-ai: #aa98d6; --icon-build: #cf9d62; --icon-client: #79b6a8; --icon-core: #86acd6; --text: #ededed; --text-muted: #a8a8a8; } }
     @font-face { font-family: "archgram-geist"; font-weight: 400; src: url(data:font/ttf;base64,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AAAAAAAAACgCWAAoAPoAAAIuACgAyQAsAaMALAKXADICawA8AmUAMgJyADwCqABcAr8ALQJVAEMDbQBcAucAXALjAC0CgAA3ApsAFAInACwCIgAsAlMALAIxACwBiwA8AlIALAJFAFAA9ABOAk4AUAELAFADbQBQAkUAUAI9ACwCUwBQAXsAUAIIACwBiAA3Aj8AUAIYABYCSQAvAhkAFgD0AFAAAAAsAAAAAAAAAFQAAABUAAAAgAAAAKQAAADAAAABHAAAAYAAAAH8AAACZAAAAsgAAAMsAAADcAAAA6gAAAPYAAAENAAABMAAAATsAAAFbAAABcgAAAYoAAAGkAAABtAAAAdUAAAHlAAAB6wAAAfgAAAICAAACGwAAAiwAAAJCAAACWgAAAmUAAAKFAAAClAAAAqQAAAKuAAACuwAAAswAAALSAAAC2QAAQAAACgAcgAQAFsABQACACoAVwCNAAAAjQ4MAAQAAQAAAAkAcgADAAEECQAAAJ4AAAADAAEECQABAAoAngADAAEECQACAA4AqAADAAEECQADADAAtgADAAEECQAEABoA5gADAAEECQAFAFYBAAADAAEECQAGABoBVgADAAEECQANASIBcAADAAEECQAOADYCkgBDAG8AcAB5AHIAaQBnAGgAdAAgADIAMAAyADQAIABUAGgAZQAgAEcAZQBpAHMAdAAgAFAAcgBvAGoAZQBjAHQAIABBAHUAdABoAG8AcgBzACAAKABoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHYAZQByAGMAZQBsAC8AZwBlAGkAcwB0AC0AZgBvAG4AdAApAEcAZQBpAHMAdABSAGUAZwB1AGwAYQByADEALgA4ADAAMAA7AFYAUgBDAEwAOwBHAGUAaQBzAHQALQBSAGUAZwB1AGwAYQByAEcAZQBpAHMAdAAgAFIAZQBnAHUAbABhAHIAVgBlAHIAcwBpAG8AbgAgADEALgA4ADAAMAA7ACAAdAB0AGYAYQB1AHQAbwBoAGkAbgB0ACAAKAB2ADEALgA4AC4ANAAuADEANgAtAGUAYgA2ADQAKQBHAGUAaQBzAHQALQBSAGUAZwB1AGwAYQByAFQAaABpAHMAIABGAG8AbgB0ACAAUwBvAGYAdAB3AGEAcgBlACAAaQBzACAAbABpAGMAZQBuAHMAZQBkACAAdQBuAGQAZQByACAAdABoAGUAIABTAEkATAAgAE8AcABlAG4AIABGAG8AbgB0ACAATABpAGMAZQBuAHMAZQAsACAAVgBlAHIAcwBpAG8AbgAgADEALgAxAC4AIABUAGgAaQBzACAAbABpAGMAZQBuAHMAZQAgAGkAcwAgAGEAdgBhAGkAbABhAGIAbABlACAAdwBpAHQAaAAgAGEAIABGAEEAUQAgAGEAdAA6ACAAaAB0AHQAcABzADoALwAvAG8AcABlAG4AZgBvAG4AdABsAGkAYwBlAG4AcwBlAC4AbwByAGcAaAB0AHQAcABzADoALwAvAG8AcABlAG4AZgBvAG4AdABsAGkAYwBlAG4AcwBlAC4AbwByAGcAAAADAAAAAAAA/5wAMgAAAAAAAAAAAAAAAAAAAAAAAAAA) format("truetype"); }
-    @font-face { font-family: "archgram-geist"; font-weight: 500; src: url(data:font/ttf;base64,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ALYAAwABBAkAAwAuAMQAAwABBAkABAAYAPIAAwABBAkABQBWAQoAAwABBAkABgAYAWAAAwABBAkADQEiAXgAAwABBAkADgA2ApoAQwBvAHAAeQByAGkAZwBoAHQAIAAyADAAMgA0ACAAVABoAGUAIABHAGUAaQBzAHQAIABQAHIAbwBqAGUAYwB0ACAAQQB1AHQAaABvAHIAcwAgACgAaAB0AHQAcABzADoALwAvAGcAaQB0AGgAdQBiAC4AYwBvAG0ALwB2AGUAcgBjAGUAbAAvAGcAZQBpAHMAdAAtAGYAbwBuAHQAKQBHAGUAaQBzAHQAIABNAGUAZABpAHUAbQBSAGUAZwB1AGwAYQByADEALgA4ADAAMAA7AFYAUgBDAEwAOwBHAGUAaQBzAHQALQBNAGUAZABpAHUAbQBHAGUAaQBzAHQAIABNAGUAZABpAHUAbQBWAGUAcgBzAGkAbwBuACAAMQAuADgAMAAwADsAIAB0AHQAZgBhAHUAdABvAGgAaQBuAHQAIAAoAHYAMQAuADgALgA0AC4AMQA2AC0AZQBiADYANAApAEcAZQBpAHMAdAAtAE0AZQBkAGkAdQBtAFQAaABpAHMAIABGAG8AbgB0ACAAUwBvAGYAdAB3AGEAcgBlACAAaQBzACAAbABpAGMAZQBuAHMAZQBkACAAdQBuAGQAZQByACAAdABoAGUAIABTAEkATAAgAE8AcABlAG4AIABGAG8AbgB0ACAATABpAGMAZQBuAHMAZQAsACAAVgBlAHIAcwBpAG8AbgAgADEALgAxAC4AIABUAGgAaQBzACAAbABpAGMAZQBuAHMAZQAgAGkAcwAgAGEAdgBhAGkAbABhAGIAbABlACAAdwBpAHQAaAAgAGEAIABGAEEAUQAgAGEAdAA6ACAAaAB0AHQAcABzADoALwAvAG8AcABlAG4AZgBvAG4AdABsAGkAYwBlAG4AcwBlAC4AbwByAGcAaAB0AHQAcABzADoALwAvAG8AcABlAG4AZgBvAG4AdABsAGkAYwBlAG4AcwBlAC4AbwByAGcAAAADAAAAAAAA/5wAMgAAAAAAAAAAAAAAAAAAAAAAAAAA) format("truetype"); }
+    @font-face { font-family: "archgram-geist"; font-weight: 500; src: url(data:font/ttf;base64,AAEAAAAKAIAAAwAgT1MvMjzpb+gAAACsAAAAYGNtYXAJOwrQAAABDAAAAWxnbHlm8/OGhgAAAngAAAwEaGVhZDNqgaYAAA58AAAANmhoZWEMSgmFAAAOtAAAACRobXR4Y40JpwAADtgAAACwbG9jYQABDiwAAA+IAAAAtG1heHABig8vAAAQPAAAACBuYW1lSYtlsAAAEFwAAANCcG9zdP+fADIAABOgAAAAIAAEAlEB9AAFAAACigJYAAAASwKKAlgAAAFeADIBPwAAAAAAAAAAAAAAAKEAAv9QAeR7AAAAAAAAAABWUkNMAMAAIPsCA+3+2QAABEABBiAAAJcAAAAAAhQCxgAAACAACgAAAAEAAwABAAAADAAEAWAAAABUAEAABQAUACAALwBBAEIAQwBEAEUARgBHAEkATQBOAE8AUABRAFIAUwBUAFUAVgBfAGEAYgBjAGQAZQBnAGgAaQBrAGwAbQBuAG8AcAByAHMAdAB2AHcAeP//AAAAIAAvAEEAQgBDAEQARQBGAEcASQBNAE4ATwBQAFEAUgBTAFQAVQBWAF8AYQBiAGMAZABlAGcAaABpAGsAbABtAG4AbwBwAHIAcwB0AHYAdwB4////4f/T/8L/wv/C/8L/wv/C/8L/wf++/77/vv++/77/vv++/77/vv++/7b/tf+1/7X/tf+1/7T/tP+0/7P/s/+z/7P/s/+z/7L/sv+y/7H/sf+xAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAoAAACNQLGAAMABgAJAAwADwAAMxEhEQETEwUREzMTEQEhAygCDf4q0M/+S9Ep0f5LAZ/PAsb9OgKi/t4BIhz9ugEj/t0CRv2eASIAAAAAAAAAAQAl/5IBswLuAAMAABcBMwElAShm/tluA1z8pAAAAAACABQAAAKdAsYABwAKAAAzATMBIychBxMzAxQBAIkBAHNB/t5AYt9wAsb9Orm5ARsBRAAAAwBWAAACdQLGAA4AFgAfAAAzETMyFhUUBgcWFhUUBiMDMzI2NTQjIxEzMjY1NCYjI1b/gIJGPk1Vgni5kUdOlZG2Q0tLQ7YCxlxkPVEJCVxHYWIBlzYxZ/38NzU0OgAAAAAAAAEALP/wAqIC1gAdAAAFIiYmNTQ2NjMyFhcHJiYjIgYGFRQWFjMyNjcXBgYBcGCSUlGSYoSSFnEOXFFBXzU1YD9WXg1xFJsQWaZzcqdbhXQGSFRCelVVekBbUAZ5jwAAAAIAVgAAApUCxgAIAA8AADMRMzIWFRQGIyczMjUQIyNW5Ke0saR+eOvreALGuauquGP/AQEAAAAAAQBWAAACLALGAAsAADMRIRUhFSEVIRUhFVYBzv6eAVb+qgFqAsZjz2DRYwABAFYAAAIjAsYACQAAMxEhFSEVIRUhEVYBzf6fAU/+sQLGY9hg/tUAAAAAAAEALP/wApgC1gAkAAAFIiYmNTQ2NjMyFhYXByYmIyIGBhUUFhYzMjY2NyM1IREjJwYGAW1lkExOkWZXeUcOcQxUVEpeLS1fSjpULwK+ASVKBRt4EF+nbGuoYT5sRQZBUUp8S056RzJWNFv+lnE6RwAAAAAAAQBWAAAAwgLGAAMAADMRMxFWbALG/ToAAQBWAAADJALGAAwAADMRMxMTMxEjEQMjAxFWlNPTlGy/eL8Cxv25Akf9OgII/fkCB/34AAAAAAABAFYAAAKTAsYACQAAMxEzAREzESMBEVaJAUhsjv69Asb9vQJD/ToCNv3KAAAAAAACACz/8ALDAtYADwAbAAAFIiYmNTQ2NjMyFhYVFAYGJzI2NTQmIyIGFRQWAXdnlFBQlGdolU9PlWhndXVnZnV1EFmmc3OnWlqnc3OmWWOPgICRkYCAjwAAAAAAAAIAVgAAAmECxgAKABEAADMRITIWFRQGIyMRETMyNTQjI1YBCXmJiXmdmpWVmgLGdWhod/72AWx9egAAAAAAAAACACz/vQK9AtYAFAAoAAAFJwYGIyImJjU0NjYzMhYWFRQGBxclMjY3JzMXNjU0JiYjIgYGFRQWFgIqORhBJGeTTkyTaWuSTEVBWv7jEx8LZWdEVi9gSklgLzBgQ0oLDGKnaWipY2OpaGKgMnGWBAV/WkiZSnxLS3xKSXxKAAAAAAIAVgAAAm4CxgATABwAADMRITIWFRQGBxYWFxcjJyYmIyMRETMyNjU0JiMjVgEbcYVHMjE3BRNtEQM0O7yxPUdJRKgCxnRiPlkPCDw3z8ErKf7rAXg8OTk9AAAAAQA2//ACWALWAC0AAAUiJiYnNxYWMzI2NTQmJicuAjU0NjYzMhYWFwcmJiMiBhUUFhYXHgIVFAYGAVZVfUgGbwpZUEVMHVFOVWYtO25NUXRCCG8IUUk+Rx1LRVxsL0F0ED5uSQdKUDQyHi8nExQzSzc9XTQ8aEMGPU45Lx8oHxAVPVI0P10yAAAAAAABAAwAAAIsAsYABwAAMxEjNSEVIxHm2gIg2gJjY2P9nQAAAAABAEf/8AJvAsYAEwAABSImJjURMxEUFjMyNjURMxEUBgYBW1V8Q2xYUFBYbEN8EEF4UgHL/jVRV1dRAcv+NVJ4QQAAAAEAFAAAApwCxgAGAAAhATMTEzMBART/AHPR0XP+/wLG/bICTv06AAAAAAAAAQAq/6QCBQAAAAMAABc1IRUqAdtcXFwAAAAAAAIAKv/0AiQCIAAhACwAABciJjU0Njc3NCMiBgcnNjYzMhYVFRQWMzMVBiMiJic1BgYnMjY1NQcGBhUUFuBTY1NXt3MzOgttD3dfbHENDxMOGS01BxRiLUhSnDAnLwxMRUROESN7LisHUFxzaM8TD1QDJS0DKjRUUj8iHgknHiIlAAAAAAIAS//0AjYCxgASAB4AAAUiJicHIxEzFTY2MzIWFhUUBgYnMjY1NCYjIgYVFBYBVDhVFgNjahRUN0VmNzdmVj1IRz1DTEsMMCxQAsb9IzREfVVVfURcZFZYYmJYVmQAAAAAAAABACr/9AIUAiAAGwAABSImJjU0NjYzMhYXByYmIyIGFRQWMzI2NxcGBgEmTHI+PnJMYYANbwhEM0NLS0MzRAhvDX8MRX1UVH1FZVwGNDdjV1hiOToGXG0AAAAAAAIAKv/0AhUCxgASAB4AAAUiJiY1NDY2MzIWFzUzESMnBgYnMjY1NCYjIgYVFBYBCERkNjZkRDdWFmpjAxZZHEFGRkFATEwMRH1VVX1ELin9/TpQLDBcYlhZYWNXVWUAAAAAAAACACr/9AIWAiAAFwAeAAAFIiYmNTQ2NjMyFhYVFSEWFjMyNjcXBgYDISYmIyIGASZOcT09cExIbj3+ggRLQC89DW4Ve+YBDgVINjlJDEV9VFR9RUN+WRtOTismB0taAUdHREcAAAAAAAIAKv9eAhQCIAAeACoAAAUiJic3FhYzMjY1NQYGIyImJjU0NjYzMhYXNTMRFAYDMjY3NiYjIgYVFBYBIV94EW4LNzhCRxRUM0NoOjlmQjlXE2aDcT5LAQFMP0FHSaJURQciJjg5TSkwQXVMTHVCNCxU/hZiagEXWk9OWltNTlsAAAAAAAEASwAAAgQCxgASAAAzETMVNjYzMhYVESMRNCMiBhURS2oVUzRXXGplO0UCxv8uK3FZ/qoBOo1JRv7IAAAAAP//AEkAAAC3AssCJgAqAAAABgArHwAAAAABAEsAAAIyAsYACwAAMxEzERMzBxMjJwcVS2rvhtDYeqVeAsb+RwEH4P7M8mSOAAABAEsAAAEEAsYACgAAMyImNREzERQzMxW/NT9qJSo2OwJV/bUkVwAAAQBLAAADKQIgACEAADMRMxc2NjMyFhc2NjMyFhURIxE0IyIGFREjETQmIyIGFRFLYQIUTjI7URESTzlUXGplMjxlLTYzPAIUWzA3OjQ1OWlh/qoBPItMQ/7IAThDTExD/sgAAAEASwAAAgQCIAAUAAAzETMXNjYzMhYWFREjETQmIyIGFRFLYQIVVjc7UClqLzg5RQIUXTcyNVs6/qoBNkZLS0b+ygAAAgAq//QCIgIgAA8AGwAABSImJjU0NjYzMhYWFRQGBicyNjU0JiMiBhUUFgEmTHI+PnJMTHI+PnJMREpKRENLSwxFfFVVfEVFfFVVfEVcYlhXY2NXWGIAAAIAS/9qAjYCIAASAB4AABcRMxc2NjMyFhYVFAYGIyImJxU3MjY1NCYjIgYVFBZLZAIXVTVOZTExZU4zVBaKQElJQEBKSpYCqlEuL01+S0t+TS0n3uZiWFhiXlxcXgAAAAEASwAAAWECFAANAAAzETMXNjYzMxUjIgYVEUthAw8/MTMzPTwCFGU0MV88P/7GAAAAAAABACr/9AHvAiAAKQAABSImJzcWFjMyNjU0JiYnLgI1NDYzMhYWFwcmJiMiBhUUFhceAhUUBgEYdHQGbQc6QDI1EjQzTlckbmhJXjAFbQMzOzQyL0FRWyZ2DGVPBSw0ICMUGhMJDyk9LEhdMVAuBiY2KCAjIwoNKT0rS1IAAAAAAAEAMgAAAXoCkQATAAAhIiY1ESM1MzUzFTMVIxEUFjMzFQEXTEhRUWqNjSAhTEVLAS1XfX1X/tslHFcAAAEAFgAAAhsCFAAGAAAzAzMTEzMD2MJxkZFywwIU/lgBqP3sAAAAAAABABYAAAMnAhQADAAAMwMzExMzExMzAyMDA7iib3J1ZHVzb6J3cHACFP5gAaD+YAGg/ewBfP6EAAAAAAABAC8AAAIwAhQACwAAMxMDMxc3MwMTIycHL8G5doN/ebe/domKARABBL+//vr+8svLAAAAAQBLAAAAtQIUAAMAADMRMxFLagIU/ewAAQAqAmEAmALLAAMAABM1MxUqbgJhamoAAAAAAAEAAAABzM1VefOJXw889QAPA+gAAAAA5almUwAAAADmQwpu/zj/DAkiBCgAAAAGAAIAAQAAAAAAAQAAA+3+2QAACWD/OP04CSID6AAAAAAAAAAAAAAAAAAAACwCWAAoAPMAAAHuACUCsQAUArAAVgLJACwCvQBWAmEAVgJTAFYCyQAsARgAVgN6AFYC6QBWAu8ALAKRAFYC6QAsAqgAVgKOADYCOAAMArYARwKwABQCLgAqAjUAKgJgAEsCMwAqAmAAKgJAACoCXwAqAk8ASwEAAEkCYQBLARoASwN1AEsCTwBLAkwAKgJgAEsBigBLAhkAKgGaADICMAAWAz0AFgJfAC8BAABLAAAAKgAAAAAAAABUAAAAVAAAAHQAAACoAAABDAAAAWwAAAGkAAAB0AAAAfwAAAJwAAACiAAAAsAAAALwAAADTAAAA4wAAAQMAAAEaAAABPQAAAUYAAAFXAAABYgAAAWkAAAGKAAABowAAAboAAAHTAAAB7QAAAg4AAAIeAAACJAAAAjAAAAI6AAACUwAAAmQAAAJ6AAACkgAAAp8AAAK/AAACzgAAAtgAAALnAAAC9AAAAvoAAAMBAABAAAALAByABAAVwAFAAIAKgBXAI0AAACNDgwABAABAAAACQByAAMAAQQJAAAAngAAAAMAAQQJAAEAGACeAAMAAQQJAAIADgC2AAMAAQQJAAMALgDEAAMAAQQJAAQAGADyAAMAAQQJAAUAVgEKAAMAAQQJAAYAGAFgAAMAAQQJAA0BIgF4AAMAAQQJAA4ANgKaAEMAbwBwAHkAcgBpAGcAaAB0ACAAMgAwADIANAAgAFQAaABlACAARwBlAGkAcwB0ACAAUAByAG8AagBlAGMAdAAgAEEAdQB0AGgAbwByAHMAIAAoAGgAdAB0AHAAcwA6AC8ALwBnAGkAdABoAHUAYgAuAGMAbwBtAC8AdgBlAHIAYwBlAGwALwBnAGUAaQBzAHQALQBmAG8AbgB0ACkARwBlAGkAcwB0ACAATQBlAGQAaQB1AG0AUgBlAGcAdQBsAGEAcgAxAC4AOAAwADAAOwBWAFIAQwBMADsARwBlAGkAcwB0AC0ATQBlAGQAaQB1AG0ARwBlAGkAcwB0ACAATQBlAGQAaQB1AG0AVgBlAHIAcwBpAG8AbgAgADEALgA4ADAAMAA7ACAAdAB0AGYAYQB1AHQAbwBoAGkAbgB0ACAAKAB2ADEALgA4AC4ANAAuADEANgAtAGUAYgA2ADQAKQBHAGUAaQBzAHQALQBNAGUAZABpAHUAbQBUAGgAaQBzACAARgBvAG4AdAAgAFMAbwBmAHQAdwBhAHIAZQAgAGkAcwAgAGwAaQBjAGUAbgBzAGUAZAAgAHUAbgBkAGUAcgAgAHQAaABlACAAUwBJAEwAIABPAHAAZQBuACAARgBvAG4AdAAgAEwAaQBjAGUAbgBzAGUALAAgAFYAZQByAHMAaQBvAG4AIAAxAC4AMQAuACAAVABoAGkAcwAgAGwAaQBjAGUAbgBzAGUAIABpAHMAIABhAHYAYQBpAGwAYQBiAGwAZQAgAHcAaQB0AGgAIABhACAARgBBAFEAIABhAHQAOgAgAGgAdAB0AHAAcwA6AC8ALwBvAHAAZQBuAGYAbwBuAHQAbABpAGMAZQBuAHMAZQAuAG8AcgBnAGgAdAB0AHAAcwA6AC8ALwBvAHAAZQBuAGYAbwBuAHQAbABpAGMAZQBuAHMAZQAuAG8AcgBnAAAAAwAAAAAAAP+cADIAAAAAAAAAAAAAAAAAAAAAAAAAAA==) format("truetype"); }
     text { font-family: "archgram-geist", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-kerning: none; }
     .title { font-size: 14px; font-weight: 500; fill: var(--text); }
     .sub { font-size: 12px; font-weight: 400; fill: var(--text-muted); }
@@ -13,6 +13,8 @@
     .card { fill: var(--card); stroke: var(--card-edge); stroke-width: 1; }
     .card.external { fill: var(--canvas); stroke: var(--connector); stroke-dasharray: 5 4; }
     .badge { fill: var(--badge); }
+    .frame { fill: none; stroke: var(--frame); stroke-width: 1.1; stroke-dasharray: 6 5; }
+    .frame-label { font-size: 11px; font-weight: 500; letter-spacing: 0.88px; fill: var(--text-muted); }
     .label-patch { fill: var(--canvas); }
     .edge { fill: none; stroke: var(--connector); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .edge.dashed { stroke-dasharray: 4 4; }
@@ -23,108 +25,116 @@
     .icon.build { stroke: var(--icon-build); }
     .icon.client { stroke: var(--icon-client); }
   </style>
-  <rect class="canvas" width="1306" height="384" rx="16"/>
+  <rect class="canvas" width="1372" height="552" rx="16"/>
   <defs><marker id="arrow" viewBox="0 0 7 12" refX="7" refY="6" markerWidth="7" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L7 6L0 12"/></marker></defs>
-  <g class="edges">
-    <path class="edge" d="M483 92 L492 92 A9 9 0 0 0 501 83 L501 67.5 A15.5 15.5 0 0 1 516.5 52 L532 52" marker-end="url(#arrow)"/>
-    <path class="edge" d="M719 52 L850 52" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1037 52 L1051 52 A14 14 0 0 1 1065 66 L1065 97 A15 15 0 0 0 1080 112 L1095 112" marker-end="url(#arrow)"/>
-    <path class="edge" d="M483 92 L492 92 A9 9 0 0 1 501 101 L501 116.5 A15.5 15.5 0 0 0 516.5 132 L532 132" marker-end="url(#arrow)"/>
-    <path class="edge" d="M719 132 L1037 132 A16 16 0 0 1 1053 148 L1053 176 A16 16 0 0 0 1069 192 L1095 192" marker-end="url(#arrow)"/>
-    <path class="edge" d="M208 286 L216 286 A8 8 0 0 0 224 278 L224 268 A16 16 0 0 1 240 252 L266 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M483 252 L532 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M719 245 L780 245 A16 16 0 0 0 796 229 L796 188 A16 16 0 0 1 812 172 L850 172" marker-end="url(#arrow)"/>
-    <path class="edge" d="M719 245 L780 245 C796 245 796 252 812 252 L850 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1037 172 L1051 172 A14 14 0 0 0 1065 158 L1065 127 A15 15 0 0 1 1080 112 L1095 112" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1037 252 L1045 252 A8 8 0 0 0 1053 244 L1053 208 A16 16 0 0 1 1069 192 L1095 192" marker-end="url(#arrow)"/>
-    <path class="edge" d="M719 259 L792 259 A16 16 0 0 1 808 275 L808 310 A16 16 0 0 0 824 326 L850 326" marker-end="url(#arrow)"/>
-    <rect class="label-patch" x="731.47" y="251.8" width="53.07" height="14.4" rx="5"/>
-    <text class="sub" x="758" y="263.26" text-anchor="middle">present</text>
-    <path class="edge" d="M853 338 L836 338 C820 338 820 332 804 332 L252 332 A16 16 0 0 1 236 316 L236 310.5 A12.5 12.5 0 0 0 223.5 298 L211 298" marker-end="url(#arrow)"/>
-    <rect class="label-patch" x="599.2" y="324.8" width="55.6" height="14.4" rx="5"/>
-    <text class="sub" x="627" y="336.26" text-anchor="middle">streams</text>
+  <g class="frames">
+    <rect class="frame" x="291.5" y="24.5" width="812" height="200" rx="14"/>
+    <rect class="frame" x="24.5" y="248.5" width="1079" height="280" rx="14"/>
   </g>
+  <g class="edges">
+    <path class="edge" d="M527 134 L536 134 A9 9 0 0 0 545 125 L545 109.5 A15.5 15.5 0 0 1 560.5 94 L576 94" marker-end="url(#arrow)"/>
+    <path class="edge" d="M763 94 L894 94" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1081 94 L1115 94 A16 16 0 0 1 1131 110 L1131 191 A15 15 0 0 0 1146 206 L1161 206" marker-end="url(#arrow)"/>
+    <path class="edge" d="M527 134 L536 134 A9 9 0 0 1 545 143 L545 158.5 A15.5 15.5 0 0 0 560.5 174 L576 174" marker-end="url(#arrow)"/>
+    <path class="edge" d="M763 174 L1103 174 A16 16 0 0 1 1119 190 L1119 270 A16 16 0 0 0 1135 286 L1161 286" marker-end="url(#arrow)"/>
+    <path class="edge" d="M230 432 L238 432 A8 8 0 0 0 246 424 L246 414 A16 16 0 0 1 262 398 L310 398" marker-end="url(#arrow)"/>
+    <path class="edge" d="M527 398 L576 398" marker-end="url(#arrow)"/>
+    <path class="edge" d="M763 391 L824 391 A16 16 0 0 0 840 375 L840 334 A16 16 0 0 1 856 318 L894 318" marker-end="url(#arrow)"/>
+    <path class="edge" d="M763 391 L824 391 C840 391 840 398 856 398 L894 398" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1081 318 L1115 318 A16 16 0 0 0 1131 302 L1131 221 A15 15 0 0 1 1146 206 L1161 206" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1081 398 L1103 398 A16 16 0 0 0 1119 382 L1119 302 A16 16 0 0 1 1135 286 L1161 286" marker-end="url(#arrow)"/>
+    <path class="edge" d="M763 405 L836 405 A16 16 0 0 1 852 421 L852 456 A16 16 0 0 0 868 472 L894 472" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="775.47" y="397.8" width="53.07" height="14.4" rx="5"/>
+    <text class="sub" x="802" y="409.26" text-anchor="middle">present</text>
+    <path class="edge" d="M897 484 L880 484 C864 484 864 478 848 478 L274 478 A16 16 0 0 1 258 462 L258 456.5 A12.5 12.5 0 0 0 245.5 444 L233 444" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="643.2" y="470.8" width="55.6" height="14.4" rx="5"/>
+    <text class="sub" x="671" y="482.26" text-anchor="middle">streams</text>
+  </g>
+  <rect class="label-patch" x="308" y="38.9" width="87.25" height="13.2"/>
+  <text class="frame-label" x="313.5" y="49.41">BEFORE USE</text>
+  <rect class="label-patch" x="41" y="262.9" width="125.58" height="13.2"/>
+  <text class="frame-label" x="46.5" y="273.41">AT QUESTION TIME</text>
   <g data-node="cvs">
-    <rect class="card" x="269.5" y="64.5" width="214" height="56" rx="10"/>
-    <rect class="badge" x="279.5" y="74.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(285.5 80.5)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/></g>
-    <text class="title" x="325.5" y="90.27">CV PDFs</text>
-    <text class="sub" x="325.5" y="105.16">30 files</text>
+    <rect class="card" x="313.5" y="106.5" width="214" height="56" rx="10"/>
+    <rect class="badge" x="323.5" y="116.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(329.5 122.5)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/></g>
+    <text class="title" x="369.5" y="132.27">CV PDFs</text>
+    <text class="sub" x="369.5" y="147.16">30 files</text>
   </g>
   <g data-node="extract">
-    <rect class="card external" x="535.5" y="24.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="545.5" y="34.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(551.5 40.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="591.5" y="50.27">Gemini</text>
-    <text class="sub" x="591.5" y="65.16">extracts profile</text>
+    <rect class="card external" x="579.5" y="66.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="589.5" y="76.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(595.5 82.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="635.5" y="92.27">Gemini</text>
+    <text class="sub" x="635.5" y="107.16">extracts profile</text>
   </g>
   <g data-node="fieldcheck">
-    <rect class="card" x="853.5" y="24.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="863.5" y="34.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(869.5 40.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
-    <text class="title" x="909.5" y="50.27">Field check</text>
-    <text class="sub" x="909.5" y="65.16">page per fact</text>
+    <rect class="card" x="897.5" y="66.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="907.5" y="76.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(913.5 82.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
+    <text class="title" x="953.5" y="92.27">Field check</text>
+    <text class="sub" x="953.5" y="107.16">page per fact</text>
   </g>
   <g data-node="embed">
-    <rect class="card external" x="535.5" y="104.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="545.5" y="114.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(551.5 120.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="591.5" y="130.27">Embedding</text>
-    <text class="sub" x="591.5" y="145.16">each chunk</text>
+    <rect class="card external" x="579.5" y="146.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="589.5" y="156.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(595.5 162.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="635.5" y="172.27">Embedding</text>
+    <text class="sub" x="635.5" y="187.16">each chunk</text>
   </g>
   <g data-node="index">
-    <rect class="card" x="1098.5" y="84.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="1108.5" y="94.5" width="36" height="36" rx="8"/>
-    <g class="icon core" transform="translate(1114.5 100.5)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
-    <text class="title" x="1154.5" y="110.27">data/index</text>
-    <text class="sub" x="1154.5" y="125.16">JSON, in memory</text>
+    <rect class="card" x="1164.5" y="178.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1174.5" y="188.5" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(1180.5 194.5)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
+    <text class="title" x="1220.5" y="204.27">data/index</text>
+    <text class="sub" x="1220.5" y="219.16">JSON, in memory</text>
   </g>
   <g data-node="vectors">
-    <rect class="card external" x="1098.5" y="164.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="1108.5" y="174.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(1114.5 180.5)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><circle cx="9" cy="12" r=".9"/><circle cx="14.5" cy="11" r=".9"/><circle cx="12" cy="15.5" r=".9"/></g>
-    <text class="title" x="1154.5" y="190.27">Pinecone</text>
-    <text class="sub" x="1154.5" y="205.16">chunk vectors</text>
+    <rect class="card external" x="1164.5" y="258.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1174.5" y="268.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(1180.5 274.5)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><circle cx="9" cy="12" r=".9"/><circle cx="14.5" cy="11" r=".9"/><circle cx="12" cy="15.5" r=".9"/></g>
+    <text class="title" x="1220.5" y="284.27">Pinecone</text>
+    <text class="sub" x="1220.5" y="299.16">chunk vectors</text>
   </g>
   <g data-node="chat">
-    <rect class="card" x="24.5" y="264.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="34.5" y="274.5" width="36" height="36" rx="8"/>
-    <g class="icon client" transform="translate(40.5 280.5)" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6"/><circle cx="8.2" cy="6.3" r=".6"/></g>
-    <text class="title" x="80.5" y="297.47">Chat screen</text>
+    <rect class="card" x="46.5" y="410.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="56.5" y="420.5" width="36" height="36" rx="8"/>
+    <g class="icon client" transform="translate(62.5 426.5)" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6"/><circle cx="8.2" cy="6.3" r=".6"/></g>
+    <text class="title" x="102.5" y="443.47">Chat screen</text>
   </g>
   <g data-node="route">
-    <rect class="card" x="269.5" y="224.5" width="214" height="56" rx="10"/>
-    <rect class="badge" x="279.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon core" transform="translate(285.5 240.5)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
-    <text class="title" x="325.5" y="250.27">POST /api/ask</text>
-    <text class="sub" x="325.5" y="265.16">no CV text in the prompt</text>
+    <rect class="card" x="313.5" y="370.5" width="214" height="56" rx="10"/>
+    <rect class="badge" x="323.5" y="380.5" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(329.5 386.5)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
+    <text class="title" x="369.5" y="396.27">POST /api/ask</text>
+    <text class="sub" x="369.5" y="411.16">no CV text in the prompt</text>
   </g>
   <g data-node="llm">
-    <rect class="card external" x="535.5" y="224.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="545.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(551.5 240.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="591.5" y="250.27">Gemini</text>
-    <text class="sub" x="591.5" y="265.16">tool-calling loop</text>
+    <rect class="card external" x="579.5" y="370.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="589.5" y="380.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(595.5 386.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="635.5" y="396.27">Gemini</text>
+    <text class="sub" x="635.5" y="411.16">tool-calling loop</text>
   </g>
   <g data-node="tools">
-    <rect class="card" x="853.5" y="144.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="863.5" y="154.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(869.5 160.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
-    <text class="title" x="909.5" y="170.27">Exact tools</text>
-    <text class="sub" x="909.5" y="185.16">find, count, get</text>
+    <rect class="card" x="897.5" y="290.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="907.5" y="300.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(913.5 306.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
+    <text class="title" x="953.5" y="316.27">Exact tools</text>
+    <text class="sub" x="953.5" y="331.16">find, count, get</text>
   </g>
   <g data-node="search">
-    <rect class="card" x="853.5" y="224.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="863.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(869.5 240.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
-    <text class="title" x="909.5" y="250.27">search_cv_text</text>
-    <text class="sub" x="909.5" y="265.16">BM25 + vectors</text>
+    <rect class="card" x="897.5" y="370.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="907.5" y="380.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(913.5 386.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
+    <text class="title" x="953.5" y="396.27">search_cv_text</text>
+    <text class="sub" x="953.5" y="411.16">BM25 + vectors</text>
   </g>
   <g data-node="answercheck">
-    <rect class="card" x="853.5" y="304.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="863.5" y="314.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(869.5 320.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
-    <text class="title" x="909.5" y="330.27">Answer check</text>
-    <text class="sub" x="909.5" y="345.16">ids and pages</text>
+    <rect class="card" x="897.5" y="450.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="907.5" y="460.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(913.5 466.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
+    <text class="title" x="953.5" y="476.27">Answer check</text>
+    <text class="sub" x="953.5" y="491.16">ids and pages</text>
   </g>
 </svg>

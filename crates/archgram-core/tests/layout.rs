@@ -79,11 +79,112 @@ fn random_spec(seed: u64, nodes: usize) -> String {
             }
         })
         .collect();
+    let (node_json, frame_json) = random_frames(seed, node_json);
     format!(
-        r#"{{ "archgram": 1, "title": "random {seed}", "description": "generated", "nodes": [{}], "edges": [{}] }}"#,
+        r#"{{ "archgram": 1, "title": "random {seed}", "description": "generated", "nodes": [{}], "frames": [{}], "edges": [{}] }}"#,
         node_json.join(", "),
+        frame_json.join(", "),
         edge_json.join(", ")
     )
+}
+
+/// Up to four frames, nested at most three deep, each holding at least one
+/// node, and about half the nodes framed. A second generator, so the nodes
+/// and edges stay what they were for each seed.
+fn random_frames(seed: u64, mut nodes: Vec<String>) -> (Vec<String>, Vec<String>) {
+    let mut rng = Rng((seed ^ 0x9e37_79b9_7f4a_7c15) | 1);
+    let count = rng.below(5).min(nodes.len());
+    let mut depth = vec![0usize; count];
+    let mut frames = Vec::new();
+    for f in 0..count {
+        let parent = if f > 0 && rng.below(2) == 0 {
+            Some(rng.below(f)).filter(|&p| depth[p] < 2)
+        } else {
+            None
+        };
+        depth[f] = parent.map_or(0, |p| depth[p] + 1);
+        let parent = parent.map_or(String::new(), |p| format!(r#", "parent": "f{p}""#));
+        frames.push(format!(r#"{{ "id": "f{f}", "label": "Frame {f}"{parent} }}"#));
+    }
+    for (i, node) in nodes.iter_mut().enumerate() {
+        let frame = if i < count {
+            Some(i)
+        } else if count > 0 && rng.below(2) == 0 {
+            Some(rng.below(count))
+        } else {
+            None
+        };
+        if let Some(f) = frame {
+            *node = node.replacen(" }", &format!(r#", "frame": "f{f}" }}"#), 1);
+        }
+    }
+    (nodes, frames)
+}
+
+/// Every frame holds its nodes and child frames with its padding around
+/// them, nothing else reaches into it, frames that do not nest stay apart,
+/// and its name sits inside it, clear of every card.
+fn check_frames(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::layout::Placement) {
+    use archgram_core::geometry::Rect;
+    use archgram_core::tokens::SPACING_FRAME_PADDING as PAD;
+    let frame_index = |id: &str| spec.frames.iter().position(|f| f.id == id).unwrap();
+    let within = |f: usize, mut g: usize| loop {
+        if g == f {
+            return true;
+        }
+        match &spec.frames[g].parent {
+            Some(parent) => g = frame_index(parent),
+            None => return false,
+        }
+    };
+    let holds = |outer: &Rect, inner: &Rect| {
+        inner.x >= outer.x + PAD - 0.5
+            && inner.y >= outer.y + PAD - 0.5
+            && inner.right() <= outer.right() - PAD + 0.5
+            && inner.bottom() <= outer.bottom() - PAD + 0.5
+    };
+    for (f, frame) in spec.frames.iter().enumerate() {
+        let r = p.frames[f].unwrap_or_else(|| panic!("seed {seed}: frame {} has no box", frame.id));
+        for (v, node) in spec.nodes.iter().enumerate() {
+            let inside = node.frame.as_deref().is_some_and(|g| within(f, frame_index(g)));
+            if inside {
+                assert!(
+                    holds(&r, &p.nodes[v]),
+                    "seed {seed}: frame {f} does not hold node {v}"
+                );
+            } else {
+                assert!(
+                    !r.overlaps(&p.nodes[v]),
+                    "seed {seed}: node {v} reaches into frame {f}"
+                );
+            }
+        }
+        for g in 0..spec.frames.len() {
+            if g == f {
+                continue;
+            }
+            let other = p.frames[g].unwrap();
+            if within(f, g) {
+                assert!(
+                    holds(&r, &other),
+                    "seed {seed}: frame {f} does not hold frame {g}"
+                );
+            } else if !within(g, f) {
+                assert!(!r.overlaps(&other), "seed {seed}: frames {f} and {g} meet");
+            }
+        }
+        let label = p.frame_labels[f].unwrap();
+        assert!(
+            label.x >= r.x && label.y >= r.y && label.right() <= r.right() && label.bottom() <= r.bottom(),
+            "seed {seed}: the name of frame {f} is outside it"
+        );
+        for (v, n) in p.nodes.iter().enumerate() {
+            assert!(
+                !label.overlaps(n),
+                "seed {seed}: node {v} covers the name of frame {f}"
+            );
+        }
+    }
 }
 
 /// Whether `p` lies on the border of `r`, to within half a pixel.
@@ -199,6 +300,7 @@ fn check_random(seeds: u64, direction: &str) {
         }
         check_labels(seed, &spec, &p);
         check_units(seed, &spec, &p);
+        check_frames(seed, &spec, &p);
         assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
     }
 }
@@ -268,6 +370,24 @@ fn check_units(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::l
             grow(u, x, y, x + w, y + h);
         }
     }
+    // A frame belongs to the unit of the nodes it holds.
+    let frame_index = |id: &str| spec.frames.iter().position(|f| f.id == id).unwrap();
+    for (f, r) in p.frames.iter().enumerate() {
+        let Some(r) = r else { continue };
+        let holder = spec.nodes.iter().position(|node| {
+            let mut at = node.frame.as_deref().map(frame_index);
+            while let Some(g) = at {
+                if g == f {
+                    return true;
+                }
+                at = spec.frames[g].parent.as_deref().map(frame_index);
+            }
+            false
+        });
+        if let Some(v) = holder {
+            grow(p.units[v], r.x, r.y, r.right(), r.bottom());
+        }
+    }
     let boxes: Vec<(f64, f64, f64, f64)> = boxes.into_iter().map(|b| b.unwrap()).collect();
     for (a, ba) in boxes.iter().enumerate() {
         for (b, bb) in boxes.iter().enumerate().skip(a + 1) {
@@ -309,6 +429,29 @@ fn parts_without_edges_go_below_the_flow() {
     // Side by side in one row, not stacked in the first column.
     assert!((p.nodes[3].y - p.nodes[4].y).abs() < 1e-9);
     assert!(p.nodes[4].x > p.nodes[3].right());
+}
+
+#[test]
+fn a_frame_of_nodes_without_edges_is_a_grid_below_the_flow() {
+    let spec = parse_spec(
+        r#"{ "archgram": 1, "title": "t", "description": "d",
+        "nodes": [{ "id": "a", "kind": "browser", "label": "A" }, { "id": "b", "kind": "service", "label": "B" },
+                  { "id": "c", "kind": "database", "label": "C" },
+                  { "id": "x", "kind": "check", "label": "X", "frame": "f" }, { "id": "y", "kind": "check", "label": "Y", "frame": "f" }],
+        "frames": [{ "id": "f", "label": "Checks" }],
+        "edges": [{ "from": "a", "to": "b" }, { "from": "b", "to": "c" }] }"#,
+    )
+    .unwrap();
+    let p = place(&spec, &card_sizes(&spec)).unwrap();
+    let frame = p.frames[0].expect("the frame is placed");
+    let flow_bottom = p.nodes[..3]
+        .iter()
+        .map(archgram_core::geometry::Rect::bottom)
+        .fold(0.0, f64::max);
+    assert!(frame.y >= flow_bottom, "{frame:?} is not below the flow");
+    // Side by side in the frame, which holds them with its padding.
+    assert!((p.nodes[3].y - p.nodes[4].y).abs() < 1e-9);
+    check_frames(0, &spec, &p);
 }
 
 #[test]

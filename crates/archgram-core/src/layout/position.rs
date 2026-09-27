@@ -28,27 +28,61 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+/// What a vertex is, for the space it keeps from its neighbours.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    /// A node's card.
+    Card,
+    /// A long edge's bend, or its label.
+    Dummy,
+    /// A frame's first border in a layer.
+    First(usize),
+    /// A frame's last border in a layer.
+    Last(usize),
+}
+
 /// What `coordinates` needs to know about the vertices.
 pub struct Vertices<'a> {
     /// Extent before the anchor, towards the start of the layer.
     pub lo: &'a [f64],
     /// Extent after the anchor, towards the end of the layer.
     pub hi: &'a [f64],
-    pub dummy: &'a [bool],
+    pub kind: &'a [Kind],
     pub node_gap: f64,
     pub edge_gap: f64,
+    /// Each frame's padding after its first border and before its last.
+    pub pad_lo: &'a [f64],
+    pub pad_hi: &'a [f64],
+    /// For a border vertex, the same border in the layer before and after.
+    pub border_up: &'a [Option<usize>],
+    pub border_down: &'a [Option<usize>],
+    /// Further least distances: `(a, b, d)` keeps `b` at least `d` after `a`.
+    pub extra: &'a [(usize, usize, f64)],
 }
 
 impl Vertices<'_> {
-    /// The least distance between the anchors of `a` and `b` when `a` comes
-    /// first. Not symmetric: `a`'s far side faces `b`'s near side.
+    /// The least distance between the anchors of neighbours `a` and `b`
+    /// when `a` comes first. Not symmetric: `a`'s far side faces `b`'s near
+    /// side. Inside a frame its padding keeps the borders off what it holds;
+    /// elsewhere the node gap, or the edge gap next to a dummy.
     fn separation(&self, a: usize, b: usize) -> f64 {
-        let gap = if self.dummy[a] || self.dummy[b] {
-            self.edge_gap
-        } else {
-            self.node_gap
-        };
-        self.hi[a] + self.lo[b] + gap
+        match (self.kind[a], self.kind[b]) {
+            (Kind::First(f), Kind::Last(g)) if f == g => self.pad_lo[f] + self.pad_hi[f],
+            (Kind::First(f), _) => self.pad_lo[f] + self.lo[b],
+            (_, Kind::Last(f)) => self.hi[a] + self.pad_hi[f],
+            (ka, kb) => {
+                let gap = if ka == Kind::Dummy || kb == Kind::Dummy {
+                    self.edge_gap
+                } else {
+                    self.node_gap
+                };
+                self.hi[a] + self.lo[b] + gap
+            }
+        }
+    }
+
+    fn is_border(&self, v: usize) -> bool {
+        matches!(self.kind[v], Kind::First(_) | Kind::Last(_))
     }
 }
 
@@ -61,7 +95,8 @@ pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices
         down[a].push(b);
         up[b].push(a);
     }
-    let conflicts = type_one_conflicts(layers, &up, v.dummy, n);
+    let dummy: Vec<bool> = v.kind.iter().map(|&k| k == Kind::Dummy).collect();
+    let conflicts = type_one_conflicts(layers, &up, &dummy, n);
 
     let mut results: Vec<(Vec<f64>, bool)> = Vec::new();
     for looking_up in [true, false] {
@@ -77,8 +112,16 @@ pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices
                 }
             }
             let before = if looking_up { &up } else { &down };
-            let (root, _) = align(&ls, before, &conflicts, n);
-            let mut x = compact(&ls, &root, v, n, !from_left);
+            let chain = if looking_up { v.border_up } else { v.border_down };
+            let (root, _) = align(&ls, before, chain, &conflicts, n);
+            let mut x = compact(&ls, &root, v, n, !from_left).unwrap_or_else(|| {
+                // A cycle among the blocks: the frames' rules and an alignment
+                // disagree. Keep the border chains and let every other vertex
+                // stand alone, which the layers' order always allows.
+                debug_assert!(false, "the alignment made a cycle among the blocks");
+                let alone: Vec<usize> = (0..n).map(|i| if v.is_border(i) { root[i] } else { i }).collect();
+                compact(&ls, &alone, v, n, !from_left).expect("borders alone keep the order")
+            });
             if !from_left {
                 for c in &mut x {
                     *c = -*c;
@@ -171,9 +214,13 @@ fn type_one_conflicts(
 /// Vertical alignment for layers given in processing order, with `before[v]`
 /// the neighbours of `v` in the layer processed just before its own.
 /// Returns each vertex's block root and its successor in the block.
+/// A border vertex is aligned with its border in the layer before, `chain`,
+/// ahead of everything else: a frame's borders form straight blocks, and no
+/// other alignment may cross one.
 fn align(
     layers: &[Vec<usize>],
     before: &[Vec<usize>],
+    chain: &[Option<usize>],
     conflicts: &BTreeSet<(usize, usize)>,
     n: usize,
 ) -> (Vec<usize>, Vec<usize>) {
@@ -186,10 +233,20 @@ fn align(
         }
     }
     for layer in layers.iter().skip(1) {
+        let mut fixed: Vec<(usize, usize)> = Vec::new();
+        for &v in layer {
+            if let Some(u) = chain.get(v).copied().flatten() {
+                next[u] = v;
+                root[v] = root[u];
+                next[v] = root[v];
+                fixed.push((pos[v], pos[u]));
+            }
+        }
+        let crosses = |pv: usize, pu: usize| fixed.iter().any(|&(fv, fu)| (pv < fv) != (pu < fu));
         let mut r: isize = -1;
         for &v in layer {
             let mut ns: Vec<usize> = before[v].clone();
-            if ns.is_empty() {
+            if ns.is_empty() || chain.get(v).copied().flatten().is_some() {
                 continue;
             }
             ns.sort_by_key(|&u| pos[u]);
@@ -205,7 +262,7 @@ fn align(
                 }
                 let u = ns[m];
                 let p = pos[u].cast_signed();
-                if !conflicts.contains(&(u.min(v), u.max(v))) && r < p {
+                if !conflicts.contains(&(u.min(v), u.max(v))) && r < p && !crosses(pos[v], pos[u]) {
                     next[u] = v;
                     root[v] = root[u];
                     next[v] = root[v];
@@ -221,8 +278,14 @@ fn align(
 /// then each pulled towards the blocks after it as far as they allow.
 /// `mirrored` layers run from the end of the drawing's layers to their start
 /// (the result is negated afterwards), so each neighbour pair is measured
-/// the other way round.
-fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize, mirrored: bool) -> Vec<f64> {
+/// the other way round. `None` when the blocks' constraints form a cycle.
+fn compact(
+    layers: &[Vec<usize>],
+    root: &[usize],
+    v: &Vertices<'_>,
+    n: usize,
+    mirrored: bool,
+) -> Option<Vec<f64>> {
     // Separation constraints between blocks: block(a) + sep <= block(b).
     let mut sep: BTreeMap<(usize, usize), f64> = BTreeMap::new();
     for layer in layers {
@@ -236,6 +299,17 @@ fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize, mi
             };
             let e = sep.entry(key).or_insert(s);
             *e = e.max(s);
+        }
+    }
+    for &(a, b, d) in v.extra {
+        let key = if mirrored {
+            (root[b], root[a])
+        } else {
+            (root[a], root[b])
+        };
+        if key.0 != key.1 {
+            let e = sep.entry(key).or_insert(d);
+            *e = e.max(d);
         }
     }
     let blocks: BTreeSet<usize> = (0..n)
@@ -265,7 +339,9 @@ fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize, mi
             }
         }
     }
-    debug_assert_eq!(topo.len(), blocks.len(), "the alignment keeps the layers' order");
+    if topo.len() < blocks.len() {
+        return None;
+    }
 
     let mut x: BTreeMap<usize, f64> = BTreeMap::new();
     for &b in &topo {
@@ -282,7 +358,7 @@ fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize, mi
             }
         }
     }
-    (0..n).map(|i| x.get(&root[i]).copied().unwrap_or(0.0)).collect()
+    Some((0..n).map(|i| x.get(&root[i]).copied().unwrap_or(0.0)).collect())
 }
 
 #[cfg(test)]
@@ -290,25 +366,31 @@ mod tests {
     use super::*;
 
     /// Cards 56 across: 28 on either side of the anchor.
-    fn cards(n: usize) -> (Vec<f64>, Vec<bool>) {
-        (vec![28.0; n], vec![false; n])
+    fn cards(n: usize) -> (Vec<f64>, Vec<Kind>) {
+        (vec![28.0; n], vec![Kind::Card; n])
+    }
+
+    /// A vertex set with no frames and no further constraints.
+    fn plain<'a>(lo: &'a [f64], hi: &'a [f64], kind: &'a [Kind]) -> Vertices<'a> {
+        Vertices {
+            lo,
+            hi,
+            kind,
+            node_gap: 24.0,
+            edge_gap: 12.0,
+            pad_lo: &[],
+            pad_hi: &[],
+            border_up: &[],
+            border_down: &[],
+            extra: &[],
+        }
     }
 
     #[test]
     fn a_chain_is_a_straight_line() {
         let layers = vec![vec![0], vec![1], vec![2]];
-        let (half, dummy) = cards(3);
-        let x = coordinates(
-            &layers,
-            &[(0, 1), (1, 2)],
-            &Vertices {
-                lo: &half,
-                hi: &half,
-                dummy: &dummy,
-                node_gap: 24.0,
-                edge_gap: 12.0,
-            },
-        );
+        let (half, kind) = cards(3);
+        let x = coordinates(&layers, &[(0, 1), (1, 2)], &plain(&half, &half, &kind));
         assert!((x[0] - x[1]).abs() < 1e-9 && (x[1] - x[2]).abs() < 1e-9, "{x:?}");
     }
 
@@ -316,14 +398,8 @@ mod tests {
     fn neighbours_in_a_layer_never_overlap() {
         // a -> c, a -> d, b -> d: c and d share a layer.
         let layers = vec![vec![0, 1], vec![2, 3]];
-        let (half, dummy) = cards(4);
-        let v = Vertices {
-            lo: &half,
-            hi: &half,
-            dummy: &dummy,
-            node_gap: 24.0,
-            edge_gap: 12.0,
-        };
+        let (half, kind) = cards(4);
+        let v = plain(&half, &half, &kind);
         let x = coordinates(&layers, &[(0, 2), (0, 3), (1, 3)], &v);
         assert!(x[3] - x[2] >= 56.0 + 24.0 - 1e-9, "{x:?}");
         assert!(x[1] - x[0] >= 56.0 + 24.0 - 1e-9, "{x:?}");
@@ -332,14 +408,8 @@ mod tests {
     #[test]
     fn a_fork_centres_its_source_between_the_branches() {
         let layers = vec![vec![0], vec![1, 2]];
-        let (half, dummy) = cards(3);
-        let v = Vertices {
-            lo: &half,
-            hi: &half,
-            dummy: &dummy,
-            node_gap: 24.0,
-            edge_gap: 12.0,
-        };
+        let (half, kind) = cards(3);
+        let v = plain(&half, &half, &kind);
         let x = coordinates(&layers, &[(0, 1), (0, 2)], &v);
         assert!((x[0] - f64::midpoint(x[1], x[2])).abs() < 1e-9, "{x:?}");
     }
@@ -350,18 +420,8 @@ mod tests {
         // towards `a`. Measured the wrong way round in the mirrored runs,
         // the gap would be 50 + 10 instead of 40 + 5.
         let layers = vec![vec![0, 1]];
-        let (lo, hi, dummy) = ([10.0, 5.0], [40.0, 50.0], [false, false]);
-        let x = coordinates(
-            &layers,
-            &[],
-            &Vertices {
-                lo: &lo,
-                hi: &hi,
-                dummy: &dummy,
-                node_gap: 24.0,
-                edge_gap: 12.0,
-            },
-        );
+        let (lo, hi, kind) = ([10.0, 5.0], [40.0, 50.0], [Kind::Card, Kind::Card]);
+        let x = coordinates(&layers, &[], &plain(&lo, &hi, &kind));
         assert!((x[1] - x[0] - (40.0 + 5.0 + 24.0)).abs() < 1e-9, "{x:?}");
     }
 }

@@ -278,7 +278,10 @@ still says which kind of thing.
 
 A boundary around a group of nodes (`frame`): a rounded rectangle edged
 with `dash.frame` in `color.frame`, no fill, its name at the top left
-(`frame-label`). Frames nest; an edge may cross a frame's border.
+(`frame-label`), set in capitals, on a patch of canvas so an edge passing
+under it does not cut it. Frames nest; an edge may cross a frame's
+border. A frame is never shorter or narrower than its name; nodes of a
+frame that share no edge line up in a grid inside it.
 
 ### Connector
 
