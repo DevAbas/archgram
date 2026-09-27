@@ -15,6 +15,11 @@ fn the_data_is_sorted_unique_and_whole() {
             !icon.title.is_empty() && icon.path.starts_with(['M', 'm']),
             "{slug}"
         );
+        assert!(
+            icon.hex.len() == 6 && icon.hex.chars().all(|c| c.is_ascii_hexdigit()),
+            "{slug}: {}",
+            icon.hex
+        );
     }
 }
 

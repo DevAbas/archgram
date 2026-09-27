@@ -191,7 +191,7 @@ fn build(path: &str, Build { out, options, split }: Build) -> ExitCode {
         Err(errors) => return report(path, &errors),
     };
     if options.embed_font {
-        let missing = archgram_core::uncovered_characters(&spec);
+        let missing = archgram_core::uncovered_characters(&spec, &Icons::load());
         if !missing.is_empty() {
             let list = missing
                 .iter()

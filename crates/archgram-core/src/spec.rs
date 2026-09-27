@@ -68,6 +68,10 @@ pub enum LogoPlace {
     #[default]
     Corner,
     Chip,
+    /// Leading the note line, before the note or the technology's name.
+    Inline,
+    /// In the badge, in place of the kind's icon.
+    Icon,
 }
 
 /// One thing in the system.

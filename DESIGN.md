@@ -56,6 +56,11 @@ components:
     backgroundColor: "{color.card}"
     textColor: "{color.text-muted}"
     size: "{card.logo-chip}"
+  logo-inline:
+    textColor: "{color.text-muted}"
+    size: "{card.logo-inline}"
+  logo-icon:
+    size: "{card.horizontal-icon}"
   frame:
     textColor: "{color.frame}"
     rounded: "{rounded.frame}"
@@ -267,15 +272,26 @@ title bar for a browser, a phone for mobile and a monitor for desktop.
 ### Technology logo
 
 When a node names its technology, its logo (from Simple Icons) appears in
-one of two places, chosen per diagram:
+one of four places, chosen per diagram:
 
 - **Corner** (`logo-corner`, the default): in the card's top-right corner.
+  The card keeps room for it beside the title, so the two never meet.
+- **Inline** (`logo-inline`): leading the card's second line,
+  `card.logo-inline-gap` before the note; a card without a note shows the
+  technology's name there instead.
 - **Chip** (`logo-chip`): in a small round chip on the icon badge's lower
   right corner, edged like a card.
+- **Icon** (`logo-icon`): in the badge, in place of the kind's icon, at
+  the icon's size and in its category's hue, as the icon would be.
 
-The logo is always `color.text-muted`. It says which technology; the icon
-still says which kind of thing. A card with its logo in the corner keeps
-room for it beside the title, so the two never meet.
+In the first three the logo is `color.text-muted`: it says which
+technology, and the icon still says which kind of thing. In the fourth
+the logo says both, so it takes the icon's hue.
+
+While a flow's signal is at a card, its logo shows its brand's own colour
+(the logo's `hex` in Simple Icons); when the signal leaves the card, the
+logo returns to its usual colour. That is the only place a brand colour
+appears, and only for as long as the signal is there.
 
 ### Frame
 
@@ -308,7 +324,8 @@ in room kept for it: it never covers a card.
 A flow's moving marker (`signal`): a solid dot of `signal.dot` in the icon
 hue of the node it leaves, with a thin ring of `signal.ring` at
 `signal.ring-opacity`. No blur and no glow. The node a signal reaches keeps
-still; only the signal moves.
+still; only the signal moves, and the card's technology logo shows its
+brand's colour while the signal is there (Technology logo).
 
 ### Legend
 
@@ -329,9 +346,10 @@ variant.
   written here first.
 - Do use the external variant for anything the system calls but does not
   own, including managed services and third-party APIs.
-- Do name technologies with `tech`, so the logo appears; do not put a
-  logo in place of the kind's icon.
-- Don't use brand colours, neon hues, gradients, shadows or glow.
+- Do name technologies with `tech`, so the logo appears. A logo takes the
+  kind's icon's place only when the diagram asks for it (`logo: icon`).
+- Don't use brand colours, neon hues, gradients, shadows or glow; a
+  logo's brand colour shows only while a flow's signal is at its card.
 - Don't animate for decoration; if the flow does not need it, the diagram
   is still.
 - Don't write a value in this file. A new value is a token first.

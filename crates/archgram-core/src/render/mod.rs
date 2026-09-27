@@ -73,7 +73,7 @@ pub fn render(
         r#"<desc id="desc">{}</desc>"#,
         escape(spec.description.trim())
     ));
-    style(&mut svg, spec, options);
+    style(&mut svg, spec, options, logos);
     svg.line(&format!(
         r#"<rect class="canvas" width="{}" height="{}" rx="{}"/>"#,
         num(w),
@@ -126,12 +126,7 @@ pub fn render(
             y: r.y + OFFSET,
             ..*r
         };
-        let logo = node
-            .tech
-            .as_deref()
-            .and_then(|t| logos.path(t))
-            .map(|p| (p, spec.logo));
-        card::card(&mut svg, node, at, spec.card, logo);
+        card::card(&mut svg, node, at, spec.card, spec.logo, logos);
     }
     let entries: Vec<crate::layout::legend::Entry> = placement
         .legend
@@ -200,7 +195,7 @@ const EDGE_OFFSET: f64 = SPACING_MARGIN + (STROKE_CONNECTOR / 2.0) % 1.0;
 
 /// The style sheet: the theme's roles as custom properties, then the classes
 /// that read them (DESIGN.md, front matter: components).
-fn style(svg: &mut Svg, spec: &Spec, options: Options) {
+fn style(svg: &mut Svg, spec: &Spec, options: Options, logos: &dyn crate::logos::Logos) {
     let (palette, mode) = (spec.palette.as_str(), options.mode);
     // Validation admits only known palettes; should one slip through, the
     // first palette stands in, in the same theme.
@@ -223,7 +218,7 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         Mode::Light => svg.line(&format!(":root {{ {} }}", vars(&light))),
         Mode::Dark => svg.line(&format!(":root {{ {} }}", vars(&dark))),
     }
-    if options.embed_font && embed_fonts(svg, spec) {
+    if options.embed_font && embed_fonts(svg, spec, logos) {
         // No kerning: the subset carries none and the text was measured without it.
         svg.line(&format!(
             "text {{ font-family: \"{}\", {FONT_SANS}; font-kerning: none; }}",
@@ -252,6 +247,9 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
     ));
     svg.line(".badge { fill: var(--badge); }");
     svg.line(".logo { fill: var(--text-muted); }");
+    for hue in ["core", "ai", "build", "client"] {
+        svg.line(&format!(".logo-icon.{hue} {{ fill: var(--icon-{hue}); }}"));
+    }
     svg.line(&format!(
         ".logo-chip {{ fill: var(--card); stroke: var(--card-edge); stroke-width: {}; }}",
         num(STROKE_CARD)
@@ -332,9 +330,9 @@ fn dash(d: &[f64]) -> String {
 /// One `@font-face` per weight the diagram uses, each a subset holding only
 /// the characters set in that weight. False when a subset cannot be made, in
 /// which case the text falls back to the system font.
-fn embed_fonts(svg: &mut Svg, spec: &Spec) -> bool {
+fn embed_fonts(svg: &mut Svg, spec: &Spec, logos: &dyn crate::logos::Logos) -> bool {
     let mut by_weight: std::collections::BTreeMap<u16, BTreeSet<char>> = std::collections::BTreeMap::new();
-    for (weight, text) in crate::measure::text_runs(spec) {
+    for (weight, text) in crate::measure::text_runs_with(spec, logos) {
         by_weight.entry(weight).or_default().extend(text.chars());
     }
     let mut faces = Vec::new();

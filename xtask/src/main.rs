@@ -118,7 +118,8 @@ fn write_icons(tag: &str) -> Result<String, String> {
         if title.contains('\t') || path.contains('\t') {
             return Err(format!("`{slug}` holds a tab"));
         }
-        rows.push(format!("{slug}\t{title}\t{path}"));
+        let hex = entry["hex"].as_str().ok_or(format!("`{title}` has no colour"))?;
+        rows.push(format!("{slug}\t{title}\t{hex}\t{path}"));
         provenance.push(format!(
             "{slug}\t{}\t{}\t{}",
             entry["source"].as_str().unwrap_or(""),

@@ -12,6 +12,18 @@ pub trait Logos {
     fn path(&self, slug: &str) -> Option<&str>;
     /// Every slug in the set, for suggesting one when a name is wrong.
     fn slugs(&self) -> Vec<&str>;
+
+    /// The technology's name, shown beside an inline logo on a card without
+    /// a note.
+    fn title(&self, _slug: &str) -> Option<&str> {
+        None
+    }
+
+    /// The brand's colour, six hex digits, shown while a flow's signal is at
+    /// the card (DESIGN.md, Components: Technology logo).
+    fn colour(&self, _slug: &str) -> Option<&str> {
+        None
+    }
 }
 
 /// No logos at all: `tech` is then neither checked nor drawn.

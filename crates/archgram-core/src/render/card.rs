@@ -2,13 +2,14 @@
 
 use crate::font::baseline_in_line;
 use crate::geometry::Rect;
+use crate::logos::Logos;
 use crate::render::icons::{GRID, icon};
 use crate::render::svg::{Svg, escape, num};
 use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING, CARD_LOGO_CORNER,
-    CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE, CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD,
-    STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_LOGO_INLINE, CARD_LOGO_INLINE_GAP, CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE,
+    CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The CSS class that gives an icon its category's hue (DESIGN.md, Colors).
@@ -21,10 +22,12 @@ pub fn category_class(c: Category) -> &'static str {
     }
 }
 
-/// The two lines a card may carry: its title and, when given, its note.
+/// The two lines a card may carry: its title and, when given, its note,
+/// with the logo that leads the note when logos go inline.
 struct Lines<'a> {
     title: &'a str,
     note: Option<&'a str>,
+    inline: Option<&'a str>,
 }
 
 impl Lines<'_> {
@@ -46,35 +49,60 @@ impl Lines<'_> {
             }
     }
 
-    /// Writes the lines with the block's top at `top`, anchored at `x`.
+    /// Writes the lines with the block's top at `top`, anchored at `x`. An
+    /// inline logo leads the note line, the pair anchored as one.
     fn write(&self, svg: &mut Svg, x: f64, top: f64, anchor: &str) {
-        let anchor = if anchor == "start" {
+        let anchored = if anchor == "start" {
             String::new()
         } else {
             format!(r#" text-anchor="{anchor}""#)
         };
         let title_y = top + baseline_in_line(&TYPOGRAPHY_TITLE);
         svg.line(&format!(
-            r#"<text class="title" x="{}" y="{}"{anchor}>{}</text>"#,
+            r#"<text class="title" x="{}" y="{}"{anchored}>{}</text>"#,
             num(x),
             num(title_y),
             escape(self.title)
         ));
-        if let Some(note) = self.note {
-            let note_y = top + Self::title_height() + baseline_in_line(&TYPOGRAPHY_SUBTITLE);
+        let Some(note) = self.note else { return };
+        let note_top = top + Self::title_height();
+        let note_y = note_top + baseline_in_line(&TYPOGRAPHY_SUBTITLE);
+        let Some(logo) = self.inline else {
             svg.line(&format!(
-                r#"<text class="sub" x="{}" y="{}"{anchor}>{}</text>"#,
+                r#"<text class="sub" x="{}" y="{}"{anchored}>{}</text>"#,
                 num(x),
                 num(note_y),
                 escape(note)
             ));
-        }
+            return;
+        };
+        let lead = CARD_LOGO_INLINE + CARD_LOGO_INLINE_GAP;
+        let whole = lead + crate::font::text_width(note, &TYPOGRAPHY_SUBTITLE);
+        let start = if anchor == "start" { x } else { x - whole / 2.0 };
+        svg.line(&format!(
+            r#"<path class="logo" transform="translate({} {}) scale({})" d="{}"/>"#,
+            num(start),
+            num(note_top + (Self::note_height() - CARD_LOGO_INLINE) / 2.0),
+            num(CARD_LOGO_INLINE / GRID),
+            escape(logo)
+        ));
+        svg.line(&format!(
+            r#"<text class="sub" x="{}" y="{}">{}</text>"#,
+            num(start + lead),
+            num(note_y),
+            escape(note)
+        ));
     }
 }
 
-/// Draws `node`'s card in `r`, with its technology's logo when `logo` gives
-/// its path and where it goes.
-pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<(&str, LogoPlace)>) {
+/// Draws `node`'s card in `r`, with its technology's logo from `logos`, in
+/// the diagram's `place` for logos.
+pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, place: LogoPlace, logos: &dyn Logos) {
+    let path = node.tech.as_deref().and_then(|t| logos.path(t));
+    let in_badge = if place == LogoPlace::Icon { path } else { None };
+    let logo = path
+        .filter(|_| matches!(place, LogoPlace::Corner | LogoPlace::Chip))
+        .map(|p| (p, place));
     svg.open(&format!(r#"<g data-node="{}">"#, escape(&node.id)));
     let class = match node.variant {
         Variant::External => "card external",
@@ -114,9 +142,11 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<
         num(ROUNDED_CARD)
     ));
 
+    let second = crate::measure::note_line(node, place, logos);
     let lines = Lines {
         title: &node.label,
-        note: node.note.as_deref(),
+        note: second.text,
+        inline: second.logo,
     };
     let hue = category_class(node.kind.category());
     match style {
@@ -127,7 +157,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<
                 w: CARD_HORIZONTAL_BADGE,
                 h: CARD_HORIZONTAL_BADGE,
             };
-            badge_with_icon(svg, badge, CARD_HORIZONTAL_ICON, node, hue);
+            badge_with_icon(svg, badge, CARD_HORIZONTAL_ICON, node, hue, in_badge);
             let text_x = r.x + crate::measure::horizontal_text_inset();
             lines.write(svg, text_x, r.centre_y() - lines.height() / 2.0, "start");
             draw_logo(svg, logo, r, badge);
@@ -141,7 +171,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<
                 w: CARD_VERTICAL_BADGE,
                 h: CARD_VERTICAL_BADGE,
             };
-            badge_with_icon(svg, badge, CARD_VERTICAL_ICON, node, hue);
+            badge_with_icon(svg, badge, CARD_VERTICAL_ICON, node, hue, in_badge);
             lines.write(svg, r.centre_x(), badge.bottom() + CARD_PADDING, "middle");
             draw_logo(svg, logo, r, badge);
         }
@@ -159,6 +189,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<
 fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rect) {
     let Some((path, place)) = logo else { return };
     let (size, x, y) = match place {
+        LogoPlace::Inline | LogoPlace::Icon => return,
         LogoPlace::Corner => (
             CARD_LOGO_CORNER,
             r.right() - CARD_PADDING - CARD_LOGO_CORNER,
@@ -187,7 +218,9 @@ fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rec
     ));
 }
 
-fn badge_with_icon(svg: &mut Svg, badge: Rect, icon_size: f64, node: &Node, hue: &str) {
+/// The badge and, in it, the kind's icon; or the technology's logo in the
+/// category's hue when logos go in place of the icon.
+fn badge_with_icon(svg: &mut Svg, badge: Rect, icon_size: f64, node: &Node, hue: &str, logo: Option<&str>) {
     svg.line(&format!(
         r#"<rect class="badge" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
         num(badge.x),
@@ -201,6 +234,16 @@ fn badge_with_icon(svg: &mut Svg, badge: Rect, icon_size: f64, node: &Node, hue:
         badge.centre_x() - icon_size / 2.0,
         badge.centre_y() - icon_size / 2.0,
     );
+    if let Some(path) = logo {
+        svg.line(&format!(
+            r#"<path class="logo-icon {hue}" transform="translate({} {}) scale({})" d="{}"/>"#,
+            num(ix),
+            num(iy),
+            num(scale),
+            escape(path)
+        ));
+        return;
+    }
     let transform = if (scale - 1.0).abs() < f64::EPSILON {
         format!("translate({} {})", num(ix), num(iy))
     } else {

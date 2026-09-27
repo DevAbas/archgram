@@ -1,6 +1,6 @@
 //! Technology logos for archgram (ARCHITECTURE.md, Code map), from a pinned
 //! release of Simple Icons: `data/icons.tsv`, one logo per line (slug,
-//! title, the path on a 24 by 24 grid), sorted by slug and written by
+//! title, brand colour, the path on a 24 by 24 grid), sorted by slug and written by
 //! `cargo xtask icons <tag>`. `data/RELEASE` names the release and commit;
 //! `data/provenance.tsv` each logo's source and brand guidelines. Logos
 //! that carry a licence of their own other than CC0 are left out.
@@ -21,6 +21,8 @@ pub const RELEASE: &str = include_str!("../data/RELEASE");
 pub struct Icon {
     pub slug: &'static str,
     pub title: &'static str,
+    /// The brand's colour, six hex digits without `#`.
+    pub hex: &'static str,
     pub path: &'static str,
 }
 
@@ -42,12 +44,13 @@ impl Icons {
         let icons = DATA
             .lines()
             .map(|line| {
-                let mut cells = line.splitn(3, '\t');
-                let (slug, title, path) = (cells.next(), cells.next(), cells.next());
+                let mut cells = line.splitn(4, '\t');
+                let mut cell = |what: &str| cells.next().unwrap_or_else(|| panic!("a {what}"));
                 Icon {
-                    slug: slug.expect("a slug"),
-                    title: title.expect("a title"),
-                    path: path.expect("a path"),
+                    slug: cell("slug"),
+                    title: cell("title"),
+                    hex: cell("colour"),
+                    path: cell("path"),
                 }
             })
             .collect();
@@ -83,5 +86,13 @@ impl Logos for Icons {
 
     fn slugs(&self) -> Vec<&str> {
         self.icons.iter().map(|i| i.slug).collect()
+    }
+
+    fn title(&self, slug: &str) -> Option<&str> {
+        self.get(slug).map(|i| i.title)
+    }
+
+    fn colour(&self, slug: &str) -> Option<&str> {
+        self.get(slug).map(|i| i.hex)
     }
 }

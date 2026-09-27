@@ -105,6 +105,16 @@ fn a_logo_goes_in_the_corner_or_on_a_chip() {
     let chip = archgram_core::build_with(&spec("chip"), Options::default(), &logos).unwrap();
     assert_eq!(chip.matches(r#"class="logo-chip""#).count(), 1);
     assert_eq!(chip.matches(r#"class="logo""#).count(), 1);
+    // Inline: the logo leads the note line; icon: it takes the icon's place.
+    let inline = archgram_core::build_with(&spec("inline"), Options::default(), &logos).unwrap();
+    assert_eq!(inline.matches(r#"class="logo""#).count(), 1);
+    let icon = archgram_core::build_with(&spec("icon"), Options::default(), &logos).unwrap();
+    assert_eq!(icon.matches(r#"class="logo-icon core""#).count(), 1);
+    assert_eq!(
+        icon.matches(r#"class="icon "#).count(),
+        1,
+        "one kind icon left, the API's"
+    );
     // A slug the set lacks is refused, with the nearest one offered.
     let wrong = spec("corner").replace(r#""tech": "redis""#, r#""tech": "rediss""#);
     let errors = archgram_core::build_with(&wrong, Options::default(), &logos).unwrap_err();

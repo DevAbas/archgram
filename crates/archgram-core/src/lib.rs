@@ -91,7 +91,7 @@ pub fn draw_with(
     options: render::Options,
     logos: &dyn logos::Logos,
 ) -> Result<String, Vec<SpecError>> {
-    let sizes = measure::card_sizes(spec);
+    let sizes = measure::card_sizes_with(spec, logos);
     let placement = layout::place(spec, &sizes)?;
     Ok(render::render(spec, &placement, options, logos))
 }
@@ -108,7 +108,7 @@ pub fn draw_themes(
     options: render::Options,
     logos: &dyn logos::Logos,
 ) -> Result<(String, String), Vec<SpecError>> {
-    let sizes = measure::card_sizes(spec);
+    let sizes = measure::card_sizes_with(spec, logos);
     let placement = layout::place(spec, &sizes)?;
     let theme = |mode| render::render(spec, &placement, render::Options { mode, ..options }, logos);
     Ok((theme(render::Mode::Light), theme(render::Mode::Dark)))
@@ -124,9 +124,9 @@ pub fn check_logos(spec: &Spec, logos: &dyn logos::Logos) -> Vec<SpecError> {
 /// The characters in the spec's text that the embedded font does not have,
 /// in order and without repeats. They are drawn in the reader's font.
 #[must_use]
-pub fn uncovered_characters(spec: &Spec) -> Vec<char> {
+pub fn uncovered_characters(spec: &Spec, logos: &dyn logos::Logos) -> Vec<char> {
     let mut out: Vec<char> = Vec::new();
-    for (weight, text) in measure::text_runs(spec) {
+    for (weight, text) in measure::text_runs_with(spec, logos) {
         for c in font::uncovered(&text, weight) {
             if !out.contains(&c) {
                 out.push(c);

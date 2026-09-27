@@ -226,6 +226,17 @@
         "value": 18,
         "unit": "px"
       }
+    },
+    "logo-inline": {
+      "$value": "{card.logo-chip}",
+      "$description": "A logo leading a card's note line, as tall as the note's letters."
+    },
+    "logo-inline-gap": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      },
+      "$description": "Between an inline logo and the text after it."
     }
   },
   "spacing": {

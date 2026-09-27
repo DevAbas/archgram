@@ -46,7 +46,7 @@ must be quoted to stay text.
 | `description` | yes | text | | The whole diagram in prose; the SVG's `<desc>`, read by screen readers |
 | `direction` | no | `right`, `down` | `right` | The direction of the flow |
 | `card` | no | `horizontal`, `vertical` | `horizontal` | The card style for every node |
-| `logo` | no | `corner`, `chip` | `corner` | Where technology logos go |
+| `logo` | no | `corner`, `inline`, `chip`, `icon` | `corner` | Where technology logos go: the card's corner, before the note (or the technology's name), a chip on the icon, or in place of the icon |
 | `palette` | no | a palette name | `mono` | The palette; light and dark are chosen when rendering |
 | `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
 | `nodes` | yes | list | | At least one node |

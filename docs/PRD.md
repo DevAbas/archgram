@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.4        |
+| Version | 0.5        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -109,6 +109,9 @@ same file every time.
 ### 6.4 Animation
 - Off by default. A flow in the spec turns it on for that path.
 - A signal travelling a flow takes the colour of the node it leaves.
+- While the signal is at a card, the card's technology logo shows its
+  brand's own colour; when the signal leaves, the logo returns to its
+  usual colour.
 - archgram computes the timeline: branches start together, converging
   paths arrive together, the last node of a flow lights last.
 - Native SMIL only; every animation stops under
@@ -134,11 +137,14 @@ a dashed border).
 | Clients | browser, mobile, desktop |
 
 A node may name its technology (`tech: postgresql`, a Simple Icons slug);
-archgram then shows the technology's logo, in one of two places the
-diagram chooses: the card's corner or a chip on the icon. Logos come from
+archgram then shows the technology's logo, in one of four places the
+diagram chooses: the card's corner, before the note (or the technology's
+name) on the card's second line, a chip on the icon, or in place of the
+kind's icon. Logos come from
 a pinned Simple Icons release, CC0 data; a logo under a licence of its
 own is left out. They are drawn in one neutral colour to name a
-technology, as Simple Icons intends; the brands' guidelines stay with
+technology, as Simple Icons intends (in place of the icon, in the
+category's hue, as the icon was); the brands' guidelines stay with
 whoever publishes a diagram, and archgram records each logo's source and
 guidelines for them.
 
@@ -176,3 +182,4 @@ guidelines for them.
 | 0.2     | 2026-09-27 | The mono palette, colour only in icon lines; horizontal and vertical cards; logos in the corner or on a chip (§5, §6.3, §7). Palettes removed from the open questions. |
 | 0.3     | 2026-09-27 | The font is Geist, measured and embedded as a subset; removed from the open questions. |
 | 0.4     | 2026-09-27 | Logos: a pinned Simple Icons release, CC0 data only, drawn neutral, sources and guidelines recorded (§7); removed from the open questions. |
+| 0.5     | 2026-09-27 | Four places for a logo: corner, inline, chip, icon (§7); the brand's colour while a signal is at the card (§6.4). |
