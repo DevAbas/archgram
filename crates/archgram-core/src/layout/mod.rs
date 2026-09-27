@@ -17,12 +17,18 @@
 //! on an edge between neighbouring layers, the gap reserves room for it
 //! before its tracks, on the segment leaving the edge's first card.
 //!
+//! Before step 1, the spec is split into units that share nothing: no
+//! edge, no hint group, no frame (`pack`). Each unit with edges runs the
+//! steps on its own; units without edges are set out as grids; the largest
+//! unit comes first and the others are packed in rows below it.
+//!
 //! The layout is computed as if the flow ran right: "main" is along the
 //! flow, "cross" across it. A flow running down swaps the two at the end.
 //! Frames are not laid out yet (v0.2); their nodes are placed like any other.
 
 mod acyclic;
 mod order;
+mod pack;
 mod position;
 mod rank;
 mod route;
@@ -31,7 +37,8 @@ use crate::error::SpecError;
 use crate::geometry::{Point, Rect, Size};
 use crate::spec::{Direction, Spec, Variant};
 use crate::tokens::{
-    CARD_MULTI_OFFSET, ROUNDED_CARD, SPACING_EDGE_EDGE, SPACING_LAYER_LAYER, SPACING_NODE_NODE,
+    ARROWHEAD_GAP, ARROWHEAD_LENGTH, CARD_MULTI_OFFSET, ROUNDED_CARD, ROUNDED_CONNECTOR, SPACING_EDGE_EDGE,
+    SPACING_LAYER_LAYER, SPACING_NODE_NODE,
 };
 
 /// Where everything goes.
@@ -45,8 +52,11 @@ pub struct Placement {
     pub edges: Vec<Vec<Point>>,
     /// Each edge's label box in spec order, on its path; `None` without a label.
     pub labels: Vec<Option<Rect>>,
-    /// The layer of each node, in spec order.
+    /// The layer of each node within its unit, in spec order.
     pub layers: Vec<usize>,
+    /// The unit each node belongs to, in spec order: parts of the diagram
+    /// that share nothing are laid out apart (`pack`).
+    pub units: Vec<usize>,
     /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
@@ -61,9 +71,27 @@ pub struct Placement {
 ///
 /// When `spec` has not passed validation (an edge or hint names a node that
 /// does not exist), or `sizes` does not hold one size per node.
-#[allow(clippy::too_many_lines)] // the steps above, in order
 pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
-    let n = spec.nodes.len();
+    let units = pack::units(spec);
+    if units.len() <= 1 {
+        return lay_out(spec, sizes);
+    }
+    // Hints are checked on the whole spec, so an error points at the spec's
+    // own hint. The units would find the same: cycle removal treats each
+    // connected part on its own anyway (`acyclic`).
+    let (dag, _) = acyclic_edges(spec);
+    let errors = hint_errors(spec, &dag);
+    if !errors.is_empty() {
+        return Err(errors);
+    }
+    Ok(pack::pack(spec, sizes, &units, |sub, sub_sizes| {
+        lay_out(sub, sub_sizes).expect("hints checked on the whole spec")
+    }))
+}
+
+/// Each edge as (from, to) node indices, turned so the graph has no cycle,
+/// and whether each was turned.
+fn acyclic_edges(spec: &Spec) -> (Vec<(usize, usize)>, Vec<bool>) {
     let index = |id: &str| {
         spec.nodes
             .iter()
@@ -75,33 +103,26 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         .iter()
         .map(|e| (index(&e.from), index(&e.to)))
         .collect();
-    let (mut main_size, cross_size): (Vec<f64>, Vec<f64>) = match spec.direction {
-        Direction::Right => sizes.iter().map(|s| (s.w, s.h)).unzip(),
-        Direction::Down => sizes.iter().map(|s| (s.h, s.w)).unzip(),
-    };
-
-    // 1. Cycle removal.
-    let reversed = acyclic::reversed_edges(n, &edges);
-    let dag: Vec<(usize, usize)> = edges
+    let reversed = acyclic::reversed_edges(spec.nodes.len(), &edges);
+    let dag = edges
         .iter()
         .zip(&reversed)
         .map(|(&(a, b), &r)| if r { (b, a) } else { (a, b) })
         .collect();
+    (dag, reversed)
+}
 
-    // 2. Layering, with sameLayer groups merged into one vertex each.
+/// Layout hints that contradict the edges, located in the spec.
+fn hint_errors(spec: &Spec, dag: &[(usize, usize)]) -> Vec<SpecError> {
+    let index = |id: &str| {
+        spec.nodes
+            .iter()
+            .position(|nd| nd.id == id)
+            .expect("validated id")
+    };
     let mut errors = Vec::new();
-    let mut group = (0..n).collect::<Vec<_>>();
     for (j, members) in spec.hints.same_layer.iter().enumerate() {
         let ids: Vec<usize> = members.iter().map(|m| index(m)).collect();
-        let head = ids.iter().map(|&i| group[i]).min().unwrap_or(0);
-        for &i in &ids {
-            let old = group[i];
-            for g in &mut group {
-                if *g == old {
-                    *g = head;
-                }
-            }
-        }
         for (k, &(a, b)) in dag.iter().enumerate() {
             if ids.contains(&a) && ids.contains(&b) {
                 let e = &spec.edges[k];
@@ -133,8 +154,44 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             ));
         }
     }
+    errors
+}
+
+/// Lays out one connected unit (all of the spec when it is one), steps 1 to 6.
+#[allow(clippy::too_many_lines)] // the steps above, in order
+fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
+    let n = spec.nodes.len();
+    let index = |id: &str| {
+        spec.nodes
+            .iter()
+            .position(|nd| nd.id == id)
+            .expect("validated id")
+    };
+    let (main_size, cross_size): (Vec<f64>, Vec<f64>) = match spec.direction {
+        Direction::Right => sizes.iter().map(|s| (s.w, s.h)).unzip(),
+        Direction::Down => sizes.iter().map(|s| (s.h, s.w)).unzip(),
+    };
+
+    // 1. Cycle removal.
+    let (dag, reversed) = acyclic_edges(spec);
+
+    // 2. Layering, with sameLayer groups merged into one vertex each.
+    let errors = hint_errors(spec, &dag);
     if !errors.is_empty() {
         return Err(errors);
+    }
+    let mut group = (0..n).collect::<Vec<_>>();
+    for members in &spec.hints.same_layer {
+        let ids: Vec<usize> = members.iter().map(|m| index(m)).collect();
+        let head = ids.iter().map(|&i| group[i]).min().unwrap_or(0);
+        for &i in &ids {
+            let old = group[i];
+            for g in &mut group {
+                if *g == old {
+                    *g = head;
+                }
+            }
+        }
     }
     let mut weights: std::collections::BTreeMap<(usize, usize), u32> = std::collections::BTreeMap::new();
     for &(a, b) in &dag {
@@ -251,24 +308,52 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             edge_gap: SPACING_EDGE_EDGE,
         },
     );
-    let depth: Vec<f64> = layers
-        .iter()
-        .map(|l| l.iter().map(|&v| main_sizes[v]).fold(0.0, f64::max))
-        .collect();
-    // Cards in one layer share its deepest card's size along the flow: the
-    // width of a column when the flow runs right, so their sides line up.
+    // Along the flow, a stack of several instances reaches past its front
+    // card: to the right when the flow runs right, up when it runs down.
+    let multi = |v: usize| v < n && spec.nodes[v].variant == Variant::Multi;
+    let stack_before = |v: usize| {
+        if multi(v) && spec.direction == Direction::Down {
+            2.0 * CARD_MULTI_OFFSET
+        } else {
+            0.0
+        }
+    };
+    let stack_after = |v: usize| {
+        if multi(v) && spec.direction == Direction::Right {
+            2.0 * CARD_MULTI_OFFSET
+        } else {
+            0.0
+        }
+    };
+    // Cards in one layer share its deepest front card's size along the
+    // flow, the width of a column when the flow runs right, so the sides of
+    // the cards a reader sees line up; stacks reach past them.
     let card_depth: Vec<f64> = layers
         .iter()
         .map(|l| {
             l.iter()
                 .filter(|&&v| v < n)
-                .map(|&v| main_size[v])
+                .map(|&v| main_size[v] - stack_before(v) - stack_after(v))
                 .fold(0.0, f64::max)
         })
         .collect();
-    for (v, size) in main_size.iter_mut().enumerate() {
-        *size = card_depth[vertex_layer[v]];
-    }
+    let reach_before: Vec<f64> = layers
+        .iter()
+        .map(|l| l.iter().map(|&v| stack_before(v)).fold(0.0, f64::max))
+        .collect();
+    let reach_after: Vec<f64> = layers
+        .iter()
+        .map(|l| l.iter().map(|&v| stack_after(v)).fold(0.0, f64::max))
+        .collect();
+    let depth: Vec<f64> = layers
+        .iter()
+        .enumerate()
+        .map(|(l, vs)| {
+            vs.iter()
+                .map(|&v| main_sizes[v])
+                .fold(card_depth[l] + reach_before[l] + reach_after[l], f64::max)
+        })
+        .collect();
 
     // 6. Routing: ports on each card's sides, then each hop between two layers
     //    straight or as a Z through a track in the gap (`route`).
@@ -414,11 +499,21 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             lead[g] = lead[g].max(along + 2.0 * SPACING_EDGE_EDGE);
         }
     }
+    // Tracks keep clear of the cards on both sides of the gap: a bend's
+    // radius after the card an edge leaves (or its label's room), and before
+    // the card it points at a bend's radius, twice the arrowhead's length
+    // and its gap, so the last bend is whole and the arrowhead sits on a
+    // straight run as long as itself.
+    let depart: Vec<f64> = lead.iter().map(|&l| l.max(ROUNDED_CONNECTOR)).collect();
+    let approach = ROUNDED_CONNECTOR + 2.0 * ARROWHEAD_LENGTH + ARROWHEAD_GAP;
     #[allow(clippy::cast_precision_loss)] // track counts are small
     let gap_width: Vec<f64> = track_count
         .iter()
-        .zip(&lead)
-        .map(|(&c, &l)| SPACING_LAYER_LAYER.max(l + (c + 1) as f64 * SPACING_EDGE_EDGE))
+        .zip(&depart)
+        .map(|(&c, &a)| {
+            let tracks = c.saturating_sub(1) as f64 * SPACING_EDGE_EDGE;
+            SPACING_LAYER_LAYER.max(a + tracks + approach)
+        })
         .collect();
     let mut start = Vec::with_capacity(layers.len());
     let mut at = 0.0;
@@ -426,19 +521,30 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         start.push(at);
         at += d + gap_width.get(i).copied().unwrap_or(0.0);
     }
-    let centre_main = |v: usize| start[vertex_layer[v]] + depth[vertex_layer[v]] / 2.0;
+    // A card's front is centred in its layer with its stacks' reach; a
+    // dummy (a long edge's bend, or its label) at the layer's middle.
+    let centre_main = |v: usize| {
+        let l = vertex_layer[v];
+        if v < n {
+            let block = card_depth[l] + reach_before[l] + reach_after[l];
+            start[l] + (depth[l] - block) / 2.0 + reach_before[l] + card_depth[l] / 2.0
+        } else {
+            start[l] + depth[l] / 2.0
+        }
+    };
     // Where a hop leaves and enters, along the flow: a card's far or near
-    // side; a dummy's centre, so a long edge runs straight through its layers.
+    // side, past its stack; a dummy's centre, so a long edge runs straight
+    // through its layers.
     let leave_main = |v: usize| {
         if v < n {
-            centre_main(v) + main_size[v] / 2.0
+            centre_main(v) + card_depth[vertex_layer[v]] / 2.0 + stack_after(v)
         } else {
             centre_main(v)
         }
     };
     let enter_main = |v: usize| {
         if v < n {
-            centre_main(v) - main_size[v] / 2.0
+            centre_main(v) - card_depth[vertex_layer[v]] / 2.0 - stack_before(v)
         } else {
             centre_main(v)
         }
@@ -460,8 +566,8 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     };
     let nodes: Vec<Rect> = (0..n)
         .map(|v| {
-            let from = point(centre_main(v) - main_size[v] / 2.0, cross[v] - cross_lo[v]);
-            let to = point(centre_main(v) + main_size[v] / 2.0, cross[v] + cross_hi[v]);
+            let from = point(enter_main(v), cross[v] - cross_lo[v]);
+            let to = point(leave_main(v), cross[v] + cross_hi[v]);
             Rect {
                 x: from.x,
                 y: from.y,
@@ -475,11 +581,18 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         let g = vertex_layer[a];
         let mut pts = vec![(leave_main(a), out_port[h])];
         if !level(h) {
-            #[allow(clippy::cast_precision_loss)]
-            let t = start[g]
-                + depth[g]
-                + lead[g]
-                + (gap_width[g] - lead[g]) * (track[h] + 1) as f64 / (track_count[g] + 1) as f64;
+            // Tracks spread over the part of the gap between the two runs,
+            // the only one in the middle of it.
+            let (first, room) = (
+                start[g] + depth[g] + depart[g],
+                gap_width[g] - depart[g] - approach,
+            );
+            #[allow(clippy::cast_precision_loss)] // track counts are small
+            let t = if track_count[g] > 1 {
+                first + room * track[h] as f64 / (track_count[g] - 1) as f64
+            } else {
+                first + room / 2.0
+            };
             pts.push((t, out_port[h]));
             pts.push((t, in_port[h]));
         }
@@ -566,6 +679,7 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         nodes,
         edges: paths,
         labels,
+        units: vec![0; layer.len()],
         layers: layer,
         size: Size { w, h },
     })

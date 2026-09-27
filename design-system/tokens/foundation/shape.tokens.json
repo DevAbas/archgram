@@ -232,6 +232,10 @@
         "unit": "px"
       }
     },
+    "pack": {
+      "$value": "{spacing.layer-layer}",
+      "$description": "Between parts of a diagram that share nothing: the largest part and the rows of the others below it."
+    },
     "frame-padding": {
       "$value": {
         "value": 22,

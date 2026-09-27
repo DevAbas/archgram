@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1279 384" width="1279" height="384" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1306 384" width="1306" height="384" role="img" aria-labelledby="title desc">
   <title id="title">How an answer comes to be</title>
   <desc id="desc">Before use, the index script has a model extract a profile from each CV, checks every field against the text and embeds each chunk. At question time the chat sends the question to the ask route; the model calls tools over the index and the vectors, ends with present, and the app checks every candidate and page before the answer streams back.</desc>
   <style>
@@ -23,68 +23,68 @@
     .icon.build { stroke: var(--icon-build); }
     .icon.client { stroke: var(--icon-client); }
   </style>
-  <rect class="canvas" width="1279" height="384" rx="16"/>
+  <rect class="canvas" width="1306" height="384" rx="16"/>
   <defs><marker id="arrow" viewBox="0 0 7 12" refX="7" refY="6" markerWidth="7" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L7 6L0 12"/></marker></defs>
   <g class="edges">
-    <path class="edge" d="M474 92 L487 92 A13 13 0 0 0 500 79 L500 63.5 A11.5 11.5 0 0 1 511.5 52 L523 52" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 52 L832 52" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1019 52 L1038 52 A16 16 0 0 1 1054 68 L1054 105 A7 7 0 0 0 1061 112 L1068 112" marker-end="url(#arrow)"/>
-    <path class="edge" d="M474 92 L487 92 A13 13 0 0 1 500 105 L500 120.5 A11.5 11.5 0 0 0 511.5 132 L523 132" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 132 L1020 132 A16 16 0 0 1 1036 148 L1036 176 A16 16 0 0 0 1052 192 L1068 192" marker-end="url(#arrow)"/>
-    <path class="edge" d="M208 286 L216.5 286 A8.5 8.5 0 0 0 225 277.5 L225 268 A16 16 0 0 1 241 252 L257 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M474 252 L523 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 245 L783 245 A16 16 0 0 0 799 229 L799 188 A16 16 0 0 1 815 172 L832 172" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 245 L783 245 C799 245 799 252 815 252 L832 252" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1019 172 L1038 172 A16 16 0 0 0 1054 156 L1054 119 A7 7 0 0 1 1061 112 L1068 112" marker-end="url(#arrow)"/>
-    <path class="edge" d="M1019 252 L1027.5 252 A8.5 8.5 0 0 0 1036 243.5 L1036 208 A16 16 0 0 1 1052 192 L1068 192" marker-end="url(#arrow)"/>
-    <path class="edge" d="M710 259 L795 259 A16 16 0 0 1 811 275 L811 315.5 A10.5 10.5 0 0 0 821.5 326 L832 326" marker-end="url(#arrow)"/>
-    <rect class="label-patch" x="722.47" y="251.8" width="53.07" height="14.4" rx="5"/>
-    <text class="sub" x="749" y="263.26" text-anchor="middle">present</text>
-    <path class="edge" d="M835 338 L835 338 C823 338 823 332 811 332 L259 332 A16 16 0 0 1 243 316 L243 314 A16 16 0 0 0 227 298 L211 298" marker-end="url(#arrow)"/>
-    <rect class="label-patch" x="590.2" y="324.8" width="55.6" height="14.4" rx="5"/>
-    <text class="sub" x="618" y="336.26" text-anchor="middle">streams</text>
+    <path class="edge" d="M483 92 L492 92 A9 9 0 0 0 501 83 L501 67.5 A15.5 15.5 0 0 1 516.5 52 L532 52" marker-end="url(#arrow)"/>
+    <path class="edge" d="M719 52 L850 52" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1037 52 L1051 52 A14 14 0 0 1 1065 66 L1065 97 A15 15 0 0 0 1080 112 L1095 112" marker-end="url(#arrow)"/>
+    <path class="edge" d="M483 92 L492 92 A9 9 0 0 1 501 101 L501 116.5 A15.5 15.5 0 0 0 516.5 132 L532 132" marker-end="url(#arrow)"/>
+    <path class="edge" d="M719 132 L1037 132 A16 16 0 0 1 1053 148 L1053 176 A16 16 0 0 0 1069 192 L1095 192" marker-end="url(#arrow)"/>
+    <path class="edge" d="M208 286 L216 286 A8 8 0 0 0 224 278 L224 268 A16 16 0 0 1 240 252 L266 252" marker-end="url(#arrow)"/>
+    <path class="edge" d="M483 252 L532 252" marker-end="url(#arrow)"/>
+    <path class="edge" d="M719 245 L780 245 A16 16 0 0 0 796 229 L796 188 A16 16 0 0 1 812 172 L850 172" marker-end="url(#arrow)"/>
+    <path class="edge" d="M719 245 L780 245 C796 245 796 252 812 252 L850 252" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1037 172 L1051 172 A14 14 0 0 0 1065 158 L1065 127 A15 15 0 0 1 1080 112 L1095 112" marker-end="url(#arrow)"/>
+    <path class="edge" d="M1037 252 L1045 252 A8 8 0 0 0 1053 244 L1053 208 A16 16 0 0 1 1069 192 L1095 192" marker-end="url(#arrow)"/>
+    <path class="edge" d="M719 259 L792 259 A16 16 0 0 1 808 275 L808 310 A16 16 0 0 0 824 326 L850 326" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="731.47" y="251.8" width="53.07" height="14.4" rx="5"/>
+    <text class="sub" x="758" y="263.26" text-anchor="middle">present</text>
+    <path class="edge" d="M853 338 L836 338 C820 338 820 332 804 332 L252 332 A16 16 0 0 1 236 316 L236 310.5 A12.5 12.5 0 0 0 223.5 298 L211 298" marker-end="url(#arrow)"/>
+    <rect class="label-patch" x="599.2" y="324.8" width="55.6" height="14.4" rx="5"/>
+    <text class="sub" x="627" y="336.26" text-anchor="middle">streams</text>
   </g>
   <g data-node="cvs">
-    <rect class="card" x="260.5" y="64.5" width="214" height="56" rx="10"/>
-    <rect class="badge" x="270.5" y="74.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(276.5 80.5)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/></g>
-    <text class="title" x="316.5" y="90.27">CV PDFs</text>
-    <text class="sub" x="316.5" y="105.16">30 files</text>
+    <rect class="card" x="269.5" y="64.5" width="214" height="56" rx="10"/>
+    <rect class="badge" x="279.5" y="74.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(285.5 80.5)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/></g>
+    <text class="title" x="325.5" y="90.27">CV PDFs</text>
+    <text class="sub" x="325.5" y="105.16">30 files</text>
   </g>
   <g data-node="extract">
-    <rect class="card external" x="526.5" y="24.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="536.5" y="34.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(542.5 40.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="582.5" y="50.27">Gemini</text>
-    <text class="sub" x="582.5" y="65.16">extracts profile</text>
+    <rect class="card external" x="535.5" y="24.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="545.5" y="34.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(551.5 40.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="591.5" y="50.27">Gemini</text>
+    <text class="sub" x="591.5" y="65.16">extracts profile</text>
   </g>
   <g data-node="fieldcheck">
-    <rect class="card" x="835.5" y="24.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="845.5" y="34.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(851.5 40.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
-    <text class="title" x="891.5" y="50.27">Field check</text>
-    <text class="sub" x="891.5" y="65.16">page per fact</text>
+    <rect class="card" x="853.5" y="24.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="863.5" y="34.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(869.5 40.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
+    <text class="title" x="909.5" y="50.27">Field check</text>
+    <text class="sub" x="909.5" y="65.16">page per fact</text>
   </g>
   <g data-node="embed">
-    <rect class="card external" x="526.5" y="104.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="536.5" y="114.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(542.5 120.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="582.5" y="130.27">Embedding</text>
-    <text class="sub" x="582.5" y="145.16">each chunk</text>
+    <rect class="card external" x="535.5" y="104.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="545.5" y="114.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(551.5 120.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="591.5" y="130.27">Embedding</text>
+    <text class="sub" x="591.5" y="145.16">each chunk</text>
   </g>
   <g data-node="index">
-    <rect class="card" x="1071.5" y="84.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="1081.5" y="94.5" width="36" height="36" rx="8"/>
-    <g class="icon core" transform="translate(1087.5 100.5)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
-    <text class="title" x="1127.5" y="110.27">data/index</text>
-    <text class="sub" x="1127.5" y="125.16">JSON, in memory</text>
+    <rect class="card" x="1098.5" y="84.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1108.5" y="94.5" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(1114.5 100.5)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
+    <text class="title" x="1154.5" y="110.27">data/index</text>
+    <text class="sub" x="1154.5" y="125.16">JSON, in memory</text>
   </g>
   <g data-node="vectors">
-    <rect class="card external" x="1071.5" y="164.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="1081.5" y="174.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(1087.5 180.5)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><circle cx="9" cy="12" r=".9"/><circle cx="14.5" cy="11" r=".9"/><circle cx="12" cy="15.5" r=".9"/></g>
-    <text class="title" x="1127.5" y="190.27">Pinecone</text>
-    <text class="sub" x="1127.5" y="205.16">chunk vectors</text>
+    <rect class="card external" x="1098.5" y="164.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1108.5" y="174.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(1114.5 180.5)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><circle cx="9" cy="12" r=".9"/><circle cx="14.5" cy="11" r=".9"/><circle cx="12" cy="15.5" r=".9"/></g>
+    <text class="title" x="1154.5" y="190.27">Pinecone</text>
+    <text class="sub" x="1154.5" y="205.16">chunk vectors</text>
   </g>
   <g data-node="chat">
     <rect class="card" x="24.5" y="264.5" width="184" height="56" rx="10"/>
@@ -93,38 +93,38 @@
     <text class="title" x="80.5" y="297.47">Chat screen</text>
   </g>
   <g data-node="route">
-    <rect class="card" x="260.5" y="224.5" width="214" height="56" rx="10"/>
-    <rect class="badge" x="270.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon core" transform="translate(276.5 240.5)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
-    <text class="title" x="316.5" y="250.27">POST /api/ask</text>
-    <text class="sub" x="316.5" y="265.16">no CV text in the prompt</text>
+    <rect class="card" x="269.5" y="224.5" width="214" height="56" rx="10"/>
+    <rect class="badge" x="279.5" y="234.5" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(285.5 240.5)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
+    <text class="title" x="325.5" y="250.27">POST /api/ask</text>
+    <text class="sub" x="325.5" y="265.16">no CV text in the prompt</text>
   </g>
   <g data-node="llm">
-    <rect class="card external" x="526.5" y="224.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="536.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(542.5 240.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
-    <text class="title" x="582.5" y="250.27">Gemini</text>
-    <text class="sub" x="582.5" y="265.16">tool-calling loop</text>
+    <rect class="card external" x="535.5" y="224.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="545.5" y="234.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(551.5 240.5)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="591.5" y="250.27">Gemini</text>
+    <text class="sub" x="591.5" y="265.16">tool-calling loop</text>
   </g>
   <g data-node="tools">
-    <rect class="card" x="835.5" y="144.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="845.5" y="154.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(851.5 160.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
-    <text class="title" x="891.5" y="170.27">Exact tools</text>
-    <text class="sub" x="891.5" y="185.16">find, count, get</text>
+    <rect class="card" x="853.5" y="144.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="863.5" y="154.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(869.5 160.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
+    <text class="title" x="909.5" y="170.27">Exact tools</text>
+    <text class="sub" x="909.5" y="185.16">find, count, get</text>
   </g>
   <g data-node="search">
-    <rect class="card" x="835.5" y="224.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="845.5" y="234.5" width="36" height="36" rx="8"/>
-    <g class="icon ai" transform="translate(851.5 240.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
-    <text class="title" x="891.5" y="250.27">search_cv_text</text>
-    <text class="sub" x="891.5" y="265.16">BM25 + vectors</text>
+    <rect class="card" x="853.5" y="224.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="863.5" y="234.5" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(869.5 240.5)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
+    <text class="title" x="909.5" y="250.27">search_cv_text</text>
+    <text class="sub" x="909.5" y="265.16">BM25 + vectors</text>
   </g>
   <g data-node="answercheck">
-    <rect class="card" x="835.5" y="304.5" width="184" height="56" rx="10"/>
-    <rect class="badge" x="845.5" y="314.5" width="36" height="36" rx="8"/>
-    <g class="icon build" transform="translate(851.5 320.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
-    <text class="title" x="891.5" y="330.27">Answer check</text>
-    <text class="sub" x="891.5" y="345.16">ids and pages</text>
+    <rect class="card" x="853.5" y="304.5" width="184" height="56" rx="10"/>
+    <rect class="badge" x="863.5" y="314.5" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(869.5 320.5)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
+    <text class="title" x="909.5" y="330.27">Answer check</text>
+    <text class="sub" x="909.5" y="345.16">ids and pages</text>
   </g>
 </svg>

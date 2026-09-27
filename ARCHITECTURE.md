@@ -80,6 +80,9 @@ takes the footprint of its whole stack, the front card plus
 `card.multi-offset` twice in each direction, so the layout keeps the
 stack clear of its neighbours; its anchor across the layers is the front
 card's middle, so a straight edge meets the card a reader sees first.
+Along the flow the front card takes its column's width like any other
+card, and the stack reaches past it into the gap (to the right when the
+flow runs right, up when it runs down).
 
 One list of text runs, each with its weight (node titles and notes, edge
 labels), feeds both the embedded font's subset and the warning for
@@ -87,7 +90,18 @@ characters Geist lacks, so neither can miss a text the other covers.
 
 ### Layout
 
-A layered layout in the Sugiyama tradition, in these steps:
+A layered layout in the Sugiyama tradition. First the spec is split into
+units that share nothing: no edge, no hint group, no top-level frame
+(component packing, as Graphviz `pack` and ELK's
+`separateConnectedComponents` do). Each unit with edges runs the steps
+below on its own. A unit without edges is set out as a grid, and lone
+nodes without edges share one grid. The unit with the most nodes comes
+first; the others follow in the order of their first node, in rows below
+it no wider than the widest unit, `spacing.pack` apart. When no unit has
+edges at all, every node goes in one grid with about as many columns as
+rows. Hints are checked on the whole spec, so an error points at the
+spec's own hint; cycle removal treats each connected part on its own, so
+the units would find the same errors. The steps:
 
 1. Cycle removal. Edges that point back against the flow are reversed for
    the duration of the layout, chosen with a greedy feedback-arc-set
@@ -143,7 +157,11 @@ does) rather than a general search:
 - Vertical segments that overlap in a gap get separate tracks. For each
   overlapping pair, the order that crosses fewer of the other hop's
   horizontal segments wins; each segment then takes the lowest track clear
-  of those it overlaps. A gap needing more tracks than it holds widens.
+  of those it overlaps. Tracks keep clear of the cards on both sides: a
+  bend's radius (or a label's room) after the card an edge leaves, and
+  before the card it points at a bend's radius, twice the arrowhead's
+  length and its gap, so the last bend is whole and the arrowhead sits on
+  a straight run. A gap needing more room than it has widens.
 - An edge label gets room of its own, as in dagre and ELK. On an edge
   longer than one layer it stands in for the middle dummy vertex, sized to
   the label, so crossing reduction and coordinates keep it clear of cards.

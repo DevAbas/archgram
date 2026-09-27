@@ -27,13 +27,13 @@
   <defs><marker id="arrow" viewBox="0 0 7 12" refX="7" refY="6" markerWidth="7" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L7 6L0 12"/></marker></defs>
   <g class="edges">
     <path class="edge" d="M208 92 L257 92" marker-end="url(#arrow)"/>
-    <path class="edge" d="M444 92 L457 92 A13 13 0 0 0 470 79 L470 63.5 A11.5 11.5 0 0 1 481.5 52 L493 52" marker-end="url(#arrow)"/>
-    <path class="edge dashed" d="M444 92 L926 92 C942 92 942 116 958 116 L965 116" marker-end="url(#arrow)"/>
+    <path class="edge" d="M444 92 L453 92 A9 9 0 0 0 462 83 L462 67.5 A15.5 15.5 0 0 1 477.5 52 L493 52" marker-end="url(#arrow)"/>
+    <path class="edge dashed" d="M444 92 L918 92 C934 92 934 116 950 116 L965 116" marker-end="url(#arrow)"/>
     <rect class="label-patch" x="792.8" y="84.8" width="62.39" height="14.4" rx="5"/>
     <text class="sub" x="824" y="96.26" text-anchor="middle">on a miss</text>
-    <path class="edge" d="M444 92 L457 92 A13 13 0 0 1 470 105 L470 127.5 A11.5 11.5 0 0 0 481.5 139 L493 139" marker-end="url(#arrow)"/>
+    <path class="edge" d="M444 92 L453 92 A9 9 0 0 1 462 101 L462 123.5 A15.5 15.5 0 0 0 477.5 139 L493 139" marker-end="url(#arrow)"/>
     <path class="edge" d="M680 139 L729 139" marker-end="url(#arrow)"/>
-    <path class="edge" d="M916 139 L926 139 C942 139 942 116 958 116 L965 116" marker-end="url(#arrow)"/>
+    <path class="edge" d="M916 139 L918 139 C934 139 934 116 950 116 L965 116" marker-end="url(#arrow)"/>
   </g>
   <g data-node="browser">
     <rect class="card" x="24.5" y="64.5" width="184" height="56" rx="10"/>

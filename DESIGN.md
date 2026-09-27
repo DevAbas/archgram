@@ -181,7 +181,12 @@ lists a fallback stack.
   A vertical card has a fixed height (`card.vertical-height`) and grows in
   width with its title, never below `card.vertical-min-width`.
 - Cards in one column share the width of its widest card, so their sides
-  line up; a column reads as one step of the flow.
+  line up; a column reads as one step of the flow. For several instances
+  the front card takes that width and the stack reaches past it.
+- Parts of a diagram that share nothing are laid out apart: the largest
+  first, the others in rows below it, `spacing.pack` apart. Nodes without
+  edges line up in a grid of equal cells instead of standing in the first
+  column of an unrelated flow.
 - A frame contains its nodes with `spacing.frame-padding` on every side
   and room at the top for its name (`spacing.frame-label`).
 - The legend sits under the diagram, left-aligned, and lists only the

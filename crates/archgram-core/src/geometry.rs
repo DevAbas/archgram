@@ -1,7 +1,7 @@
 //! Plain geometry shared by the stages.
 
 /// An axis-aligned rectangle in output pixels; `x`, `y` is the top-left corner.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Rect {
     pub x: f64,
     pub y: f64,
@@ -38,14 +38,14 @@ impl Rect {
 }
 
 /// A point in output pixels.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
 }
 
 /// A width and a height in output pixels.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Size {
     pub w: f64,
     pub h: f64,
