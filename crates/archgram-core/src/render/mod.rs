@@ -1,6 +1,7 @@
 //! Drawing the diagram as SVG (ARCHITECTURE.md, Render).
 
 mod card;
+mod edge;
 mod icons;
 pub mod svg;
 
@@ -44,7 +45,12 @@ impl Default for Options {
     }
 }
 
-/// Draws a laid-out diagram. `spec` must have passed validation.
+/// Draws a laid-out diagram.
+///
+/// # Panics
+///
+/// When `spec` has not passed validation (an edge names a node that does
+/// not exist) or `placement` was made for another spec.
 #[must_use]
 pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
     let w = placement.size.w + 2.0 * SPACING_MARGIN;
@@ -67,6 +73,32 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         num(h),
         num(ROUNDED_CANVAS)
     ));
+    // Arrowhead: an open chevron in the connector colour (DESIGN.md, Components: Connector).
+    svg.line(r#"<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M2 1L9 5L2 9"/></marker></defs>"#);
+    let shift = |r: &Rect| Rect {
+        x: r.x + SPACING_MARGIN,
+        y: r.y + SPACING_MARGIN,
+        ..*r
+    };
+    svg.open(r#"<g class="edges">"#);
+    let index = |id: &str| spec.nodes.iter().position(|n| n.id == id).expect("validated id");
+    for (e, path) in spec.edges.iter().zip(&placement.edges) {
+        let path: Vec<crate::geometry::Point> = path
+            .iter()
+            .map(|p| crate::geometry::Point {
+                x: p.x + SPACING_MARGIN,
+                y: p.y + SPACING_MARGIN,
+            })
+            .collect();
+        edge::edge(
+            &mut svg,
+            e,
+            &path,
+            &shift(&placement.nodes[index(&e.from)]),
+            &shift(&placement.nodes[index(&e.to)]),
+        );
+    }
+    svg.close("</g>");
     for (node, r) in spec.nodes.iter().zip(&placement.nodes) {
         let at = Rect {
             x: r.x + SPACING_MARGIN,
@@ -132,6 +164,15 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         dash(crate::tokens::DASH_EXTERNAL)
     ));
     svg.line(".badge { fill: var(--badge); }");
+    svg.line(&format!(
+        ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linejoin: round; }}",
+        num(crate::tokens::STROKE_CONNECTOR)
+    ));
+    svg.line(&format!(
+        ".edge.dashed {{ stroke-dasharray: {}; }}",
+        dash(crate::tokens::DASH_EDGE)
+    ));
+    svg.line(&format!(".arrowhead {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}", num(crate::tokens::STROKE_CONNECTOR)));
     svg.line(".icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }");
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".icon.{hue} {{ stroke: var(--icon-{hue}); }}"));

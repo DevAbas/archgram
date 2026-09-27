@@ -91,8 +91,12 @@ A layered layout in the Sugiyama tradition, in these steps:
    the barycentre of their neighbours, then adjacent pairs are swapped
    while that removes crossings. Spec order is the starting order and the
    tie-break; the number of sweeps is fixed.
-4. Coordinates. Brandes–Köpf style alignment gives straight edges where
-   possible and balanced positions elsewhere.
+4. Coordinates. Brandes–Köpf alignment gives straight edges where
+   possible and balanced positions elsewhere: four alignments (towards the
+   layer above or below, from either end), aligned to the narrowest, each
+   vertex at the mean of its two middle values. Blocks are placed by a
+   longest-path pass over the graph of blocks rather than the paper's class
+   shifts, which its 2020 erratum shows can misplace classes.
 5. Frames. A frame's contents are laid out first, then the frame joins its
    parent's layout as one node with the size of its contents and its
    padding. Edges that cross a frame's border are attached to the border

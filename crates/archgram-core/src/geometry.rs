@@ -37,6 +37,13 @@ impl Rect {
     }
 }
 
+/// A point in output pixels.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
 /// A width and a height in output pixels.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Size {

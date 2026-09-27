@@ -166,8 +166,9 @@ question (PRD, Open questions).
 ## Layout
 
 - The flow runs one way, left to right by default or top to bottom on
-  request. Nodes sit in layers; `spacing.layer-layer` separates layers and
-  `spacing.node-node` separates nodes within one.
+  request. Nodes sit in layers; `spacing.layer-layer` separates layers,
+  `spacing.node-node` separates nodes within one, and `spacing.edge-edge`
+  separates edges that run side by side or pass a node.
 - A card is horizontal by default (icon on the left, text on the right) or
   vertical on request (icon above the text). Horizontal suits wide flows
   and long names; vertical suits few nodes with short names. One diagram
@@ -207,9 +208,10 @@ say "several instances" rather than "raised".
   with the size of the thing, so nested shapes stay concentric.
 - Strokes: `stroke.card` for card edges, `stroke.icon` for icon lines,
   `stroke.connector` for edges, `stroke.frame` for frames.
-- Two dash patterns, never mixed up: `dash.external` marks a node we do not
-  own; `dash.frame` marks a boundary. The frame's dash is longer, so a
-  dashed card inside a dashed frame stays distinguishable.
+- Three dash patterns, never mixed up: `dash.external` marks a node we do
+  not own; `dash.frame` marks a boundary; `dash.edge` marks an edge taken
+  only sometimes. The frame's dash is longer, so a dashed card inside a
+  dashed frame stays distinguishable.
 
 ## Components
 

@@ -1,6 +1,6 @@
 //! archgram's engine: a spec in, a picture out, with no I/O
-//! (ARCHITECTURE.md, Bird's eye view). Until the layered layout exists (M4),
-//! nodes are placed in a plain grid and edges are not yet drawn.
+//! (ARCHITECTURE.md, Bird's eye view). Until the router exists (M5), edges
+//! are drawn as straight segments through the layout's bends.
 
 mod error;
 pub mod font;
@@ -48,15 +48,18 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
 ///
 /// The spec's problems, as [`parse_spec`] reports them.
 pub fn build(json: &str, options: render::Options) -> Result<String, Vec<SpecError>> {
-    Ok(draw(&parse_spec(json)?, options))
+    draw(&parse_spec(json)?, options)
 }
 
 /// Measures, lays out and draws a spec that has passed validation.
-#[must_use]
-pub fn draw(spec: &Spec, options: render::Options) -> String {
+///
+/// # Errors
+///
+/// Layout hints that contradict the edges.
+pub fn draw(spec: &Spec, options: render::Options) -> Result<String, Vec<SpecError>> {
     let sizes = measure::card_sizes(spec);
-    let placement = layout::place(spec, &sizes);
-    render::render(spec, &placement, options)
+    let placement = layout::place(spec, &sizes)?;
+    Ok(render::render(spec, &placement, options))
 }
 
 /// The characters in the spec's text that the embedded font does not have,

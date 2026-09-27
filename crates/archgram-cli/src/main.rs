@@ -144,7 +144,10 @@ fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
             );
         }
     }
-    let svg = archgram_core::draw(&spec, options);
+    let svg = match archgram_core::draw(&spec, options) {
+        Ok(svg) => svg,
+        Err(errors) => return report(path, &errors),
+    };
     let out = out.unwrap_or_else(|| Path::new(path).with_extension("svg"));
     if let Err(e) = std::fs::write(&out, svg) {
         eprintln!("archgram: cannot write {}: {e}", out.display());
