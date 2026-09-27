@@ -1,7 +1,8 @@
 //! The layout's invariants (ARCHITECTURE.md, Invariants) on specs from a
 //! seeded generator: no two cards overlap, every edge spans layers, every
 //! edge is orthogonal, starts and ends on its cards and passes through no
-//! card, and the same spec lays out the same way. The generator is a fixed xorshift, so a
+//! card, every label sits on its edge and clear of every card, cards in one
+//! layer share its depth, and the same spec lays out the same way. The generator is a fixed xorshift, so a
 //! failing seed reproduces.
 
 use archgram_core::layout::place;
@@ -65,9 +66,18 @@ fn random_spec(seed: u64, nodes: usize) -> String {
         };
         pairs.insert((from, to));
     }
+    // One edge in three has a label, short or long.
+    let labels = ["on a miss", "streams", "reads", "writes every row"];
     let edge_json: Vec<String> = pairs
         .iter()
-        .map(|(a, b)| format!(r#"{{ "from": "n{a}", "to": "n{b}" }}"#))
+        .map(|(a, b)| {
+            if (a + b) % 3 == 0 {
+                let label = labels[(a * b) % labels.len()];
+                format!(r#"{{ "from": "n{a}", "to": "n{b}", "label": "{label}" }}"#)
+            } else {
+                format!(r#"{{ "from": "n{a}", "to": "n{b}" }}"#)
+            }
+        })
         .collect();
     format!(
         r#"{{ "archgram": 1, "title": "random {seed}", "description": "generated", "nodes": [{}], "edges": [{}] }}"#,
@@ -97,6 +107,16 @@ fn crosses_interior(
     x0 < r.right() - e && x1 > r.x + e && y0 < r.bottom() - e && y1 > r.y + e
 }
 
+/// Whether `p` lies on the axis-aligned segment `a`-`b`, to within half a pixel.
+fn on_segment(
+    a: archgram_core::geometry::Point,
+    b: archgram_core::geometry::Point,
+    p: archgram_core::geometry::Point,
+) -> bool {
+    let e = 0.5;
+    p.x >= a.x.min(b.x) - e && p.x <= a.x.max(b.x) + e && p.y >= a.y.min(b.y) - e && p.y <= a.y.max(b.y) + e
+}
+
 #[test]
 fn random_specs_keep_the_invariants() {
     check_random(150, "right");
@@ -124,6 +144,15 @@ fn check_random(seeds: u64, direction: &str) {
                 assert!(
                     !a.overlaps(b),
                     "seed {seed}: nodes {i} and {j} overlap: {a:?} {b:?}"
+                );
+            }
+        }
+        for (i, a) in p.nodes.iter().enumerate() {
+            for (j, b) in p.nodes.iter().enumerate().skip(i + 1) {
+                let along = |r: &archgram_core::geometry::Rect| if direction == "right" { r.w } else { r.h };
+                assert!(
+                    p.layers[i] != p.layers[j] || (along(a) - along(b)).abs() < 1e-9,
+                    "seed {seed}: nodes {i} and {j} share a layer but not its depth"
                 );
             }
         }
@@ -164,6 +193,24 @@ fn check_random(seeds: u64, direction: &str) {
                         e.to
                     );
                 }
+            }
+        }
+        for (k, (e, label)) in spec.edges.iter().zip(&p.labels).enumerate() {
+            assert_eq!(e.label.is_some(), label.is_some(), "seed {seed}: edge {k}");
+            let Some(r) = label else { continue };
+            let centre = archgram_core::geometry::Point {
+                x: r.x + r.w / 2.0,
+                y: r.y + r.h / 2.0,
+            };
+            assert!(
+                p.edges[k].windows(2).any(|w| on_segment(w[0], w[1], centre)),
+                "seed {seed}: the label of edge {k} is off its path"
+            );
+            for (i, n) in p.nodes.iter().enumerate() {
+                assert!(
+                    !r.overlaps(n),
+                    "seed {seed}: the label of edge {k} covers node {i}"
+                );
             }
         }
         assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");

@@ -65,6 +65,8 @@ components:
     typography: "{typography.frame-label}"
   connector:
     textColor: "{color.connector}"
+    rounded: "{rounded.connector}"
+    size: "{arrowhead.length}"
   legend:
     textColor: "{color.text-muted}"
     typography: "{typography.legend}"
@@ -177,6 +179,8 @@ question (PRD, Open questions).
   grows in width with its title, never below `card.horizontal-min-width`.
   A vertical card has a fixed height (`card.vertical-height`) and grows in
   width with its title, never below `card.vertical-min-width`.
+- Cards in one column share the width of its widest card, so their sides
+  line up; a column reads as one step of the flow.
 - A frame contains its nodes with `spacing.frame-padding` on every side
   and room at the top for its name (`spacing.frame-label`).
 - The legend sits under the diagram, left-aligned, and lists only the
@@ -206,6 +210,8 @@ say "several instances" rather than "raised".
 - `rounded.card` for cards, `rounded.badge` for icon badges,
   `rounded.frame` for frames, `rounded.canvas` for the canvas. Radii grow
   with the size of the thing, so nested shapes stay concentric.
+  `rounded.connector` rounds an edge's bends, never by more than half of
+  the segment beside it, so a short step stays a step.
 - Strokes: `stroke.card` for card edges, `stroke.icon` for icon lines,
   `stroke.connector` for edges, `stroke.frame` for frames.
 - Three dash patterns, never mixed up: `dash.external` marks a node we do
@@ -269,14 +275,17 @@ with `dash.frame` in `color.frame`, no fill, its name at the top left
 
 ### Connector
 
-An edge (`connector`): an orthogonal line in `color.connector` with an open
-chevron arrowhead in the same colour. It leaves and enters a card at the
+An edge (`connector`): an orthogonal line in `color.connector`, its bends
+rounded by `rounded.connector`, ending in a filled arrowhead of the same
+colour, `arrowhead.length` along the line and `arrowhead.width` across it.
+The line stops inside the arrowhead, so its end never shows past the tip,
+and the tip touches the card. It leaves and enters a card at the
 middle of a side, or, when several edges share the side, `spacing.edge-edge`
 apart around the middle; it never passes through a card. Where it must
 change level between two layers it turns twice in the gap between them, a
 symmetric step, never a slant. An edge label, when
-there is one, uses `typography.subtitle` on the line's longest straight
-segment.
+there is one, uses `typography.subtitle` on a straight stretch of the line,
+in room kept for it: it never covers a card.
 
 ### Signal
 

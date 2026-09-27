@@ -1,0 +1,158 @@
+{
+  "archgram": 1,
+  "title": "The design system, from tokens to components",
+  "description": "Authored: the palette, the roles and the resolver in design-system/tokens/, and the components contract and the rules in DESIGN.md. Build: design:export checks the components contract, then Terrazzo resolves light and dark. Generated, never edited: tokens.generated.css holds every token as a variable, theme.generated.css the roles as the Tailwind theme with a dark variant. Consumed: Tailwind 4, with its own palette reset, feeds the components, which use role classes only. Four checks run on every edit and commit: the ESLint design rules, design:lint, design:export --check and the agent hooks.",
+  "direction": "right",
+  "nodes": [
+    {
+      "id": "palette",
+      "kind": "file",
+      "label": "palette",
+      "note": "foundation/"
+    },
+    {
+      "id": "roles",
+      "kind": "file",
+      "label": "roles",
+      "note": "semantic/, themes/"
+    },
+    {
+      "id": "resolver",
+      "kind": "file",
+      "label": "resolver",
+      "note": "light | dark"
+    },
+    {
+      "id": "contract",
+      "kind": "file",
+      "label": "components",
+      "note": "DESIGN.md contract"
+    },
+    {
+      "id": "rules",
+      "kind": "file",
+      "label": "rules",
+      "note": "prose, no values"
+    },
+    {
+      "id": "terrazzo",
+      "kind": "script",
+      "label": "Terrazzo",
+      "note": "light and dark"
+    },
+    {
+      "id": "contractcheck",
+      "kind": "check",
+      "label": "contract check",
+      "note": "before the build"
+    },
+    {
+      "id": "tokenscss",
+      "kind": "generated",
+      "label": "tokens.generated.css",
+      "note": "all tokens as vars"
+    },
+    {
+      "id": "themecss",
+      "kind": "generated",
+      "label": "theme.generated.css",
+      "note": "roles + dark variant"
+    },
+    {
+      "id": "tailwind",
+      "kind": "script",
+      "label": "Tailwind 4",
+      "note": "palette reset"
+    },
+    {
+      "id": "components",
+      "kind": "browser",
+      "label": "components",
+      "note": "role classes"
+    },
+    {
+      "id": "eslint",
+      "kind": "check",
+      "label": "ESLint design rules",
+      "note": "checks component code"
+    },
+    {
+      "id": "designlint",
+      "kind": "check",
+      "label": "design:lint",
+      "note": "contrast, 2 themes"
+    },
+    {
+      "id": "exportcheck",
+      "kind": "check",
+      "label": "design:export --check",
+      "note": "CSS is current"
+    },
+    {
+      "id": "hooks",
+      "kind": "check",
+      "label": "Agent hooks",
+      "note": "lint after every edit"
+    }
+  ],
+  "edges": [
+    {
+      "from": "palette",
+      "to": "terrazzo"
+    },
+    {
+      "from": "roles",
+      "to": "terrazzo"
+    },
+    {
+      "from": "resolver",
+      "to": "terrazzo"
+    },
+    {
+      "from": "contract",
+      "to": "contractcheck"
+    },
+    {
+      "from": "contractcheck",
+      "to": "components"
+    },
+    {
+      "from": "terrazzo",
+      "to": "tokenscss"
+    },
+    {
+      "from": "terrazzo",
+      "to": "themecss"
+    },
+    {
+      "from": "tokenscss",
+      "to": "tailwind"
+    },
+    {
+      "from": "themecss",
+      "to": "tailwind"
+    },
+    {
+      "from": "tailwind",
+      "to": "components"
+    }
+  ],
+  "hints": {
+    "first": [
+      "palette",
+      "roles",
+      "resolver",
+      "contract",
+      "rules"
+    ],
+    "order": [
+      [
+        "palette",
+        "roles",
+        "resolver",
+        "contract",
+        "rules"
+      ]
+    ]
+  }
+}

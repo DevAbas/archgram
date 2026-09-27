@@ -47,6 +47,16 @@ pub fn card_size(node: &Node, style: CardStyle) -> Size {
     }
 }
 
+/// The patch an edge's label sits on: its text on one line, with half a
+/// card's padding on either side (DESIGN.md, Components: Connector).
+#[must_use]
+pub fn label_size(label: &str) -> Size {
+    Size {
+        w: text_width(label, &TYPOGRAPHY_SUBTITLE) + CARD_PADDING,
+        h: TYPOGRAPHY_SUBTITLE.size * TYPOGRAPHY_SUBTITLE.line_height,
+    }
+}
+
 /// The size of every node's card, in spec order.
 #[must_use]
 pub fn card_sizes(spec: &Spec) -> Vec<Size> {

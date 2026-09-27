@@ -126,8 +126,13 @@ does) rather than a general search:
   overlapping pair, the order that crosses fewer of the other hop's
   horizontal segments wins; each segment then takes the lowest track clear
   of those it overlaps. A gap needing more tracks than it holds widens.
-- An edge label sits on the edge's longest straight segment, on a patch of
-  canvas colour.
+- An edge label gets room of its own, as in dagre and ELK. On an edge
+  longer than one layer it stands in for the middle dummy vertex, sized to
+  the label, so crossing reduction and coordinates keep it clear of cards.
+  On an edge between neighbouring layers, the gap it leaves into reserves
+  the label's length plus `spacing.edge-edge` on each side before its
+  tracks, and the label sits on the segment leaving the first card. The
+  label is drawn on a patch of canvas colour.
 
 A general orthogonal router (visibility graph and A*, as in libavoid) is
 not needed while every edge follows the layers; it stays an option should

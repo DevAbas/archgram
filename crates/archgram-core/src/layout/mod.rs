@@ -7,9 +7,15 @@
 //! 3. Long edges are split by dummy vertices, one per layer they cross.
 //! 4. Crossing reduction (`order`), keeping `order` hints.
 //! 5. Coordinates across the layers (`position`, Brandes and Köpf); along
-//!    them, each layer is as deep as its deepest card, cards centred in it.
+//!    them, each layer is as deep as its deepest card or label, and every
+//!    card in it takes the depth of its deepest card, so their sides line up.
 //! 6. Routing (`route`): each edge runs orthogonally through the gaps between
 //!    layers, which widen when their tracks need the room.
+//!
+//! An edge's label gets room of its own, as dagre and ELK give it: on a long
+//! edge it takes the place of the middle dummy vertex, sized to the label;
+//! on an edge between neighbouring layers, the gap reserves room for it
+//! before its tracks, on the segment leaving the edge's first card.
 //!
 //! The layout is computed as if the flow ran right: "main" is along the
 //! flow, "cross" across it. A flow running down swaps the two at the end.
@@ -34,9 +40,11 @@ pub struct Placement {
     /// Each edge's path in spec order: an orthogonal line from a side of its
     /// `from` node to a side of its `to` node.
     pub edges: Vec<Vec<Point>>,
+    /// Each edge's label box in spec order, on its path; `None` without a label.
+    pub labels: Vec<Option<Rect>>,
     /// The layer of each node, in spec order.
     pub layers: Vec<usize>,
-    /// The size of the whole drawing, from the origin.
+    /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
 
@@ -64,7 +72,7 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         .iter()
         .map(|e| (index(&e.from), index(&e.to)))
         .collect();
-    let (main_size, cross_size): (Vec<f64>, Vec<f64>) = match spec.direction {
+    let (mut main_size, cross_size): (Vec<f64>, Vec<f64>) = match spec.direction {
         Direction::Right => sizes.iter().map(|s| (s.w, s.h)).unzip(),
         Direction::Down => sizes.iter().map(|s| (s.h, s.w)).unzip(),
     };
@@ -161,6 +169,38 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         chains.push(chain);
     }
     let total = vertex_layer.len();
+    // Each label's extent along and across the flow.
+    let label_extent: Vec<Option<(f64, f64)>> = spec
+        .edges
+        .iter()
+        .map(|e| {
+            e.label.as_deref().map(|l| {
+                let s = crate::measure::label_size(l);
+                match spec.direction {
+                    Direction::Right => (s.w, s.h),
+                    Direction::Down => (s.h, s.w),
+                }
+            })
+        })
+        .collect();
+    // A long edge's label stands in for its middle dummy vertex.
+    let label_vertex: Vec<Option<usize>> = chains
+        .iter()
+        .zip(&label_extent)
+        .map(|(chain, ext)| ext.filter(|_| chain.len() > 2).map(|_| chain[chain.len() / 2]))
+        .collect();
+    let mut main_sizes: Vec<f64> = (0..total)
+        .map(|v| if v < n { main_size[v] } else { 0.0 })
+        .collect();
+    let mut cross_sizes: Vec<f64> = (0..total)
+        .map(|v| if v < n { cross_size[v] } else { 0.0 })
+        .collect();
+    for (v, ext) in label_vertex.iter().zip(&label_extent) {
+        if let (Some(v), Some((along, across))) = (v, ext) {
+            main_sizes[*v] = *along;
+            cross_sizes[*v] = *across;
+        }
+    }
     let mut layers: Vec<Vec<usize>> =
         vec![Vec::new(); vertex_layer.iter().copied().max().map_or(0, |m| m + 1)];
     for (v, &l) in vertex_layer.iter().enumerate() {
@@ -178,9 +218,6 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
 
     // 5. Coordinates.
     let dummy: Vec<bool> = (0..total).map(|v| v >= n).collect();
-    let cross_sizes: Vec<f64> = (0..total)
-        .map(|v| if v < n { cross_size[v] } else { 0.0 })
-        .collect();
     let cross = position::coordinates(
         &layers,
         &short,
@@ -193,6 +230,12 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     );
     let depth: Vec<f64> = layers
         .iter()
+        .map(|l| l.iter().map(|&v| main_sizes[v]).fold(0.0, f64::max))
+        .collect();
+    // Cards in one layer share its deepest card's size along the flow: the
+    // width of a column when the flow runs right, so their sides line up.
+    let card_depth: Vec<f64> = layers
+        .iter()
         .map(|l| {
             l.iter()
                 .filter(|&&v| v < n)
@@ -200,6 +243,9 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
                 .fold(0.0, f64::max)
         })
         .collect();
+    for (v, size) in main_size.iter_mut().enumerate() {
+        *size = card_depth[vertex_layer[v]];
+    }
 
     // 6. Routing: ports on each card's sides, then each hop between two layers
     //    straight or as a Z through a track in the gap (`route`).
@@ -267,10 +313,20 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         }
         *count = c;
     }
+    // Room for the labels of edges between neighbouring layers, at the start
+    // of the gap the edge leaves into, clear of the card and of the tracks.
+    let mut lead = vec![0.0f64; gaps];
+    for (chain, ext) in chains.iter().zip(&label_extent) {
+        if let (2, Some((along, _))) = (chain.len(), ext) {
+            let g = vertex_layer[chain[0]];
+            lead[g] = lead[g].max(along + 2.0 * SPACING_EDGE_EDGE);
+        }
+    }
     #[allow(clippy::cast_precision_loss)] // track counts are small
     let gap_width: Vec<f64> = track_count
         .iter()
-        .map(|&c| SPACING_LAYER_LAYER.max((c + 1) as f64 * SPACING_EDGE_EDGE))
+        .zip(&lead)
+        .map(|(&c, &l)| SPACING_LAYER_LAYER.max(l + (c + 1) as f64 * SPACING_EDGE_EDGE))
         .collect();
     let mut start = Vec::with_capacity(layers.len());
     let mut at = 0.0;
@@ -313,11 +369,15 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let nodes: Vec<Rect> = (0..n)
         .map(|v| {
             let c = point(centre_main(v), cross[v]);
+            let (w, h) = match spec.direction {
+                Direction::Right => (main_size[v], cross_size[v]),
+                Direction::Down => (cross_size[v], main_size[v]),
+            };
             Rect {
-                x: c.x - sizes[v].w / 2.0,
-                y: c.y - sizes[v].h / 2.0,
-                w: sizes[v].w,
-                h: sizes[v].h,
+                x: c.x - w / 2.0,
+                y: c.y - h / 2.0,
+                w,
+                h,
             }
         })
         .collect();
@@ -327,7 +387,10 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         let mut pts = vec![(leave_main(a), out_port[h])];
         if !level(h) {
             #[allow(clippy::cast_precision_loss)]
-            let t = start[g] + depth[g] + gap_width[g] * (track[h] + 1) as f64 / (track_count[g] + 1) as f64;
+            let t = start[g]
+                + depth[g]
+                + lead[g]
+                + (gap_width[g] - lead[g]) * (track[h] + 1) as f64 / (track_count[g] + 1) as f64;
             pts.push((t, out_port[h]));
             pts.push((t, in_port[h]));
         }
@@ -341,11 +404,75 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             path.reverse();
         }
     }
-    let w = nodes.iter().map(Rect::right).fold(0.0, f64::max);
-    let h = nodes.iter().map(Rect::bottom).fold(0.0, f64::max);
+    let labels: Vec<Option<Rect>> = (0..chains.len())
+        .map(|e| {
+            let (along, across) = label_extent[e]?;
+            let (along_at, across_at) = if let Some(v) = label_vertex[e] {
+                (centre_main(v), cross[v])
+            } else {
+                // The hop's segment leaving its first card, in the room the gap keeps.
+                let hop = hops.iter().position(|&(k, _, _)| k == e).expect("one hop");
+                let (_, a, b) = hops[hop];
+                let gap = vertex_layer[a];
+                let end = if level(hop) {
+                    enter_main(b)
+                } else {
+                    start[gap] + depth[gap] + lead[gap]
+                };
+                (f64::midpoint(leave_main(a), end), out_port[hop])
+            };
+            let (width, height) = match spec.direction {
+                Direction::Right => (along, across),
+                Direction::Down => (across, along),
+            };
+            let centre = point(along_at, across_at);
+            let centre = Point {
+                x: centre.x.round(),
+                y: centre.y.round(),
+            };
+            Some(Rect {
+                x: centre.x - width / 2.0,
+                y: centre.y - height / 2.0,
+                w: width,
+                h: height,
+            })
+        })
+        .collect();
+    // Whole pixels: cards and paths land on the pixel grid, so a line one
+    // pixel wide covers whole pixels once the renderer shifts the drawing by
+    // half of one (render, `HALF_PIXEL`). Card sizes are whole already.
+    let nodes: Vec<Rect> = nodes
+        .into_iter()
+        .map(|r| Rect {
+            x: r.x.round(),
+            y: r.y.round(),
+            ..r
+        })
+        .collect();
+    for path in &mut paths {
+        for p in path.iter_mut() {
+            *p = Point {
+                x: p.x.round(),
+                y: p.y.round(),
+            };
+        }
+    }
+    let w = nodes
+        .iter()
+        .chain(labels.iter().flatten())
+        .map(Rect::right)
+        .chain(paths.iter().flatten().map(|p| p.x))
+        .fold(0.0, f64::max);
+    let h = nodes
+        .iter()
+        .chain(labels.iter().flatten())
+        .map(Rect::bottom)
+        .chain(paths.iter().flatten().map(|p| p.y))
+        .fold(0.0, f64::max);
     Ok(Placement {
         nodes,
         edges: paths,
+        labels,
         layers: layer,
         size: Size { w, h },
     })

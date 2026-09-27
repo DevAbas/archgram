@@ -12,8 +12,8 @@ use crate::geometry::Rect;
 use crate::layout::Placement;
 use crate::spec::Spec;
 use crate::tokens::{
-    Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CARD, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
-    TextStyle, theme,
+    ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CARD,
+    TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE, TextStyle, theme,
 };
 use svg::{Svg, escape, num};
 
@@ -73,24 +73,38 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         num(h),
         num(ROUNDED_CANVAS)
     ));
-    // Arrowhead: an open chevron in the connector colour (DESIGN.md, Components: Connector).
-    svg.line(r#"<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M2 1L9 5L2 9"/></marker></defs>"#);
+    // Arrowhead: a filled triangle in the connector colour (DESIGN.md,
+    // Components: Connector), in user space so its size is the tokens' and
+    // not scaled by the line's stroke. The line stops `edge::INSET` short;
+    // `refX` puts the tip back on the line's end.
+    svg.line(&format!(
+        r#"<defs><marker id="arrow" viewBox="0 0 {l} {w}" refX="{rx}" refY="{ry}" markerWidth="{l}" markerHeight="{w}" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path class="arrowhead" d="M0 0L{l} {ry}L0 {w}Z"/></marker></defs>"#,
+        l = num(ARROWHEAD_LENGTH),
+        w = num(ARROWHEAD_WIDTH),
+        rx = num(ARROWHEAD_LENGTH - edge::INSET),
+        ry = num(ARROWHEAD_WIDTH / 2.0)
+    ));
     svg.open(r#"<g class="edges">"#);
-    for (e, path) in spec.edges.iter().zip(&placement.edges) {
+    for ((e, path), label) in spec.edges.iter().zip(&placement.edges).zip(&placement.labels) {
         let path: Vec<crate::geometry::Point> = path
             .iter()
             .map(|p| crate::geometry::Point {
-                x: p.x + SPACING_MARGIN,
-                y: p.y + SPACING_MARGIN,
+                x: p.x + OFFSET,
+                y: p.y + OFFSET,
             })
             .collect();
-        edge::edge(&mut svg, e, &path);
+        let label = label.map(|r| Rect {
+            x: r.x + OFFSET,
+            y: r.y + OFFSET,
+            ..r
+        });
+        edge::edge(&mut svg, e, &path, label);
     }
     svg.close("</g>");
     for (node, r) in spec.nodes.iter().zip(&placement.nodes) {
         let at = Rect {
-            x: r.x + SPACING_MARGIN,
-            y: r.y + SPACING_MARGIN,
+            x: r.x + OFFSET,
+            y: r.y + OFFSET,
             ..*r
         };
         card::card(&mut svg, node, at, spec.card);
@@ -98,6 +112,17 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
     svg.close("</svg>");
     svg.finish()
 }
+
+/// Half a pixel. The layout puts cards and paths on whole pixels; a card's
+/// border one pixel wide centred on a whole pixel would cover two half
+/// pixels and blur into a pale band, so the drawing moves by half a pixel to
+/// cover one. A line wider than a pixel then covers one whole pixel at its
+/// middle.
+const HALF_PIXEL: f64 = 0.5;
+
+/// Where the layout's origin lands on the canvas: past the margin, and half a
+/// pixel in.
+const OFFSET: f64 = SPACING_MARGIN + HALF_PIXEL;
 
 /// The style sheet: the theme's roles as custom properties, then the classes
 /// that read them (DESIGN.md, front matter: components).
@@ -161,7 +186,7 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         ".edge.dashed {{ stroke-dasharray: {}; }}",
         dash(crate::tokens::DASH_EDGE)
     ));
-    svg.line(&format!(".arrowhead {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}", num(crate::tokens::STROKE_CONNECTOR)));
+    svg.line(".arrowhead { fill: var(--connector); }");
     svg.line(".icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }");
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".icon.{hue} {{ stroke: var(--icon-{hue}); }}"));

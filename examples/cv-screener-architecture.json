@@ -1,0 +1,243 @@
+{
+  "archgram": 1,
+  "title": "How an answer comes to be",
+  "description": "Before use, npm run generate has Gemini write 30 CV PDFs; npm run index has Gemini extract a profile from each, the field check locates every fact in the text so each has a page, and each chunk is embedded into Pinecone. At question time the chat screen sends the question and history to POST /api/ask, whose prompt holds no CV text. Gemini runs a tool-calling loop: three exact tools read the index, search_cv_text embeds the query and fuses BM25 with the vectors. The loop ends with present; the answer check keeps only the candidates and pages the tools returned, and the answer streams to the chat, whose source links open the PDF at the cited page.",
+  "direction": "right",
+  "nodes": [
+    {
+      "id": "generate",
+      "kind": "script",
+      "label": "npm run generate",
+      "note": "Gemini writes CVs",
+      "frame": "prep"
+    },
+    {
+      "id": "cvs",
+      "kind": "file",
+      "label": "CV PDFs",
+      "note": "30 files",
+      "frame": "prep"
+    },
+    {
+      "id": "extract",
+      "kind": "model",
+      "label": "Gemini",
+      "note": "extracts profile",
+      "variant": "external",
+      "frame": "prep"
+    },
+    {
+      "id": "fieldcheck",
+      "kind": "check",
+      "label": "Field check",
+      "note": "page per fact",
+      "frame": "prep"
+    },
+    {
+      "id": "embed",
+      "kind": "model",
+      "label": "Embedding",
+      "note": "each chunk",
+      "variant": "external",
+      "frame": "prep"
+    },
+    {
+      "id": "index",
+      "kind": "storage",
+      "label": "data/index",
+      "note": "JSON, in memory"
+    },
+    {
+      "id": "vectors",
+      "kind": "vector-store",
+      "label": "Pinecone",
+      "note": "chunk vectors",
+      "variant": "external"
+    },
+    {
+      "id": "chat",
+      "kind": "browser",
+      "label": "Chat screen",
+      "note": "question + history",
+      "frame": "ask"
+    },
+    {
+      "id": "route",
+      "kind": "service",
+      "label": "POST /api/ask",
+      "note": "prompt: no CV text",
+      "frame": "ask"
+    },
+    {
+      "id": "llm",
+      "kind": "model",
+      "label": "Gemini",
+      "note": "tool-calling loop",
+      "variant": "external",
+      "frame": "ask"
+    },
+    {
+      "id": "search",
+      "kind": "tool",
+      "label": "search_cv_text",
+      "note": "BM25 + vectors, RRF",
+      "frame": "ask"
+    },
+    {
+      "id": "embedquery",
+      "kind": "model",
+      "label": "Embed query",
+      "variant": "external",
+      "frame": "ask"
+    },
+    {
+      "id": "find",
+      "kind": "tool",
+      "label": "find_candidates",
+      "frame": "ask"
+    },
+    {
+      "id": "count",
+      "kind": "tool",
+      "label": "count_candidates",
+      "frame": "ask"
+    },
+    {
+      "id": "get",
+      "kind": "tool",
+      "label": "get_candidates",
+      "frame": "ask"
+    },
+    {
+      "id": "present",
+      "kind": "tool",
+      "label": "present",
+      "note": "ends the loop",
+      "frame": "ask"
+    },
+    {
+      "id": "answercheck",
+      "kind": "check",
+      "label": "Answer check",
+      "note": "checks ids, pages",
+      "frame": "ask"
+    },
+    {
+      "id": "pdf",
+      "kind": "service",
+      "label": "GET /api/cvs/id",
+      "note": "PDF at the cited page",
+      "frame": "ask"
+    }
+  ],
+  "frames": [
+    {
+      "id": "prep",
+      "label": "Before use: npm run generate, npm run index"
+    },
+    {
+      "id": "ask",
+      "label": "At question time"
+    }
+  ],
+  "edges": [
+    {
+      "from": "generate",
+      "to": "cvs"
+    },
+    {
+      "from": "cvs",
+      "to": "extract"
+    },
+    {
+      "from": "extract",
+      "to": "fieldcheck"
+    },
+    {
+      "from": "fieldcheck",
+      "to": "index"
+    },
+    {
+      "from": "cvs",
+      "to": "embed"
+    },
+    {
+      "from": "embed",
+      "to": "vectors"
+    },
+    {
+      "from": "chat",
+      "to": "route"
+    },
+    {
+      "from": "route",
+      "to": "llm"
+    },
+    {
+      "from": "llm",
+      "to": "search"
+    },
+    {
+      "from": "llm",
+      "to": "find"
+    },
+    {
+      "from": "llm",
+      "to": "count"
+    },
+    {
+      "from": "llm",
+      "to": "get"
+    },
+    {
+      "from": "llm",
+      "to": "present"
+    },
+    {
+      "from": "search",
+      "to": "embedquery"
+    },
+    {
+      "from": "embedquery",
+      "to": "vectors"
+    },
+    {
+      "from": "find",
+      "to": "index"
+    },
+    {
+      "from": "count",
+      "to": "index"
+    },
+    {
+      "from": "get",
+      "to": "index"
+    },
+    {
+      "from": "present",
+      "to": "answercheck"
+    },
+    {
+      "from": "answercheck",
+      "to": "chat",
+      "label": "streams"
+    },
+    {
+      "from": "chat",
+      "to": "pdf",
+      "label": "source link"
+    }
+  ],
+  "hints": {
+    "order": [
+      [
+        "fieldcheck",
+        "search",
+        "find",
+        "count",
+        "get",
+        "present"
+      ]
+    ]
+  }
+}

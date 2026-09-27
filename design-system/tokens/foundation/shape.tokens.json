@@ -15,6 +15,12 @@
         "unit": "px"
       }
     },
+    "connector": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
     "frame": {
       "$value": {
         "value": 14,
@@ -44,7 +50,7 @@
     },
     "connector": {
       "$value": {
-        "value": 1,
+        "value": 1.5,
         "unit": "px"
       }
     },
@@ -100,6 +106,22 @@
           }
         ],
         "lineCap": "butt"
+      }
+    }
+  },
+  "arrowhead": {
+    "$type": "dimension",
+    "$description": "The filled arrowhead at an edge's end: its length along the line and its width across it.",
+    "length": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "width": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
       }
     }
   },
