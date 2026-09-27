@@ -44,7 +44,7 @@ silently changing the diagram.
 | `card` | no | `horizontal`, `vertical` | `horizontal` | The card style for every node |
 | `logo` | no | `corner`, `chip` | `corner` | Where technology logos go |
 | `palette` | no | a palette name | `mono` | The palette; light and dark are chosen when rendering |
-| `legend` | no | `true`, `false` | `true` | Whether to draw the legend |
+| `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
 | `nodes` | yes | list | | At least one node |
 | `frames`, `edges`, `flows` | no | list | empty | |
 | `hints` | no | object | empty | Layout hints, below |

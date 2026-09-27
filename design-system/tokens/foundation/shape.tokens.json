@@ -131,6 +131,22 @@
       }
     }
   },
+  "legend": {
+    "$type": "dimension",
+    "$description": "A legend entry's swatch: its size, and the gap before its text.",
+    "swatch": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "swatch-gap": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    }
+  },
   "card": {
     "$type": "dimension",
     "horizontal-height": {
@@ -253,6 +269,27 @@
         "value": 24,
         "unit": "px"
       }
+    },
+    "legend": {
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      },
+      "$description": "Between the diagram and its legend below it."
+    },
+    "legend-entry": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      },
+      "$description": "Between two entries of the legend in a row."
+    },
+    "legend-row": {
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      },
+      "$description": "Between two rows of the legend."
     }
   }
 }

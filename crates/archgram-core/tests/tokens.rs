@@ -43,6 +43,10 @@ fn text_reads_at_4_5_to_1_and_lines_at_3_to_1() {
             ("icon ai on badge", c.icon_ai, c.badge, 3.0),
             ("icon build on badge", c.icon_build, c.badge, 3.0),
             ("icon client on badge", c.icon_client, c.badge, 3.0),
+            ("icon core on canvas", c.icon_core, c.canvas, 3.0),
+            ("icon ai on canvas", c.icon_ai, c.canvas, 3.0),
+            ("icon build on canvas", c.icon_build, c.canvas, 3.0),
+            ("icon client on canvas", c.icon_client, c.canvas, 3.0),
             ("connector on canvas", c.connector, c.canvas, 3.0),
             ("frame on canvas", c.frame, c.canvas, 3.0),
         ];

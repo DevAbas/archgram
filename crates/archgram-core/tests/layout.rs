@@ -187,6 +187,33 @@ fn check_frames(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::
     }
 }
 
+/// The legend sits below every card, frame and edge, inside the drawing,
+/// and its entries do not meet.
+fn check_legend(seed: u64, p: &archgram_core::layout::Placement) {
+    let Some(first) = p.legend.first() else { return };
+    let top = first.swatch_box.y.min(first.text_box.y);
+    let above = p
+        .nodes
+        .iter()
+        .chain(p.frames.iter().flatten())
+        .map(archgram_core::geometry::Rect::bottom)
+        .chain(p.edges.iter().flatten().map(|q| q.y))
+        .fold(0.0, f64::max);
+    assert!(top >= above, "seed {seed}: the legend is not below the diagram");
+    for (i, a) in p.legend.iter().enumerate() {
+        for b in p.legend.iter().skip(i + 1) {
+            assert!(
+                !a.text_box.overlaps(&b.text_box) && !a.swatch_box.overlaps(&b.text_box),
+                "seed {seed}: legend entries meet"
+            );
+        }
+        assert!(
+            a.text_box.right() <= p.size.w + 0.5 && a.text_box.bottom() <= p.size.h + 0.5,
+            "seed {seed}: the legend runs out of the drawing"
+        );
+    }
+}
+
 /// Whether `p` lies on the border of `r`, to within half a pixel.
 fn on_border(r: &archgram_core::geometry::Rect, p: archgram_core::geometry::Point) -> bool {
     let within = |v: f64, lo: f64, hi: f64| v >= lo - 0.5 && v <= hi + 0.5;
@@ -301,6 +328,7 @@ fn check_random(seeds: u64, direction: &str) {
         check_labels(seed, &spec, &p);
         check_units(seed, &spec, &p);
         check_frames(seed, &spec, &p);
+        check_legend(seed, &p);
         assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
     }
 }
@@ -526,4 +554,36 @@ fn a_hundred_nodes_lay_out_within_the_budget() {
     let each = start.elapsed() / runs;
     println!("100 nodes: {each:?} per build");
     assert!(each.as_millis() < 50, "{each:?}");
+}
+
+#[test]
+fn the_legend_lists_what_the_diagram_uses() {
+    use archgram_core::layout::legend::Swatch;
+    use archgram_core::spec::Category;
+    let spec = |legend: &str, nodes: &str| {
+        parse_spec(&format!(
+            r#"{{ "archgram": 1, "title": "t", "description": "d", {legend} "nodes": [{nodes}] }}"#
+        ))
+        .unwrap()
+    };
+    let two = r#"{ "id": "a", "kind": "browser", "label": "A" }, { "id": "b", "kind": "service", "label": "B", "variant": "multi" }"#;
+    let s = spec("", two);
+    let p = place(&s, &card_sizes(&s)).unwrap();
+    let kinds: Vec<Swatch> = p.legend.iter().map(|e| e.swatch).collect();
+    assert_eq!(
+        kinds,
+        [
+            Swatch::Category(Category::Core),
+            Swatch::Category(Category::Client),
+            Swatch::Multi
+        ]
+    );
+    // Asked away, or with nothing to tell apart, there is none.
+    let s = spec(r#""legend": false,"#, two);
+    assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
+    let s = spec(
+        "",
+        r#"{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "database", "label": "B" }"#,
+    );
+    assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
 }

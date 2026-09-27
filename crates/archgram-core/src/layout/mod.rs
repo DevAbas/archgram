@@ -29,6 +29,7 @@
 
 mod acyclic;
 pub(crate) mod frames;
+pub mod legend;
 mod order;
 mod pack;
 mod position;
@@ -64,6 +65,8 @@ pub struct Placement {
     pub frames: Vec<Option<Rect>>,
     /// Each frame's name box, at its top left, in spec order.
     pub frame_labels: Vec<Option<Rect>>,
+    /// The legend's entries, under the diagram; none when it has none.
+    pub legend: Vec<legend::Entry>,
     /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
@@ -79,6 +82,15 @@ pub struct Placement {
 /// When `spec` has not passed validation (an edge or hint names a node that
 /// does not exist), or `sizes` does not hold one size per node.
 pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
+    let mut placement = place_units(spec, sizes)?;
+    let (entries, size) = legend::place(spec, placement.size);
+    placement.legend = entries;
+    placement.size = size;
+    Ok(placement)
+}
+
+/// The nodes, edges and frames: one unit laid out, or several packed.
+fn place_units(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let units = pack::units(spec);
     if units.len() <= 1 {
         return lay_out(spec, sizes);
@@ -836,6 +848,7 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         units: vec![0; layer.len()],
         frames: frame_rects,
         frame_labels,
+        legend: Vec::new(),
         layers: layer,
         size: Size { w, h },
     })

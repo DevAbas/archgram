@@ -4,6 +4,7 @@ mod card;
 mod edge;
 mod frame;
 mod icons;
+mod legend;
 pub mod svg;
 
 use std::collections::BTreeSet;
@@ -145,6 +146,16 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         };
         card::card(&mut svg, node, at, spec.card);
     }
+    let entries: Vec<crate::layout::legend::Entry> = placement
+        .legend
+        .iter()
+        .map(|e| crate::layout::legend::Entry {
+            swatch_box: at(e.swatch_box),
+            text_box: at(e.text_box),
+            ..e.clone()
+        })
+        .collect();
+    legend::legend(&mut svg, &entries);
     svg.close("</svg>");
     svg.finish()
 }
@@ -244,7 +255,26 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".icon.{hue} {{ stroke: var(--icon-{hue}); }}"));
     }
+    if !placement_has_legend(spec) {
+        return svg.close("</style>");
+    }
+    svg.line(&format!(
+        ".swatch {{ fill: none; stroke-width: {}; }}",
+        num(crate::tokens::STROKE_ICON)
+    ));
+    for hue in ["core", "ai", "build", "client"] {
+        svg.line(&format!(".swatch.{hue} {{ stroke: var(--icon-{hue}); }}"));
+    }
+    svg.line(&format!(
+        ".legend-text {{ {} fill: var(--text-muted); }}",
+        text(&crate::tokens::TYPOGRAPHY_LEGEND)
+    ));
     svg.close("</style>");
+}
+
+/// Whether the drawing has a legend, so its classes are needed.
+fn placement_has_legend(spec: &Spec) -> bool {
+    !crate::layout::legend::entries(spec).is_empty()
 }
 
 fn vars(c: &Colors) -> String {

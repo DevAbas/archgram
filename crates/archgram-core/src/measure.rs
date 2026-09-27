@@ -74,8 +74,8 @@ pub fn label_size(label: &str) -> Size {
 }
 
 /// Every piece of text the drawing shows, with the weight it is set in, in
-/// drawing order: node titles and notes, edge labels, then frame names in
-/// the capitals they are drawn in. The font subset
+/// drawing order: node titles and notes, edge labels, frame names in the
+/// capitals they are drawn in, then the legend's entries. The font subset
 /// and the check for characters the font lacks both read this list, so
 /// neither can miss a text the other covers.
 #[must_use]
@@ -94,6 +94,9 @@ pub fn text_runs(spec: &Spec) -> Vec<(u16, std::borrow::Cow<'_, str>)> {
     }
     for frame in &spec.frames {
         runs.push((TYPOGRAPHY_FRAME_LABEL.weight, frame.label.to_uppercase().into()));
+    }
+    for (_, text) in crate::layout::legend::entries(spec) {
+        runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
     }
     runs
 }

@@ -205,8 +205,10 @@ The SVG is built as a string with fixed number formatting (two decimals)
 and a fixed attribute order, the second half of determinism. Each node
 kind has a shape function; the theme becomes CSS custom properties, with
 the dark values under `prefers-color-scheme`, or one file per theme on
-request. The legend is generated from the kinds and variants the diagram
-uses. Technology logos come from a vendored subset of Simple Icons.
+request. The legend is generated from the categories and variants the
+diagram uses and laid out below it (`layout::legend`), in rows no wider
+than the diagram; its text is part of the text runs, so the font subset
+carries it. Technology logos come from a vendored subset of Simple Icons.
 
 The text is drawn in the same font it was measured with. archgram's own
 subsetter cuts Geist down to the glyphs the diagram uses (keeping the

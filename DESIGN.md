@@ -189,8 +189,10 @@ lists a fallback stack.
   column of an unrelated flow.
 - A frame contains its nodes with `spacing.frame-padding` on every side
   and room at the top for its name (`spacing.frame-label`).
-- The legend sits under the diagram, left-aligned, and lists only the
-  variants and categories the diagram uses.
+- The legend sits under the diagram, `spacing.legend` below it,
+  left-aligned, and lists only the variants and categories the diagram
+  uses, `spacing.legend-entry` apart, in rows `spacing.legend-row` apart
+  no wider than the diagram.
 - `spacing.margin` surrounds everything.
 
 Motion:
@@ -309,8 +311,15 @@ still; only the signal moves.
 
 ### Legend
 
-Generated from what the diagram uses: one entry per variant (multi-node,
-external) and per category present, in `typography.legend`.
+Generated from what the diagram uses: one entry per category present, in
+a fixed order (core, AI and LLM, build and tooling, clients), then one per
+variant present (several instances, external), in `typography.legend` and
+`color.text-muted`. Each entry leads with a swatch of `legend.swatch`,
+`legend.swatch-gap` before its text: a category is a small square outlined
+in its icon hue with `stroke.icon`, so colour stays in lines; several
+instances a small card with two copies behind; external a small dashed
+card. A legend that would say nothing is not drawn: one category and no
+variant.
 
 ## Do's and Don'ts
 
