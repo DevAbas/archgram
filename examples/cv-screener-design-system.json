@@ -8,31 +8,41 @@
       "id": "palette",
       "kind": "file",
       "label": "palette",
-      "note": "foundation/"
+      "note": "foundation/",
+      "tech": "json",
+      "frame": "authored"
     },
     {
       "id": "roles",
       "kind": "file",
       "label": "roles",
-      "note": "semantic/, themes/"
+      "note": "semantic/, themes/",
+      "tech": "json",
+      "frame": "authored"
     },
     {
       "id": "resolver",
       "kind": "file",
       "label": "resolver",
-      "note": "light | dark"
+      "note": "light | dark",
+      "tech": "json",
+      "frame": "authored"
     },
     {
       "id": "contract",
       "kind": "file",
       "label": "components",
-      "note": "DESIGN.md contract"
+      "note": "DESIGN.md contract",
+      "tech": "markdown",
+      "frame": "authored"
     },
     {
       "id": "rules",
       "kind": "file",
       "label": "rules",
-      "note": "prose, no values"
+      "note": "prose, no values",
+      "tech": "markdown",
+      "frame": "authored"
     },
     {
       "id": "terrazzo",
@@ -50,32 +60,39 @@
       "id": "tokenscss",
       "kind": "generated",
       "label": "tokens.generated.css",
-      "note": "all tokens as vars"
+      "note": "all tokens as vars",
+      "tech": "css",
+      "frame": "generated"
     },
     {
       "id": "themecss",
       "kind": "generated",
       "label": "theme.generated.css",
-      "note": "roles + dark variant"
+      "note": "roles + dark variant",
+      "tech": "css",
+      "frame": "generated"
     },
     {
       "id": "tailwind",
       "kind": "script",
       "label": "Tailwind 4",
-      "note": "palette reset"
+      "note": "palette reset",
+      "tech": "tailwindcss"
     },
     {
       "id": "components",
       "kind": "browser",
       "label": "components",
-      "note": "role classes"
+      "note": "role classes",
+      "tech": "react"
     },
     {
       "id": "eslint",
       "kind": "check",
       "label": "ESLint design rules",
       "note": "checks component code",
-      "frame": "enforce"
+      "frame": "enforce",
+      "tech": "eslint"
     },
     {
       "id": "designlint",
@@ -100,6 +117,14 @@
     }
   ],
   "frames": [
+    {
+      "id": "authored",
+      "label": "Authored, edit these"
+    },
+    {
+      "id": "generated",
+      "label": "Generated, never edit"
+    },
     {
       "id": "enforce",
       "label": "Enforcement, on every edit and commit"

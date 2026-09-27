@@ -9,7 +9,8 @@
       "kind": "script",
       "label": "npm run generate",
       "note": "Gemini writes CVs",
-      "frame": "prep"
+      "frame": "prep",
+      "tech": "npm"
     },
     {
       "id": "cvs",
@@ -24,7 +25,8 @@
       "label": "Gemini",
       "note": "extracts profile",
       "variant": "external",
-      "frame": "prep"
+      "frame": "prep",
+      "tech": "googlegemini"
     },
     {
       "id": "fieldcheck",
@@ -45,28 +47,33 @@
       "id": "index",
       "kind": "storage",
       "label": "data/index",
-      "note": "JSON, in memory"
+      "note": "JSON, in memory",
+      "tech": "json",
+      "frame": "stores"
     },
     {
       "id": "vectors",
       "kind": "vector-store",
       "label": "Pinecone",
       "note": "chunk vectors",
-      "variant": "external"
+      "variant": "external",
+      "frame": "stores"
     },
     {
       "id": "chat",
       "kind": "browser",
       "label": "Chat screen",
       "note": "question + history",
-      "frame": "ask"
+      "frame": "ask",
+      "tech": "react"
     },
     {
       "id": "route",
       "kind": "service",
       "label": "POST /api/ask",
       "note": "prompt: no CV text",
-      "frame": "ask"
+      "frame": "ask",
+      "tech": "nextdotjs"
     },
     {
       "id": "llm",
@@ -74,7 +81,8 @@
       "label": "Gemini",
       "note": "tool-calling loop",
       "variant": "external",
-      "frame": "ask"
+      "frame": "ask",
+      "tech": "googlegemini"
     },
     {
       "id": "search",
@@ -127,7 +135,8 @@
       "kind": "service",
       "label": "GET /api/cvs/id",
       "note": "PDF at the cited page",
-      "frame": "ask"
+      "frame": "ask",
+      "tech": "nextdotjs"
     }
   ],
   "frames": [
@@ -138,6 +147,10 @@
     {
       "id": "ask",
       "label": "At question time"
+    },
+    {
+      "id": "stores",
+      "label": "Stores, read by the tools"
     }
   ],
   "edges": [
