@@ -15,11 +15,14 @@ const USAGE: &str = "\
 archgram: architecture diagrams from a spec
 
 Usage:
-  archgram build <spec.json> [-o <out.svg>] [--theme auto|light|dark] [--system-font]
+  archgram build <spec> [-o <out.svg>] [--theme auto|light|dark] [--system-font]
                                Draw the diagram (default output: the spec's name with .svg)
-  archgram check <spec.json>   Check a spec and list every problem
+  archgram check <spec>        Check a spec and list every problem
   archgram --version           Print the version
   archgram --help              Print this help
+
+A spec is JSON (.json) or YAML (.yaml, .yml); YAML problems are shown at
+their line and column.
 
 Themes: auto (light, dark under the reader's dark mode; the default), light, dark.
 --system-font leaves the text to the reader's font instead of embedding Geist.
@@ -98,19 +101,54 @@ fn report(path: &str, errors: &[SpecError]) -> ExitCode {
     ExitCode::from(1)
 }
 
-/// Reads and checks a spec, each `tech` against the logos archgram carries.
-fn parse(text: &str) -> Result<archgram_core::Spec, Vec<SpecError>> {
-    let spec = archgram_core::parse_spec(text)?;
-    let errors = archgram_core::check_logos(&spec, &Icons::load());
-    if errors.is_empty() { Ok(spec) } else { Err(errors) }
+/// The formats a spec may be written in, by its file's extension.
+#[derive(Clone, Copy)]
+enum Format {
+    Json,
+    Yaml,
+}
+
+fn format_of(path: &str) -> Result<Format, ExitCode> {
+    match Path::new(path).extension().and_then(|e| e.to_str()) {
+        Some("json") => Ok(Format::Json),
+        Some("yaml" | "yml") => Ok(Format::Yaml),
+        _ => Err(usage_error(&format!(
+            "{path}: a spec ends in .json, .yaml or .yml"
+        ))),
+    }
+}
+
+/// Reads and checks a spec in its format, each `tech` against the logos
+/// archgram carries; a YAML spec's problems are at its lines and columns.
+fn parse(text: &str, format: Format) -> Result<archgram_core::Spec, Vec<SpecError>> {
+    let icons = Icons::load();
+    match format {
+        Format::Json => {
+            let spec = archgram_core::parse_spec(text)?;
+            let errors = archgram_core::check_logos(&spec, &icons);
+            if errors.is_empty() { Ok(spec) } else { Err(errors) }
+        }
+        Format::Yaml => {
+            let (spec, positions) = archgram_yaml::parse(text)?;
+            let errors: Vec<SpecError> = archgram_core::check_logos(&spec, &icons)
+                .into_iter()
+                .map(|e| positions.locate(e))
+                .collect();
+            if errors.is_empty() { Ok(spec) } else { Err(errors) }
+        }
+    }
 }
 
 fn check(path: &str) -> ExitCode {
+    let format = match format_of(path) {
+        Ok(f) => f,
+        Err(code) => return code,
+    };
     let text = match read(path) {
         Ok(t) => t,
         Err(code) => return code,
     };
-    match parse(&text) {
+    match parse(&text, format) {
         Ok(spec) => {
             println!(
                 "{path}: valid ({} nodes, {} edges)",
@@ -124,11 +162,15 @@ fn check(path: &str) -> ExitCode {
 }
 
 fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
+    let format = match format_of(path) {
+        Ok(f) => f,
+        Err(code) => return code,
+    };
     let text = match read(path) {
         Ok(t) => t,
         Err(code) => return code,
     };
-    let spec = match parse(&text) {
+    let spec = match parse(&text, format) {
         Ok(spec) => spec,
         Err(errors) => return report(path, &errors),
     };

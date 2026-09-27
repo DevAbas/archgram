@@ -10,10 +10,14 @@ archgram decides where they go and how they look.
 
 ## Formats
 
-The core reads JSON. The optional YAML module reads YAML and produces the
-same spec, so every example below can be written either way. Unknown
-fields are errors, not ignored, so a misspelt field is caught instead of
-silently changing the diagram.
+The core reads JSON. The optional YAML module reads YAML 1.2 and produces
+the same spec, so every example below can be written either way; the
+command line tells them apart by the file's extension (`.json`, `.yaml`,
+`.yml`). Unknown fields are errors, not ignored, so a misspelt field is
+caught instead of silently changing the diagram. In YAML, a key written
+twice, a second document, and a tag outside YAML's core schema are errors
+too, and a plain word that reads as a number or a boolean (`title: 2026`)
+must be quoted to stay text.
 
 ## Top level
 
@@ -192,7 +196,7 @@ its JSON pointer (or its line and column in YAML), when:
 ```yaml
 archgram: 1
 title: linkshort
-description: >
+description: >-
   The API creates short links and redirects. A redirect reads the URL from
   the Redis cache, falls back to Postgres on a miss, adds the click to a
   Redis stream and returns. A worker drains the stream in batches and adds

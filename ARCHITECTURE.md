@@ -32,7 +32,7 @@ The repository is one Cargo workspace.
 |---|---|---|
 | `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
-| `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr` |
+| `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
 | `archgram-wasm` | The npm package for Node and the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
@@ -62,9 +62,18 @@ what types cannot express: every edge names existing nodes, frame nesting
 has no cycles, flows follow existing edges. Errors carry a JSON pointer in
 the core and a line and column through `archgram-yaml`.
 
-`archgram-yaml` walks `saphyr`'s node tree and builds the same `Spec`
-itself. There is no serde bridge in between, so the mapping stays small,
-readable and ours.
+`archgram-yaml` reads `saphyr-parser`'s events (YAML 1.2) into its own
+tree, each value with its line and column, writes the tree as JSON, one
+value per line, and lets the core read and check it. Each problem the
+core finds comes back to the YAML: a JSON line maps to its key's position,
+a JSON pointer to its value's. So every rule lives once, in the core, and
+a YAML author still sees `line:column`. The tree is the crate's own, not
+saphyr's loader, because the loader keeps the last of two equal keys and
+expands aliases without limit: here a key twice, a second document, a tag
+outside the core schema, nesting past 64 levels and aliases expanding
+past 10 000 values are errors. Plain scalars follow the core schema
+(null, booleans, integers, floats; the rest is text); a plain number
+where text belongs is reported with the advice to quote it.
 
 ### Model
 
@@ -264,7 +273,7 @@ These hold for every output and are checked by tests on every change.
 |---|---|---|
 | `serde`, `serde_json` | Reading the spec | MIT or Apache-2.0 |
 | `skrifa` | Font metrics; the font parser Chrome uses | MIT or Apache-2.0 |
-| `saphyr` | YAML, in the optional module | MIT or Apache-2.0 |
+| `saphyr-parser` | YAML events with positions, in the optional module; with it `arraydeque` and `thiserror` | MIT or Apache-2.0 |
 | `resvg`, `tiny-skia` | PNG, in the optional module | Apache-2.0 or MIT; BSD-3-Clause |
 | `wasm-bindgen` | The WASM package | MIT or Apache-2.0 |
 
