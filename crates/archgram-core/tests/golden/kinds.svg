@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1412 344" width="1412" height="344" role="img" aria-labelledby="title desc">
+  <title id="title">Every kind</title>
+  <desc id="desc">Every node kind archgram draws, then the three variants: single, multi-node and external.</desc>
+  <style>
+    :root { --badge: #f1f1f1; --canvas: #fbfbfb; --card: #ffffff; --card-edge: #d4d4d4; --connector: #8f8f8f; --frame: #8f8f8f; --icon-ai: #6f56ad; --icon-build: #9a5b17; --icon-client: #2a7668; --icon-core: #2f6aa8; --text: #1f1f1f; --text-muted: #646464; }
+    @media (prefers-color-scheme: dark) { :root { --badge: #252525; --canvas: #111111; --card: #191919; --card-edge: #353535; --connector: #707070; --frame: #707070; --icon-ai: #aa98d6; --icon-build: #cf9d62; --icon-client: #79b6a8; --icon-core: #86acd6; --text: #ededed; --text-muted: #a8a8a8; } }
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .title { font-size: 14px; font-weight: 500; fill: var(--text); }
+    .sub { font-size: 12px; font-weight: 400; fill: var(--text-muted); }
+    .canvas { fill: var(--canvas); }
+    .card { fill: var(--card); stroke: var(--card-edge); stroke-width: 1; }
+    .card.external { fill: var(--canvas); stroke: var(--connector); stroke-dasharray: 5 4; }
+    .badge { fill: var(--badge); }
+    .icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .icon.core { stroke: var(--icon-core); }
+    .icon.ai { stroke: var(--icon-ai); }
+    .icon.build { stroke: var(--icon-build); }
+    .icon.client { stroke: var(--icon-client); }
+  </style>
+  <rect class="canvas" width="1412" height="344" rx="16"/>
+  <g data-node="service">
+    <rect class="card" x="24" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="34" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(40 40)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
+    <text class="title" x="80" y="57.04">Service</text>
+  </g>
+  <g data-node="database">
+    <rect class="card" x="260" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="270" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(276 40)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></g>
+    <text class="title" x="316" y="57.04">Database</text>
+  </g>
+  <g data-node="queue">
+    <rect class="card" x="496" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="506" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(512 40)" stroke-width="1.7"><rect x="2.5" y="8" width="19" height="8" rx="4"/><path d="M9 8v8M15 8v8"/></g>
+    <text class="title" x="552" y="57.04">Queue</text>
+  </g>
+  <g data-node="cache">
+    <rect class="card" x="732" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="742" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(748 40)" stroke-width="1.7"><path d="M13 3L6 13.5h5L10 21l7-10.5h-5z"/></g>
+    <text class="title" x="788" y="57.04">Cache</text>
+  </g>
+  <g data-node="storage">
+    <rect class="card" x="968" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="978" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(984 40)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
+    <text class="title" x="1024" y="57.04">Storage</text>
+  </g>
+  <g data-node="users">
+    <rect class="card" x="1204" y="24" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1214" y="34" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(1220 40)" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.4-6 7-6s6.4 2.4 7 6"/></g>
+    <text class="title" x="1260" y="57.04">Users</text>
+  </g>
+  <g data-node="model">
+    <rect class="card" x="24" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="34" y="114" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(40 120)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="80" y="137.04">Model</text>
+  </g>
+  <g data-node="vector-store">
+    <rect class="card" x="260" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="270" y="114" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(276 120)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><circle cx="9" cy="12" r=".9"/><circle cx="14.5" cy="11" r=".9"/><circle cx="12" cy="15.5" r=".9"/></g>
+    <text class="title" x="316" y="137.04">Vector store</text>
+  </g>
+  <g data-node="tool">
+    <rect class="card" x="496" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="506" y="114" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(512 120)" stroke-width="1.7"><path d="M14.5 4a5 5 0 0 0-4.3 6.9L4 17.1V20h2.9l6.2-6.2A5 5 0 0 0 20 9.5l-3 .9-2.4-2.4.9-3z"/></g>
+    <text class="title" x="552" y="137.04">Tool</text>
+  </g>
+  <g data-node="agent">
+    <rect class="card" x="732" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="742" y="114" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(748 120)" stroke-width="1.7"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19.2 4.5v3.2H16"/><circle cx="12" cy="12" r="2"/></g>
+    <text class="title" x="788" y="137.04">Agent</text>
+  </g>
+  <g data-node="file">
+    <rect class="card" x="968" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="978" y="114" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(984 120)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/></g>
+    <text class="title" x="1024" y="137.04">File</text>
+  </g>
+  <g data-node="script">
+    <rect class="card" x="1204" y="104" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1214" y="114" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(1220 120)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10l3 2-3 2M12.5 15H17"/></g>
+    <text class="title" x="1260" y="137.04">Script</text>
+  </g>
+  <g data-node="generated">
+    <rect class="card" x="24" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="34" y="194" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(40 200)" stroke-width="1.7"><path d="M6.5 3h7.5l4.5 4.5V21h-12z"/><path d="M14 3v4.5h4.5"/><path d="M12.5 10.5c.3 1.9 1.4 3 3.3 3.3-1.9.3-3 1.4-3.3 3.3-.3-1.9-1.4-3-3.3-3.3 1.9-.3 3-1.4 3.3-3.3z"/></g>
+    <text class="title" x="80" y="217.04">Generated file</text>
+  </g>
+  <g data-node="check">
+    <rect class="card" x="260" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="270" y="194" width="36" height="36" rx="8"/>
+    <g class="icon build" transform="translate(276 200)" stroke-width="1.7"><path d="M12 3l7 3v5.2c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></g>
+    <text class="title" x="316" y="217.04">Check</text>
+  </g>
+  <g data-node="browser">
+    <rect class="card" x="496" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="506" y="194" width="36" height="36" rx="8"/>
+    <g class="icon client" transform="translate(512 200)" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6"/><circle cx="8.2" cy="6.3" r=".6"/></g>
+    <text class="title" x="552" y="217.04">Browser</text>
+  </g>
+  <g data-node="mobile">
+    <rect class="card" x="732" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="742" y="194" width="36" height="36" rx="8"/>
+    <g class="icon client" transform="translate(748 200)" stroke-width="1.7"><rect x="7" y="3" width="10" height="18" rx="2.2"/><path d="M11 17.5h2"/></g>
+    <text class="title" x="788" y="217.04">Mobile</text>
+  </g>
+  <g data-node="desktop">
+    <rect class="card" x="968" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="978" y="194" width="36" height="36" rx="8"/>
+    <g class="icon client" transform="translate(984 200)" stroke-width="1.7"><rect x="3" y="4" width="18" height="12.5" rx="1.8"/><path d="M9 20.5h6M12 16.5v4"/></g>
+    <text class="title" x="1024" y="217.04">Desktop</text>
+  </g>
+  <g data-node="postgres">
+    <rect class="card" x="1204" y="184" width="184" height="56" rx="10"/>
+    <rect class="badge" x="1214" y="194" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(1220 200)" stroke-width="1.7"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></g>
+    <text class="title" x="1260" y="209.84">Postgres</text>
+    <text class="sub" x="1260" y="224.72">single</text>
+  </g>
+  <g data-node="api">
+    <rect class="card" x="32" y="256" width="184" height="56" rx="10"/>
+    <rect class="card" x="28" y="260" width="184" height="56" rx="10"/>
+    <rect class="card" x="24" y="264" width="184" height="56" rx="10"/>
+    <rect class="badge" x="34" y="274" width="36" height="36" rx="8"/>
+    <g class="icon core" transform="translate(40 280)" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M10 12.5l-2 2 2 2M14 12.5l2 2-2 2"/></g>
+    <text class="title" x="80" y="289.84">API</text>
+    <text class="sub" x="80" y="304.72">3 replicas</text>
+  </g>
+  <g data-node="llm">
+    <rect class="card external" x="260" y="264" width="184" height="56" rx="10"/>
+    <rect class="badge" x="270" y="274" width="36" height="36" rx="8"/>
+    <g class="icon ai" transform="translate(276 280)" stroke-width="1.7"><path d="M12 3c.8 5 4 8.2 9 9-5 .8-8.2 4-9 9-.8-5-4-8.2-9-9 5-.8 8.2-4 9-9z"/></g>
+    <text class="title" x="316" y="289.84">LLM</text>
+    <text class="sub" x="316" y="304.72">external</text>
+  </g>
+</svg>

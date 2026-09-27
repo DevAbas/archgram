@@ -1,0 +1,112 @@
+{
+  "archgram": 1,
+  "title": "Every kind",
+  "description": "Every node kind archgram draws, then the three variants: single, multi-node and external.",
+  "nodes": [
+    {
+      "id": "service",
+      "kind": "service",
+      "label": "Service"
+    },
+    {
+      "id": "database",
+      "kind": "database",
+      "label": "Database"
+    },
+    {
+      "id": "queue",
+      "kind": "queue",
+      "label": "Queue"
+    },
+    {
+      "id": "cache",
+      "kind": "cache",
+      "label": "Cache"
+    },
+    {
+      "id": "storage",
+      "kind": "storage",
+      "label": "Storage"
+    },
+    {
+      "id": "users",
+      "kind": "users",
+      "label": "Users"
+    },
+    {
+      "id": "model",
+      "kind": "model",
+      "label": "Model"
+    },
+    {
+      "id": "vector-store",
+      "kind": "vector-store",
+      "label": "Vector store"
+    },
+    {
+      "id": "tool",
+      "kind": "tool",
+      "label": "Tool"
+    },
+    {
+      "id": "agent",
+      "kind": "agent",
+      "label": "Agent"
+    },
+    {
+      "id": "file",
+      "kind": "file",
+      "label": "File"
+    },
+    {
+      "id": "script",
+      "kind": "script",
+      "label": "Script"
+    },
+    {
+      "id": "generated",
+      "kind": "generated",
+      "label": "Generated file"
+    },
+    {
+      "id": "check",
+      "kind": "check",
+      "label": "Check"
+    },
+    {
+      "id": "browser",
+      "kind": "browser",
+      "label": "Browser"
+    },
+    {
+      "id": "mobile",
+      "kind": "mobile",
+      "label": "Mobile"
+    },
+    {
+      "id": "desktop",
+      "kind": "desktop",
+      "label": "Desktop"
+    },
+    {
+      "id": "postgres",
+      "kind": "database",
+      "label": "Postgres",
+      "note": "single"
+    },
+    {
+      "id": "api",
+      "kind": "service",
+      "label": "API",
+      "note": "3 replicas",
+      "variant": "multi"
+    },
+    {
+      "id": "llm",
+      "kind": "model",
+      "label": "LLM",
+      "note": "external",
+      "variant": "external"
+    }
+  ]
+}

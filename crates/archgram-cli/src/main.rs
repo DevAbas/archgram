@@ -2,22 +2,35 @@
 //! engine in `archgram-core` does everything else.
 //!
 //! Exit codes: 0 success, 1 the spec has problems, 2 the command itself is
-//! wrong or a file cannot be read.
+//! wrong or a file cannot be read or written.
 
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+
+use archgram_core::SpecError;
+use archgram_core::render::{Mode, Options};
 
 const USAGE: &str = "\
 archgram: architecture diagrams from a spec
 
 Usage:
+  archgram build <spec.json> [-o <out.svg>] [--theme auto|light|dark]
+                               Draw the diagram (default output: the spec's name with .svg)
   archgram check <spec.json>   Check a spec and list every problem
   archgram --version           Print the version
-  archgram --help              Print this help";
+  archgram --help              Print this help
+
+Themes: auto (light, dark under the reader's dark mode; the default), light, dark.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    match args.as_slice() {
         ["check", path] => check(path),
+        ["build", path, rest @ ..] => match build_options(rest) {
+            Ok((out, options)) => build(path, out, options),
+            Err(message) => usage_error(&message),
+        },
         ["--version" | "-V"] => {
             println!("archgram {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
@@ -26,20 +39,64 @@ fn main() -> ExitCode {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
-        _ => {
-            eprintln!("archgram: unrecognised arguments: {}\n\n{USAGE}", args.join(" "));
-            ExitCode::from(2)
-        }
+        _ => usage_error(&format!("unrecognised arguments: {}", args.join(" "))),
     }
 }
 
-fn check(path: &str) -> ExitCode {
-    let text = match std::fs::read_to_string(path) {
-        Ok(text) => text,
-        Err(e) => {
-            eprintln!("archgram: cannot read {path}: {e}");
-            return ExitCode::from(2);
+fn usage_error(message: &str) -> ExitCode {
+    eprintln!("archgram: {message}\n\n{USAGE}");
+    ExitCode::from(2)
+}
+
+fn build_options(rest: &[&str]) -> Result<(Option<PathBuf>, Options), String> {
+    let mut out = None;
+    let mut options = Options::default();
+    let mut it = rest.iter();
+    while let Some(arg) = it.next() {
+        match *arg {
+            "-o" | "--output" => out = Some(PathBuf::from(it.next().ok_or("-o needs a file")?)),
+            "--theme" => {
+                options.mode = match it.next().copied() {
+                    Some("auto") => Mode::Auto,
+                    Some("light") => Mode::Light,
+                    Some("dark") => Mode::Dark,
+                    other => {
+                        return Err(format!(
+                            "--theme takes auto, light or dark, not {}",
+                            other.unwrap_or("nothing")
+                        ));
+                    }
+                };
+            }
+            other => return Err(format!("unrecognised option {other}")),
         }
+    }
+    Ok((out, options))
+}
+
+fn read(path: &str) -> Result<String, ExitCode> {
+    std::fs::read_to_string(path).map_err(|e| {
+        eprintln!("archgram: cannot read {path}: {e}");
+        ExitCode::from(2)
+    })
+}
+
+fn report(path: &str, errors: &[SpecError]) -> ExitCode {
+    for e in errors {
+        eprintln!("{path}:{e}");
+    }
+    eprintln!(
+        "{} problem{} in {path}",
+        errors.len(),
+        if errors.len() == 1 { "" } else { "s" }
+    );
+    ExitCode::from(1)
+}
+
+fn check(path: &str) -> ExitCode {
+    let text = match read(path) {
+        Ok(t) => t,
+        Err(code) => return code,
     };
     match archgram_core::parse_spec(&text) {
         Ok(spec) => {
@@ -50,16 +107,24 @@ fn check(path: &str) -> ExitCode {
             );
             ExitCode::SUCCESS
         }
-        Err(errors) => {
-            for e in &errors {
-                eprintln!("{path}:{e}");
-            }
-            eprintln!(
-                "{} problem{} in {path}",
-                errors.len(),
-                if errors.len() == 1 { "" } else { "s" }
-            );
-            ExitCode::from(1)
-        }
+        Err(errors) => report(path, &errors),
     }
+}
+
+fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
+    let text = match read(path) {
+        Ok(t) => t,
+        Err(code) => return code,
+    };
+    let svg = match archgram_core::build(&text, options) {
+        Ok(svg) => svg,
+        Err(errors) => return report(path, &errors),
+    };
+    let out = out.unwrap_or_else(|| Path::new(path).with_extension("svg"));
+    if let Err(e) = std::fs::write(&out, svg) {
+        eprintln!("archgram: cannot write {}: {e}", out.display());
+        return ExitCode::from(2);
+    }
+    println!("wrote {}", out.display());
+    ExitCode::SUCCESS
 }

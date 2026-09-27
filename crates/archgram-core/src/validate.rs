@@ -7,8 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::error::SpecError;
 use crate::spec::Spec;
 
-/// The palettes archgram carries (design-system/tokens/palettes/).
-pub const PALETTES: &[&str] = &["mono"];
+use crate::tokens::PALETTES;
 
 /// The only version of the spec format.
 pub const FORMAT_VERSION: u32 = 1;
