@@ -11,6 +11,7 @@ pub mod svg;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
+use crate::color::Rgb;
 use crate::font;
 use crate::geometry::Rect;
 use crate::layout::Placement;
@@ -39,6 +40,9 @@ pub struct Options {
     /// Embed a subset of the font the text was measured with (the default),
     /// or leave the text to the reader's system font.
     pub embed_font: bool,
+    /// A project's own colours (`theme::import`), in place of the spec's
+    /// palette.
+    pub colors: Option<crate::theme::ThemeColors>,
 }
 
 impl Default for Options {
@@ -46,6 +50,7 @@ impl Default for Options {
         Options {
             mode: Mode::Auto,
             embed_font: true,
+            colors: None,
         }
     }
 }
@@ -197,7 +202,7 @@ fn cards(
     spec: &Spec,
     placement: &Placement,
     logos: &dyn crate::logos::Logos,
-    (timeline, brands): (Option<&Timeline>, &BTreeMap<String, String>),
+    (timeline, brands): (Option<&Timeline>, &BTreeMap<String, Rgb>),
 ) {
     for (i, (node, r)) in spec.nodes.iter().zip(&placement.nodes).enumerate() {
         let at = Rect {
@@ -279,7 +284,7 @@ fn style(
     spec: &Spec,
     options: Options,
     logos: &dyn crate::logos::Logos,
-    (timeline, brands): (Option<&Timeline>, &BTreeMap<String, String>),
+    (timeline, brands): (Option<&Timeline>, &BTreeMap<String, Rgb>),
 ) {
     let (palette, mode) = (spec.palette.as_str(), options.mode);
     // Validation admits only known palettes; should one slip through, the
@@ -290,7 +295,10 @@ fn style(
             .expect("every palette has a light and a dark theme (tests/tokens.rs)")
             .colors
     };
-    let (light, dark) = (pick("light"), pick("dark"));
+    let (light, dark) = match options.colors {
+        Some(c) => (c.light, c.dark),
+        None => (pick("light"), pick("dark")),
+    };
     let animated = timeline.is_some();
     svg.open("<style>");
     theme_vars(svg, mode, (&light, &dark), animated);
@@ -604,7 +612,7 @@ fn brands(
     spec: &Spec,
     timeline: Option<&Timeline>,
     logos: &dyn crate::logos::Logos,
-) -> BTreeMap<String, String> {
+) -> BTreeMap<String, Rgb> {
     let Some(t) = timeline else {
         return BTreeMap::new();
     };
@@ -615,8 +623,7 @@ fn brands(
         .filter(|slug| logos.path(slug).is_some())
         .filter_map(|slug| {
             let hex = logos.colour(slug)?;
-            crate::color::channels(hex)
-                .map(|_| (slug.to_owned(), hex.trim_start_matches('#').to_ascii_lowercase()))
+            Rgb::parse(hex).map(|rgb| (slug.to_owned(), rgb))
         })
         .collect()
 }
@@ -639,11 +646,11 @@ fn brand_class(slug: &str) -> String {
 
 /// The brand's colour on a card, or the text colour when the brand's would
 /// not show against the card: a line at least 3:1 (DESIGN.md, Colors).
-fn brand_fill(hex: &str, card: &str) -> String {
-    let colour = format!("#{hex}");
-    match crate::color::contrast(&colour, card) {
-        Some(ratio) if ratio >= 3.0 => colour,
-        _ => "var(--text)".into(),
+fn brand_fill(brand: Rgb, card: Rgb) -> String {
+    if crate::color::contrast(brand, card) >= 3.0 {
+        brand.to_string()
+    } else {
+        "var(--text)".into()
     }
 }
 
@@ -652,7 +659,7 @@ fn brand_fill(hex: &str, card: &str) -> String {
 fn motion_style(
     svg: &mut Svg,
     style: SignalStyle,
-    brands: &BTreeMap<String, String>,
+    brands: &BTreeMap<String, Rgb>,
     (light, dark, mode): (&Colors, &Colors, Mode),
 ) {
     use crate::tokens::{
@@ -728,7 +735,7 @@ fn motion_style(
     let fills = |c: &Colors| -> Vec<String> {
         brands
             .iter()
-            .map(|(slug, hex)| format!(".{} {{ fill: {}; }}", brand_class(slug), brand_fill(hex, c.card)))
+            .map(|(slug, hex)| format!(".{} {{ fill: {}; }}", brand_class(slug), brand_fill(*hex, c.card)))
             .collect()
     };
     match mode {

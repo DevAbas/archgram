@@ -178,6 +178,60 @@ its JSON pointer (or its line and column in YAML), when:
 - `tech` names a logo archgram does not carry (the error suggests the
   nearest slugs).
 
+## Theme file
+
+A project with its own design tokens can draw in its own colours: a
+mapping file, `archgram.theme.json` by convention, passed with
+`--theme-file` (and checked with `archgram theme check`), names the
+project's resolver and which token fills each of archgram's colour roles.
+
+```json
+{
+  "version": 1,
+  "resolver": "design-system/tokens/design.resolver.json",
+  "roles": {
+    "canvas": "color.surface.page",
+    "card": "color.surface.raised",
+    "text": "color.text.primary",
+    "icon-ai": "{color.accent.violet}"
+  },
+  "themes": {
+    "light": { "inputs": { "theme": "light" } },
+    "dark": { "inputs": { "theme": "dark" }, "roles": { "card-edge": "color.border.strong" } }
+  }
+}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `version` | yes | The mapping format's version. Only `1` exists |
+| `resolver` | yes | The project's resolver document (Design Tokens 2025.10), relative to this file |
+| `roles` | no | Each archgram role's token, by its dotted id, with or without braces |
+| `themes.light`, `themes.dark` | yes | `inputs`: the resolver's input for each modifier, to pick that theme; `roles`: roles this theme maps differently |
+
+The roles are `badge`, `canvas`, `card`, `card-edge`, `connector`,
+`frame`, `icon-ai`, `icon-build`, `icon-client`, `icon-core`,
+`signal-core`, `text` and `text-muted` (DESIGN.md, Colors). A role the file
+leaves out keeps the mono palette's colour. The file replaces the spec's
+`palette`.
+
+archgram reads the resolver's sets, modifiers (an input, else the
+modifier's default), its resolution order (later sources win), `$ref` to
+files beside it and to its own sets, inline tokens, `{alias}` values and
+`$ref` JSON Pointers inside values, and `$type` from the groups above a
+token. A colour may be in `srgb`, `srgb-linear`, `hsl`, `hwb`, `oklab`,
+`oklch` or `display-p3`; in another space it needs a `hex` to fall back
+on. Channels outside sRGB are clipped. A role's colour is opaque.
+
+An import is refused, with every problem listed and each located by file
+and JSON pointer, when the mapping or the resolver breaks its format; a
+role is not archgram's; an input names no modifier or no context; a
+modifier without a default gets no input; a file cannot be read, or is a
+remote reference; a token does not exist (the nearest are suggested), is
+not a colour, or aliases in a loop; a group uses `$extends`; a colour
+cannot be read; or a pair of roles falls below the contrast DESIGN.md
+requires, in either theme.
+
 ## Examples
 
 ### linkshort (JSON)

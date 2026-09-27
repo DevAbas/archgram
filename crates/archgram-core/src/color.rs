@@ -2,6 +2,8 @@
 //! (ARCHITECTURE.md, Invariants): no call into the platform's maths library,
 //! whose last digits may differ.
 
+use crate::tokens::{Colors, Role};
+
 /// Each 8-bit sRGB channel value in linear light (IEC 61966-2-1), written
 /// out so no `powf` runs: `c / 12.92` up to 0.04045, else
 /// `((c + 0.055) / 1.055)^2.4`, with `c` the value over 255.
@@ -265,33 +267,280 @@ const LINEAR: [f64; 256] = [
     1.0,
 ];
 
-/// An `#rrggbb` or `rrggbb` colour's three channels.
-#[must_use]
-pub fn channels(hex: &str) -> Option<[u8; 3]> {
-    let h = hex.strip_prefix('#').unwrap_or(hex);
-    if h.len() != 6 || !h.is_ascii() {
-        return None;
+/// An opaque colour, eight bits a channel: what a role holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Rgb(pub [u8; 3]);
+
+impl Rgb {
+    /// An `#rrggbb` or `rrggbb` colour.
+    #[must_use]
+    pub fn parse(hex: &str) -> Option<Rgb> {
+        let h = hex.strip_prefix('#').unwrap_or(hex);
+        if h.len() != 6 || !h.is_ascii() {
+            return None;
+        }
+        let byte = |i: usize| u8::from_str_radix(&h[i..i + 2], 16).ok();
+        Some(Rgb([byte(0)?, byte(2)?, byte(4)?]))
     }
-    let byte = |i: usize| u8::from_str_radix(&h[i..i + 2], 16).ok();
-    Some([byte(0)?, byte(2)?, byte(4)?])
+
+    /// Relative luminance (WCAG 2.1), from 0 for black to 1 for white.
+    #[must_use]
+    pub fn luminance(self) -> f64 {
+        let [r, g, b] = self.0.map(|c| LINEAR[usize::from(c)]);
+        0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
 }
 
-/// Relative luminance (WCAG 2.1), from 0 for black to 1 for white.
-#[must_use]
-pub fn luminance(rgb: [u8; 3]) -> f64 {
-    let [r, g, b] = rgb.map(|c| LINEAR[usize::from(c)]);
-    0.2126 * r + 0.7152 * g + 0.0722 * b
+/// `#rrggbb`, in lower case.
+impl std::fmt::Display for Rgb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let [r, g, b] = self.0;
+        write!(f, "#{r:02x}{g:02x}{b:02x}")
+    }
 }
 
-/// The contrast ratio of two colours (WCAG 2.1), from 1 to 21; `None` when
-/// either is not a hex colour.
+/// The contrast ratio of two colours (WCAG 2.1), from 1 to 21.
 #[must_use]
-pub fn contrast(a: &str, b: &str) -> Option<f64> {
-    let (x, y) = (luminance(channels(a)?), luminance(channels(b)?));
-    Some((x.max(y) + 0.05) / (x.min(y) + 0.05))
+pub fn contrast(a: Rgb, b: Rgb) -> f64 {
+    let (x, y) = (a.luminance(), b.luminance());
+    (x.max(y) + 0.05) / (x.min(y) + 0.05)
+}
+
+/// The colour spaces a DTCG colour may be read from; any other falls back
+/// to the value's `hex`.
+pub const SPACES: [&str; 7] = [
+    "srgb",
+    "srgb-linear",
+    "hsl",
+    "hwb",
+    "oklab",
+    "oklch",
+    "display-p3",
+];
+
+/// A resolved DTCG colour value (Design Tokens 2025.10, Color): an object
+/// with `colorSpace`, `components` (each a number or `none`, read as 0),
+/// an optional `alpha` and an optional `hex`, or an older `#rrggbb` string.
+/// Out of sRGB's gamut, each channel is clipped. Role colours are opaque, so
+/// an `alpha` below 1 is refused.
+///
+/// # Errors
+///
+/// What makes the value unreadable, in words.
+pub fn from_dtcg(value: &serde_json::Value) -> Result<Rgb, String> {
+    use serde_json::Value;
+    if let Value::String(hex) = value {
+        return Rgb::parse(hex).ok_or_else(|| format!("`{hex}` is not a `#rrggbb` colour"));
+    }
+    let Value::Object(o) = value else {
+        return Err("a colour is an object with `colorSpace` and `components`".into());
+    };
+    if let Some(alpha) = o.get("alpha") {
+        let a = alpha.as_f64().ok_or("`alpha` is a number")?;
+        if a < 1.0 {
+            return Err(format!("`alpha` is {a}; a role's colour is opaque"));
+        }
+    }
+    let space = o
+        .get("colorSpace")
+        .and_then(Value::as_str)
+        .ok_or("a colour needs `colorSpace`")?;
+    let components: Vec<f64> = o
+        .get("components")
+        .and_then(Value::as_array)
+        .ok_or("a colour needs `components`")?
+        .iter()
+        .map(|c| match c {
+            Value::String(n) if n == "none" => Ok(0.0),
+            _ => c.as_f64().ok_or_else(|| format!("`{c}` is not a component")),
+        })
+        .collect::<Result<_, _>>()?;
+    let [x, y, z] = <[f64; 3]>::try_from(components.as_slice())
+        .map_err(|_| format!("`{space}` takes three components, not {}", components.len()))?;
+    let rgb = match space {
+        "srgb" => [x, y, z],
+        "srgb-linear" => [x, y, z].map(encode),
+        "hsl" => hsl(x, y / 100.0, z / 100.0),
+        "hwb" => hwb(x, y / 100.0, z / 100.0),
+        "oklab" => oklab(x, y, z),
+        "oklch" => {
+            let (sin, cos) = crate::math::sin_cos_degrees(z);
+            oklab(x, y * cos, y * sin)
+        }
+        "display-p3" => display_p3([x, y, z]),
+        other => {
+            return match o.get("hex").and_then(Value::as_str) {
+                Some(hex) => Rgb::parse(hex).ok_or_else(|| format!("`{hex}` is not a `#rrggbb` colour")),
+                None => Err(format!(
+                    "`{other}` is not read, and the colour has no `hex` to fall back on; archgram reads {}",
+                    SPACES.join(", ")
+                )),
+            };
+        }
+    };
+    Ok(Rgb(rgb.map(|c| {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let byte = (c.clamp(0.0, 1.0) * 255.0).round() as u8;
+        byte
+    })))
+}
+
+/// Linear light to the sRGB curve (IEC 61966-2-1), sign kept past black.
+fn encode(c: f64) -> f64 {
+    let a = c.abs();
+    let v = if a <= 0.003_130_8 {
+        12.92 * a
+    } else {
+        1.055 * crate::math::pow(a, 1.0 / 2.4) - 0.055
+    };
+    if c < 0.0 { -v } else { v }
+}
+
+/// The sRGB curve to linear light, sign kept past black.
+fn decode(c: f64) -> f64 {
+    let a = c.abs();
+    let v = if a <= 0.040_45 {
+        a / 12.92
+    } else {
+        crate::math::pow((a + 0.055) / 1.055, 2.4)
+    };
+    if c < 0.0 { -v } else { v }
+}
+
+/// HSL to sRGB (CSS Color 4, `hslToRgb`): hue in degrees, the others 0 to 1.
+fn hsl(hue: f64, saturation: f64, lightness: f64) -> [f64; 3] {
+    let h = hue - 360.0 * (hue / 360.0).floor();
+    let a = saturation * lightness.min(1.0 - lightness);
+    [0.0, 8.0, 4.0].map(|n: f64| {
+        let k = (n + h / 30.0) % 12.0;
+        lightness - a * (k - 3.0).min(9.0 - k).clamp(-1.0, 1.0)
+    })
+}
+
+/// HWB to sRGB (CSS Color 4, `hwbToRgb`).
+fn hwb(hue: f64, white: f64, black: f64) -> [f64; 3] {
+    if white + black >= 1.0 {
+        let grey = white / (white + black);
+        return [grey; 3];
+    }
+    hsl(hue, 1.0, 0.5).map(|c| c * (1.0 - white - black) + white)
+}
+
+/// `OKLab` to sRGB (Björn Ottosson, "A perceptual color space for image
+/// processing", 2020): to LMS, cubed, to linear sRGB, then the curve.
+fn oklab(l: f64, a: f64, b: f64) -> [f64; 3] {
+    let l_ = l + 0.396_337_777_4 * a + 0.215_803_757_3 * b;
+    let m_ = l - 0.105_561_345_8 * a - 0.063_854_172_8 * b;
+    let s_ = l - 0.089_484_177_5 * a - 1.291_485_548 * b;
+    let (l3, m3, s3) = (l_ * l_ * l_, m_ * m_ * m_, s_ * s_ * s_);
+    [
+        4.076_741_662_1 * l3 - 3.307_711_591_3 * m3 + 0.230_969_929_2 * s3,
+        -1.268_438_004_6 * l3 + 2.609_757_401_1 * m3 - 0.341_319_396_5 * s3,
+        -0.004_196_086_3 * l3 - 0.703_418_614_7 * m3 + 1.707_614_701 * s3,
+    ]
+    .map(encode)
+}
+
+/// Display P3 to sRGB (CSS Color 4): its curve is sRGB's; its primaries go
+/// through CIE XYZ (D65) to sRGB's.
+fn display_p3(rgb: [f64; 3]) -> [f64; 3] {
+    const P3_TO_XYZ: [[f64; 3]; 3] = [
+        [
+            0.486_570_948_648_216_2,
+            0.265_667_693_169_093_06,
+            0.198_217_285_234_362_5,
+        ],
+        [
+            0.228_974_564_069_748_8,
+            0.691_738_521_836_506_4,
+            0.079_286_914_093_745,
+        ],
+        [0.0, 0.045_113_381_858_902_64, 1.043_944_368_900_976],
+    ];
+    const XYZ_TO_SRGB: [[f64; 3]; 3] = [
+        [
+            3.240_969_941_904_522_6,
+            -1.537_383_177_570_094,
+            -0.498_610_760_293_003_4,
+        ],
+        [
+            -0.969_243_636_280_879_6,
+            1.875_967_501_507_720_2,
+            0.041_555_057_407_175_59,
+        ],
+        [
+            0.055_630_079_696_993_66,
+            -0.203_976_958_888_976_52,
+            1.056_971_514_242_878_6,
+        ],
+    ];
+    let times = |m: &[[f64; 3]; 3], v: [f64; 3]| m.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2]);
+    times(&XYZ_TO_SRGB, times(&P3_TO_XYZ, rgb.map(decode))).map(encode)
+}
+
+/// The pairs DESIGN.md holds to WCAG 2.1 AA (Colors): text 4.5:1 on what
+/// it sits on, lines and icons 3:1. Each is a foreground role, the role
+/// behind it and the least ratio.
+pub const PAIRS: [(Role, Role, f64); 14] = [
+    (Role::Text, Role::Card, 4.5),
+    (Role::TextMuted, Role::Card, 4.5),
+    (Role::Text, Role::Canvas, 4.5),
+    (Role::TextMuted, Role::Canvas, 4.5),
+    (Role::IconCore, Role::Badge, 3.0),
+    (Role::IconAi, Role::Badge, 3.0),
+    (Role::IconBuild, Role::Badge, 3.0),
+    (Role::IconClient, Role::Badge, 3.0),
+    (Role::IconCore, Role::Canvas, 3.0),
+    (Role::IconAi, Role::Canvas, 3.0),
+    (Role::IconBuild, Role::Canvas, 3.0),
+    (Role::IconClient, Role::Canvas, 3.0),
+    (Role::Connector, Role::Canvas, 3.0),
+    (Role::Frame, Role::Canvas, 3.0),
+];
+
+/// A pair below its least contrast.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Shortfall {
+    pub foreground: Role,
+    pub background: Role,
+    pub ratio: f64,
+    pub least: f64,
+}
+
+impl std::fmt::Display for Shortfall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Rounded down, so a ratio shown as the least is never below it.
+        let shown = (self.ratio * 100.0).floor() / 100.0;
+        write!(
+            f,
+            "`{}` on `{}` is {}:1, below {}:1",
+            self.foreground.name(),
+            self.background.name(),
+            crate::render::svg::num(shown),
+            crate::render::svg::num(self.least)
+        )
+    }
+}
+
+/// Every pair of `colors` below its least contrast (`PAIRS`).
+#[must_use]
+pub fn check(colors: &Colors) -> Vec<Shortfall> {
+    PAIRS
+        .iter()
+        .filter_map(|&(foreground, background, least)| {
+            let ratio = contrast(colors.get(foreground), colors.get(background));
+            (ratio < least).then_some(Shortfall {
+                foreground,
+                background,
+                ratio,
+                least,
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
+#[allow(clippy::disallowed_methods)]
 mod tests {
     use super::*;
 
@@ -308,10 +557,99 @@ mod tests {
         }
     }
 
+    fn read(json: &str) -> Result<Rgb, String> {
+        from_dtcg(&serde_json::from_str(json).unwrap())
+    }
+
+    #[test]
+    fn each_space_reads_to_the_colour_css_gives() {
+        // CSS Color 4's conversions, computed apart (Python, its own libm)
+        // and rounded to eight bits; none lands near a rounding boundary.
+        let cases = [
+            (
+                r#"{ "colorSpace": "srgb", "components": [0.1843, 0.4157, 0.6588] }"#,
+                "#2f6aa8",
+            ),
+            (
+                r#"{ "colorSpace": "srgb-linear", "components": [0.5, 0.3, 0.05] }"#,
+                "#bc953f",
+            ),
+            (
+                r#"{ "colorSpace": "hsl", "components": [200, 60, 40] }"#,
+                "#297aa3",
+            ),
+            (
+                r#"{ "colorSpace": "hsl", "components": [-30, 70, 62] }"#,
+                "#e25a9e",
+            ),
+            (
+                r#"{ "colorSpace": "hwb", "components": [40, 12, 33] }"#,
+                "#ab7c1f",
+            ),
+            (
+                r#"{ "colorSpace": "hwb", "components": ["none", 70, 60] }"#,
+                "#898989",
+            ),
+            (
+                r#"{ "colorSpace": "oklab", "components": [0.627955, 0.224863, 0.125846] }"#,
+                "#ff0000",
+            ),
+            (
+                r#"{ "colorSpace": "oklch", "components": [0.519752, 0.1795, 264.052] }"#,
+                "#315fce",
+            ),
+            (
+                r#"{ "colorSpace": "oklch", "components": [0.7, 0.12, 145] }"#,
+                "#6cb26f",
+            ),
+            (
+                r#"{ "colorSpace": "oklch", "components": [1, 0, "none"] }"#,
+                "#ffffff",
+            ),
+            (
+                r#"{ "colorSpace": "display-p3", "components": [0.3, 0.6, 0.8] }"#,
+                "#249bd1",
+            ),
+            (
+                r#"{ "colorSpace": "display-p3", "components": [1, 0, 0] }"#,
+                "#ff0000",
+            ),
+            (
+                r##"{ "colorSpace": "lab", "components": [50, 0, 0], "hex": "#777777" }"##,
+                "#777777",
+            ),
+            (r##""#ABCDEF""##, "#abcdef"),
+        ];
+        for (json, want) in cases {
+            assert_eq!(read(json).map(|c| c.to_string()), Ok(want.to_owned()), "{json}");
+        }
+    }
+
+    #[test]
+    fn unreadable_colours_say_why() {
+        assert!(
+            read(r#"{ "colorSpace": "lab", "components": [50, 0, 0] }"#)
+                .unwrap_err()
+                .contains("no `hex`")
+        );
+        assert!(
+            read(r#"{ "colorSpace": "srgb", "components": [1, 0, 0], "alpha": 0.5 }"#)
+                .unwrap_err()
+                .contains("opaque")
+        );
+        assert!(
+            read(r#"{ "colorSpace": "srgb", "components": [1, 0] }"#)
+                .unwrap_err()
+                .contains("three")
+        );
+    }
+
     #[test]
     fn black_on_white_is_21_to_1() {
-        assert_eq!(contrast("#000000", "#ffffff"), Some(21.0));
-        assert_eq!(contrast("ffffff", "#ffffff"), Some(1.0));
-        assert_eq!(contrast("#fff", "#ffffff"), None);
+        let (black, white) = (Rgb::parse("#000000").unwrap(), Rgb::parse("ffffff").unwrap());
+        assert!((contrast(black, white) - 21.0).abs() < 1e-12);
+        assert!((contrast(white, white) - 1.0).abs() < 1e-12);
+        assert_eq!(Rgb::parse("#fff"), None);
+        assert_eq!(Rgb([0x2f, 0x6a, 0xa8]).to_string(), "#2f6aa8");
     }
 }

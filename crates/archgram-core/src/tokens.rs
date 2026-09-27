@@ -3,6 +3,8 @@
 
 #![allow(clippy::unreadable_literal, clippy::doc_markdown, missing_docs)]
 
+pub use crate::color::Rgb;
+
 include!(concat!(env!("OUT_DIR"), "/tokens.rs"));
 
 /// The theme for a palette in light or dark, when the palette exists.

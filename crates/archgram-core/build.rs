@@ -4,7 +4,8 @@
 //! sets and modifiers name, resolves every alias for each palette and theme,
 //! and writes `tokens.rs` into `OUT_DIR`:
 //!
-//! - one `Colors` value per palette and theme, holding every `color.*` role;
+//! - the `Role` enum of every `color.*` role, and one `Colors` value per
+//!   palette and theme holding each role's colour;
 //! - one constant per foundation token (dimensions in pixels, dash arrays,
 //!   type styles, durations in milliseconds, numbers, the font stack).
 //!
@@ -73,7 +74,7 @@ fn main() {
                 ),
             }
             let fields = roles.iter().fold(String::new(), |mut acc, (k, v)| {
-                let _ = write!(acc, "{}: \"{v}\", ", field(k));
+                let _ = write!(acc, "{}: {}, ", field(k), rgb(v));
                 acc
             });
             entries.push(format!(
@@ -83,11 +84,44 @@ fn main() {
     }
 
     let names = colors_struct.expect("at least one palette and theme");
-    out.push_str("/// Every colour role, as a hex string, for one palette and theme.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Colors {\n");
+    out.push_str("/// Every colour role, by its token name under `color.`.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub enum Role {\n");
     for n in &names {
-        let _ = writeln!(out, "    /// `color.{n}`\n    pub {}: &'static str,", field(n));
+        let _ = writeln!(out, "    /// `color.{n}`\n    {},", variant(n));
     }
-    out.push_str("}\n\nimpl Colors {\n    /// Every role with its token name (`card-edge`) and value, in name order.\n    #[must_use]\n    pub fn roles(&self) -> [(&'static str, &'static str); ");
+    out.push_str("}\n\nimpl Role {\n    /// Every role, in name order.\n");
+    let _ = writeln!(
+        out,
+        "    pub const ALL: [Role; {}] = [{}];\n",
+        names.len(),
+        names
+            .iter()
+            .map(|n| format!("Role::{}", variant(n)))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    out.push_str("    /// The token name, such as `card-edge`.\n    #[must_use]\n    pub fn name(self) -> &'static str {\n        match self {\n");
+    for n in &names {
+        let _ = writeln!(out, "            Role::{} => \"{n}\",", variant(n));
+    }
+    out.push_str("        }\n    }\n\n    /// The role a token name names.\n    #[must_use]\n    pub fn from_name(name: &str) -> Option<Role> {\n        Role::ALL.into_iter().find(|r| r.name() == name)\n    }\n}\n\n");
+    out.push_str("/// Every colour role's colour, for one palette and theme.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Colors {\n");
+    for n in &names {
+        let _ = writeln!(out, "    /// `color.{n}`\n    pub {}: Rgb,", field(n));
+    }
+    out.push_str("}\n\nimpl Colors {\n    /// A role's colour.\n    #[must_use]\n    pub fn get(&self, role: Role) -> Rgb {\n        match role {\n");
+    for n in &names {
+        let _ = writeln!(out, "            Role::{} => self.{},", variant(n), field(n));
+    }
+    out.push_str("        }\n    }\n\n    /// Sets a role's colour.\n    pub fn set(&mut self, role: Role, colour: Rgb) {\n        match role {\n");
+    for n in &names {
+        let _ = writeln!(
+            out,
+            "            Role::{} => self.{} = colour,",
+            variant(n),
+            field(n)
+        );
+    }
+    out.push_str("        }\n    }\n\n    /// Every role with its token name (`card-edge`) and colour, in name order.\n    #[must_use]\n    pub fn roles(&self) -> [(&'static str, Rgb); ");
     let _ = write!(out, "{}] {{\n        [", names.len());
     for n in &names {
         let _ = write!(out, "(\"{n}\", self.{}), ", field(n));
@@ -261,6 +295,25 @@ fn ms(v: &Value, id: &str) -> String {
 /// A number as a Rust `f64` literal.
 fn number(v: &Value, id: &str) -> String {
     format!("{:?}", v.as_f64().unwrap_or_else(|| panic!("{id}: not a number")))
+}
+
+/// `card-edge` becomes `CardEdge`.
+fn variant(role: &str) -> String {
+    role.split('-')
+        .map(|w| {
+            let mut c = w.chars();
+            c.next()
+                .map(|f| f.to_ascii_uppercase().to_string() + c.as_str())
+                .unwrap_or_default()
+        })
+        .collect()
+}
+
+/// `#2f6aa8` as the Rust expression of its colour.
+fn rgb(hex: &str) -> String {
+    let h = hex.trim_start_matches('#');
+    assert!(h.len() == 6, "{hex}: a colour's hex has six digits");
+    format!("Rgb([0x{}, 0x{}, 0x{}])", &h[0..2], &h[2..4], &h[4..6])
 }
 
 /// `card-edge` becomes `card_edge`.

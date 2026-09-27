@@ -163,6 +163,9 @@ Rules:
 - Contrast follows WCAG 2.1 AA in both themes: text 4.5:1 against what it
   sits on; icon lines, connectors and frame borders 3:1 against their
   background (1.4.11).
+- A project's own tokens may fill the roles instead of a palette
+  (docs/SPEC.md, Theme file); they are held to every rule here, and an
+  import that misses a contrast is refused.
 - An external node keeps its category's icon hue; its dashed border, not
   a grey icon, says it is not ours.
 

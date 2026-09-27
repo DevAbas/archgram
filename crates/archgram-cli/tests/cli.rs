@@ -95,3 +95,84 @@ fn a_yaml_spec_is_read_and_its_problems_located() {
     let run = archgram(&["check", &example("linkshort.json").replace(".json", ".txt")]);
     assert_eq!(run.status.code(), Some(2));
 }
+
+/// A mapping of archgram's own tokens, every role to its own token, in `dir`.
+fn own_theme(dir: &Path, extra_role: &str) -> PathBuf {
+    let resolver = format!(
+        "{}/../../design-system/tokens/design.resolver.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let roles = [
+        "badge",
+        "canvas",
+        "card",
+        "card-edge",
+        "connector",
+        "frame",
+        "icon-ai",
+        "icon-build",
+        "icon-client",
+        "icon-core",
+        "signal-core",
+        "text",
+        "text-muted",
+    ]
+    .iter()
+    .map(|r| format!(r#""{r}": "color.{r}""#))
+    .collect::<Vec<_>>()
+    .join(", ");
+    let mapping = format!(
+        r#"{{ "version": 1, "resolver": "{resolver}", "roles": {{ {roles}{extra_role} }},
+        "themes": {{ "light": {{ "inputs": {{ "theme": "light" }} }}, "dark": {{ "inputs": {{ "theme": "dark" }} }} }} }}"#
+    );
+    let path = dir.join("archgram.theme.json");
+    std::fs::write(&path, mapping).unwrap();
+    path
+}
+
+#[test]
+fn a_theme_file_is_checked_and_drawn_with() {
+    let dir = scratch("theme");
+    let theme = own_theme(&dir, "");
+    let run = archgram(&["theme", "check", theme.to_str().unwrap()]);
+    assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+    let shown = String::from_utf8_lossy(&run.stdout);
+    assert!(
+        shown.contains("card-edge    #d4d4d4  {color.card-edge}"),
+        "{shown}"
+    );
+    // archgram's own tokens draw what the built-in palette draws.
+    let (with, without) = (dir.join("with.svg"), dir.join("without.svg"));
+    let spec = example("kinds.json");
+    let a = archgram(&[
+        "build",
+        &spec,
+        "-o",
+        with.to_str().unwrap(),
+        "--theme-file",
+        theme.to_str().unwrap(),
+    ]);
+    let b = archgram(&["build", &spec, "-o", without.to_str().unwrap()]);
+    assert!(a.status.success() && b.status.success());
+    assert!(read(&with) == read(&without), "the own tokens draw differently");
+}
+
+#[test]
+fn a_broken_theme_file_is_a_problem_not_a_drawing() {
+    let dir = scratch("theme-broken");
+    let theme = own_theme(&dir, r#", "paper": "color.card""#);
+    let run = archgram(&["theme", "check", theme.to_str().unwrap()]);
+    assert_eq!(run.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&run.stderr).contains("/roles/paper: `paper` is not an archgram role"));
+    let out = dir.join("never.svg");
+    let run = archgram(&[
+        "build",
+        &example("kinds.json"),
+        "-o",
+        out.to_str().unwrap(),
+        "--theme-file",
+        theme.to_str().unwrap(),
+    ]);
+    assert_eq!(run.status.code(), Some(1));
+    assert!(!out.exists());
+}

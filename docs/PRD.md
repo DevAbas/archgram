@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.6        |
+| Version | 0.7        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -104,6 +104,9 @@ same file every time.
   it; cards, frames and connectors stay neutral.
 - One SVG carries both themes and follows `prefers-color-scheme`; on
   request archgram writes one file per theme.
+- On request, a project's own DTCG design tokens fill archgram's colour
+  roles, through a mapping file; the colours must keep the same contrast
+  as archgram's own, in both themes.
 - Output is self-contained: no script, no external file, no web font.
 
 ### 6.4 Animation
@@ -190,3 +193,4 @@ guidelines for them.
 | 0.4     | 2026-09-27 | Logos: a pinned Simple Icons release, CC0 data only, drawn neutral, sources and guidelines recorded (§7); removed from the open questions. |
 | 0.5     | 2026-09-27 | Four places for a logo: corner, inline, chip, icon (§7); the brand's colour while a signal is at the card (§6.4). |
 | 0.6     | 2026-09-27 | Flows branch; seven signal styles, the line filling by default; a lit card takes its hue until its signals arrive; the still image lists or numbers the flows on request (§6.4). |
+| 0.7     | 2026-09-27 | A project's DTCG tokens as the theme, through a mapping file, held to the same contrast (§6.3). |

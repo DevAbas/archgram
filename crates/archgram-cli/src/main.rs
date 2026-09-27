@@ -16,8 +16,11 @@ archgram: architecture diagrams from a spec
 
 Usage:
   archgram build <spec> [-o <out.svg>] [--theme auto|light|dark | --split-themes] [--system-font]
+                     [--theme-file <archgram.theme.json>]
                                Draw the diagram (default output: the spec's name with .svg)
   archgram check <spec>        Check a spec and list every problem
+  archgram theme check <archgram.theme.json>
+                               Read a project's design tokens as the theme and show each role's colour
   archgram --version           Print the version
   archgram --help              Print this help
 
@@ -29,13 +32,17 @@ Themes: auto (light, dark under the reader's dark mode; the default), light, dar
   page that picks one per reader (GitHub's <picture> with prefers-color-scheme).
 --system-font leaves the text to the reader's font instead of embedding Geist.
   The text is still measured with Geist, so a wider system font can crowd or
-  overflow a card; embedding (the default) draws exactly what was measured.";
+  overflow a card; embedding (the default) draws exactly what was measured.
+--theme-file draws in a project's own colours: a mapping file names the
+  project's DTCG resolver, its light and dark inputs, and the token for each
+  role (docs/SPEC.md, Theme file).";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
         ["check", path] => check(path),
+        ["theme", "check", path] => theme_check(path),
         ["build", path, rest @ ..] => match build_options(rest) {
             Ok(b) => build(path, b),
             Err(message) => usage_error(&message),
@@ -63,12 +70,15 @@ struct Build {
     options: Options,
     /// Write one file per theme instead of one with both.
     split: bool,
+    /// A mapping file for a project's own colours.
+    theme_file: Option<String>,
 }
 
 fn build_options(rest: &[&str]) -> Result<Build, String> {
     let mut out = None;
     let mut options = Options::default();
     let (mut split, mut themed) = (false, false);
+    let mut theme_file = None;
     let mut it = rest.iter();
     while let Some(arg) = it.next() {
         match *arg {
@@ -89,13 +99,19 @@ fn build_options(rest: &[&str]) -> Result<Build, String> {
             }
             "--system-font" => options.embed_font = false,
             "--split-themes" => split = true,
+            "--theme-file" => theme_file = Some((*it.next().ok_or("--theme-file needs a file")?).to_owned()),
             other => return Err(format!("unrecognised option {other}")),
         }
     }
     if split && themed {
         return Err("--split-themes writes both themes; leave out --theme".into());
     }
-    Ok(Build { out, options, split })
+    Ok(Build {
+        out,
+        options,
+        split,
+        theme_file,
+    })
 }
 
 fn read(path: &str) -> Result<String, ExitCode> {
@@ -177,7 +193,21 @@ fn check(path: &str) -> ExitCode {
     }
 }
 
-fn build(path: &str, Build { out, options, split }: Build) -> ExitCode {
+fn build(
+    path: &str,
+    Build {
+        out,
+        mut options,
+        split,
+        theme_file,
+    }: Build,
+) -> ExitCode {
+    if let Some(file) = theme_file {
+        match load_theme(&file) {
+            Ok(imported) => options.colors = Some(imported.colors),
+            Err(code) => return code,
+        }
+    }
     let format = match format_of(path) {
         Ok(f) => f,
         Err(code) => return code,
@@ -235,4 +265,40 @@ fn build(path: &str, Build { out, options, split }: Build) -> ExitCode {
 /// `diagram.svg` as `diagram.light.svg`, for one theme's file.
 fn themed(out: &Path, theme: &str) -> PathBuf {
     out.with_extension(format!("{theme}.svg"))
+}
+
+/// Reads a theme's mapping file and the tokens it names, each file by its
+/// path beside the mapping; prints the problems if there are any.
+fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
+    read(path)?;
+    let from_disk = |p: &str| std::fs::read_to_string(p).ok();
+    archgram_core::theme::import(path, &from_disk).map_err(|errors| {
+        for e in &errors {
+            eprintln!("{e}");
+        }
+        eprintln!(
+            "{} problem{} in the theme {path}",
+            errors.len(),
+            if errors.len() == 1 { "" } else { "s" }
+        );
+        ExitCode::from(1)
+    })
+}
+
+fn theme_check(path: &str) -> ExitCode {
+    let imported = match load_theme(path) {
+        Ok(i) => i,
+        Err(code) => return code,
+    };
+    for (name, roles) in [("light", &imported.light), ("dark", &imported.dark)] {
+        println!("{name}:");
+        for (role, source, colour) in roles {
+            let from = source
+                .as_deref()
+                .map_or_else(|| "(mono)".to_owned(), |id| format!("{{{id}}}"));
+            println!("  {:<12} {colour}  {from}", role.name());
+        }
+    }
+    println!("{path}: every pair keeps its contrast in both themes");
+    ExitCode::SUCCESS
 }

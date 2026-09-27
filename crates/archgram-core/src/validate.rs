@@ -441,7 +441,11 @@ pub fn logos(spec: &Spec, logos: &dyn crate::logos::Logos) -> Vec<SpecError> {
 
 /// Up to `count` candidates close to `id`, nearest first, ties in the
 /// candidates' order.
-fn nearest_few<'a>(id: &str, candidates: impl Iterator<Item = &'a str>, count: usize) -> Vec<&'a str> {
+pub(crate) fn nearest_few<'a>(
+    id: &str,
+    candidates: impl Iterator<Item = &'a str>,
+    count: usize,
+) -> Vec<&'a str> {
     let limit = (id.chars().count() / 3).max(1);
     let mut close: Vec<(usize, &str)> = candidates
         .map(|c| (edit_distance(id, c), c))

@@ -30,7 +30,7 @@ The repository is one Cargo workspace.
 
 | Crate | Holds | Depends on |
 |---|---|---|
-| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
+| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes and their import from DTCG tokens, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
@@ -48,9 +48,25 @@ all of `archgram-icons`.
 
 `archgram-core`'s build script reads `design-system/tokens/` at compile
 time: it follows the resolver, resolves every alias, and writes one table
-of values per palette and theme into the crate. The tokens stay the only
-place a value is written; changing one rebuilds the crate, and no colour
-or size is typed by hand in the code.
+of values per palette and theme into the crate: a `Role` for every colour
+token, and each palette's colours as values (`Rgb`), not text. The tokens
+stay the only place a value is written; changing one rebuilds the crate,
+and no colour or size is typed by hand in the code.
+
+### A project's tokens as the theme
+
+`theme::import` reads a mapping file (docs/SPEC.md, Theme file) and the
+project's DTCG resolver at run time, into the same `Colors` the build
+writes, one per theme; the render options carry them in place of the
+spec's palette. The core reads no file: the caller hands it each file's
+text by its path, the CLI from disk, the WASM package from JavaScript.
+Only the parts of the Resolver Module that reading colours needs are
+there, with anything else refused by name. Colours are converted from
+their colour space with archgram's own elementary functions (`math`):
+the platform's `powf`, `sin` and the like may differ in their last digit
+between machines, and clippy refuses them in the core. The imported
+colours pass the same contrast check as archgram's own (`color::check`,
+the pairs DESIGN.md names), or the import fails.
 
 ## The pipeline, stage by stage
 
@@ -284,9 +300,12 @@ These hold for every output and are checked by tests on every change.
 - Every edge is orthogonal.
 - A frame holds its nodes and child frames with its padding around them;
   nothing else reaches into it, and frames that do not nest stay apart.
-- Every text pair meets WCAG 2.1 AA in both themes.
+- Every text pair meets WCAG 2.1 AA in both themes, imported ones too.
 - Every `keyTimes` starts at 0, ends at 1 and never goes back, with one
   value per time and one spline per interval.
+- `archgram-core` calls no elementary function of the platform's maths
+  library (`clippy.toml`): its own (`math`) use only operations IEEE 754
+  rounds exactly.
 - `archgram-core` performs no I/O.
 - archgram's own crates contain no `unsafe` code
   (`#![forbid(unsafe_code)]`).

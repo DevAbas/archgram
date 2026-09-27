@@ -7,10 +7,12 @@ pub mod font;
 pub mod geometry;
 pub mod layout;
 pub mod logos;
+mod math;
 pub mod measure;
 pub mod motion;
 pub mod render;
 pub mod spec;
+pub mod theme;
 pub mod tokens;
 mod validate;
 
