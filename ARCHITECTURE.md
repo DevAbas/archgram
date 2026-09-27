@@ -183,9 +183,10 @@ These hold for every output and are checked by tests on every change.
 - `cargo xtask deps` checks the whole tree without third-party tools: the
   licence of every package, from `cargo metadata`, against the allowed
   list (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-3.0,
-  OFL-1.1 for fonts); and every version in `Cargo.lock` against the RustSec
-  advisory database, fetched as a git repository. Either finding fails the
-  check.
+  OFL-1.1 for fonts); the source of every package outside the workspace,
+  which must be crates.io; and every version in `Cargo.lock` against the
+  RustSec advisory database, fetched as a git repository. Any finding fails
+  the check.
 - Cargo's own `cargo tree` shows where each indirect dependency comes from.
 
 ## Testing

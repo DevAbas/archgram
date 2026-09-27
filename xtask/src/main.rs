@@ -80,13 +80,33 @@ fn deps() -> ExitCode {
         }
     }
 
-    // Advisories, for packages from a registry (our own crates have none).
+    // Sources: everything outside the workspace comes from crates.io, so every
+    // dependency has a place in the advisory database and a published licence.
+    let foreign: Vec<&Package> = packages
+        .iter()
+        .filter(|p| !p.in_workspace && p.source.as_deref() != Some(CRATES_IO))
+        .collect();
+    if foreign.is_empty() {
+        println!("sources: every dependency comes from crates.io");
+    } else {
+        failed = true;
+        for p in &foreign {
+            eprintln!(
+                "source: {} {} comes from {}, not crates.io",
+                p.name,
+                p.version,
+                p.source.as_deref().unwrap_or("a local path")
+            );
+        }
+    }
+
+    // Advisories, for the crates.io packages (our own crates have none).
     let db = root.join("target").join("advisory-db");
     if let Err(e) = fetch_advisory_db(&db) {
         eprintln!("advisories: cannot fetch the RustSec database: {e}");
         return ExitCode::from(2);
     }
-    let external: Vec<&Package> = packages.iter().filter(|p| p.from_registry).collect();
+    let external: Vec<&Package> = packages.iter().filter(|p| !p.in_workspace).collect();
     let mut hits = 0;
     for p in &external {
         for a in advisories_for(&db, &p.name) {
@@ -129,8 +149,14 @@ struct Package {
     name: String,
     version: Version,
     licence: Option<String>,
-    from_registry: bool,
+    /// `cargo metadata`'s source: crates.io, another registry, git, or none for a path.
+    source: Option<String>,
+    /// One of this workspace's own crates.
+    in_workspace: bool,
 }
+
+/// The source `cargo metadata` gives crates.io packages, whichever protocol fetched them.
+const CRATES_IO: &str = "registry+https://github.com/rust-lang/crates.io-index";
 
 /// Every package Cargo resolves for the workspace, from `cargo metadata --locked`.
 fn metadata(root: &Path) -> Result<Vec<Package>, String> {
@@ -144,6 +170,12 @@ fn metadata(root: &Path) -> Result<Vec<Package>, String> {
     }
     let json: Value = serde_json::from_slice(&out.stdout).map_err(|e| e.to_string())?;
     let mut packages = Vec::new();
+    let members: Vec<&str> = json["workspace_members"]
+        .as_array()
+        .ok_or("cargo metadata has no workspace members")?
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
     for p in json["packages"]
         .as_array()
         .ok_or("cargo metadata has no packages")?
@@ -155,7 +187,8 @@ fn metadata(root: &Path) -> Result<Vec<Package>, String> {
             name,
             version,
             licence: p["license"].as_str().map(str::to_owned),
-            from_registry: p["source"].as_str().is_some_and(|s| s.starts_with("registry+")),
+            source: p["source"].as_str().map(str::to_owned),
+            in_workspace: p["id"].as_str().is_some_and(|id| members.contains(&id)),
         });
     }
     packages.sort_by(|a, b| (&a.name, &a.version).cmp(&(&b.name, &b.version)));
@@ -342,7 +375,7 @@ fn strings(array: &str) -> Vec<String> {
 
 /// A semantic version; pre-release and build metadata are kept apart and
 /// compared after the numbers, which is enough for advisory ranges.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Version {
     major: u64,
     minor: u64,
@@ -364,6 +397,44 @@ impl Version {
             patch,
             pre: pre.to_owned(),
         })
+    }
+}
+
+/// Semantic Versioning 2.0.0, section 11: numbers first; then a pre-release
+/// sorts below its release; pre-releases compare identifier by identifier,
+/// numeric ones by value and below alphanumeric ones, a shorter list first.
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        use std::cmp::Ordering;
+        (self.major, self.minor, self.patch)
+            .cmp(&(other.major, other.minor, other.patch))
+            .then_with(|| match (self.pre.is_empty(), other.pre.is_empty()) {
+                (true, true) => Ordering::Equal,
+                (true, false) => Ordering::Greater,
+                (false, true) => Ordering::Less,
+                (false, false) => {
+                    let (a, b): (Vec<&str>, Vec<&str>) =
+                        (self.pre.split('.').collect(), other.pre.split('.').collect());
+                    for (x, y) in a.iter().zip(&b) {
+                        let order = match (x.parse::<u64>(), y.parse::<u64>()) {
+                            (Ok(m), Ok(n)) => m.cmp(&n),
+                            (Ok(_), Err(_)) => Ordering::Less,
+                            (Err(_), Ok(_)) => Ordering::Greater,
+                            (Err(_), Err(_)) => x.cmp(y),
+                        };
+                        if order != Ordering::Equal {
+                            return order;
+                        }
+                    }
+                    a.len().cmp(&b.len())
+                }
+            })
+    }
+}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -482,6 +553,29 @@ mod tests {
         assert!(!licence_allowed("GPL-3.0-only"));
         assert!(!licence_allowed("MIT AND GPL-3.0-only"));
         assert!(licence_allowed("GPL-3.0-only OR MIT"));
+    }
+
+    #[test]
+    fn pre_releases_sort_below_their_release() {
+        // The example chain in Semantic Versioning 2.0.0, section 11.
+        let chain = [
+            "1.0.0-alpha",
+            "1.0.0-alpha.1",
+            "1.0.0-alpha.beta",
+            "1.0.0-beta",
+            "1.0.0-beta.2",
+            "1.0.0-beta.11",
+            "1.0.0-rc.1",
+            "1.0.0",
+        ];
+        for pair in chain.windows(2) {
+            assert!(v(pair[0]) < v(pair[1]), "{} < {}", pair[0], pair[1]);
+        }
+        let r = Requirement::parse(">= 1.0.0").unwrap();
+        assert!(
+            !r.matches(&v("1.0.0-rc.1")),
+            "a pre-release is not yet the patched release"
+        );
     }
 
     #[test]

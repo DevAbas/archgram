@@ -24,7 +24,7 @@ components:
     textColor: "{color.text}"
     typography: "{typography.title}"
     rounded: "{rounded.card}"
-    width: "{card.vertical-width}"
+    width: "{card.vertical-min-width}"
     height: "{card.vertical-height}"
   node-subtitle:
     textColor: "{color.text-muted}"
@@ -174,8 +174,8 @@ question (PRD, Open questions).
   uses one style.
 - A horizontal card has a fixed height (`card.horizontal-height`) and
   grows in width with its title, never below `card.horizontal-min-width`.
-  A vertical card has a fixed size (`card.vertical-width`,
-  `card.vertical-height`).
+  A vertical card has a fixed height (`card.vertical-height`) and grows in
+  width with its title, never below `card.vertical-min-width`.
 - A frame contains its nodes with `spacing.frame-padding` on every side
   and room at the top for its name (`spacing.frame-label`).
 - The legend sits under the diagram, left-aligned, and lists only the

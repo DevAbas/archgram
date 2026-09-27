@@ -3,6 +3,7 @@
 //! nodes are placed in a plain grid and edges are not yet drawn.
 
 mod error;
+pub mod font;
 pub mod geometry;
 pub mod layout;
 pub mod measure;
@@ -47,8 +48,33 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
 ///
 /// The spec's problems, as [`parse_spec`] reports them.
 pub fn build(json: &str, options: render::Options) -> Result<String, Vec<SpecError>> {
-    let spec = parse_spec(json)?;
-    let sizes = measure::card_sizes(&spec);
-    let placement = layout::place(&spec, &sizes);
-    Ok(render::render(&spec, &placement, options))
+    Ok(draw(&parse_spec(json)?, options))
+}
+
+/// Measures, lays out and draws a spec that has passed validation.
+#[must_use]
+pub fn draw(spec: &Spec, options: render::Options) -> String {
+    let sizes = measure::card_sizes(spec);
+    let placement = layout::place(spec, &sizes);
+    render::render(spec, &placement, options)
+}
+
+/// The characters in the spec's text that the embedded font does not have,
+/// in order and without repeats. They are drawn in the reader's font.
+#[must_use]
+pub fn uncovered_characters(spec: &Spec) -> Vec<char> {
+    use crate::tokens::{TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE};
+    let mut out: Vec<char> = Vec::new();
+    for node in &spec.nodes {
+        let mut found = font::uncovered(&node.label, TYPOGRAPHY_TITLE.weight);
+        if let Some(note) = &node.note {
+            found.extend(font::uncovered(note, TYPOGRAPHY_SUBTITLE.weight));
+        }
+        for c in found {
+            if !out.contains(&c) {
+                out.push(c);
+            }
+        }
+    }
+    out
 }

@@ -12,7 +12,14 @@ fn example(name: &str) -> String {
 }
 
 fn golden(name: &str, mode: Mode) {
-    let svg = build(&example(name), Options { mode }).unwrap_or_else(|e| panic!("{name}: {e:?}"));
+    let svg = build(
+        &example(name),
+        Options {
+            mode,
+            ..Options::default()
+        },
+    )
+    .unwrap_or_else(|e| panic!("{name}: {e:?}"));
     let suffix = match mode {
         Mode::Auto => "",
         Mode::Light => ".light",
@@ -62,8 +69,22 @@ fn the_svg_carries_its_title_and_description_and_no_invalid_numbers() {
 
 #[test]
 fn a_single_theme_has_no_media_query() {
-    let light = build(&example("kinds"), Options { mode: Mode::Light }).unwrap();
+    let light = build(
+        &example("kinds"),
+        Options {
+            mode: Mode::Light,
+            ..Options::default()
+        },
+    )
+    .unwrap();
     assert!(!light.contains("prefers-color-scheme"));
-    let auto = build(&example("kinds"), Options { mode: Mode::Auto }).unwrap();
+    let auto = build(
+        &example("kinds"),
+        Options {
+            mode: Mode::Auto,
+            ..Options::default()
+        },
+    )
+    .unwrap();
     assert!(auto.contains("@media (prefers-color-scheme: dark)"));
 }

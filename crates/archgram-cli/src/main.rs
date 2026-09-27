@@ -14,13 +14,16 @@ const USAGE: &str = "\
 archgram: architecture diagrams from a spec
 
 Usage:
-  archgram build <spec.json> [-o <out.svg>] [--theme auto|light|dark]
+  archgram build <spec.json> [-o <out.svg>] [--theme auto|light|dark] [--system-font]
                                Draw the diagram (default output: the spec's name with .svg)
   archgram check <spec.json>   Check a spec and list every problem
   archgram --version           Print the version
   archgram --help              Print this help
 
-Themes: auto (light, dark under the reader's dark mode; the default), light, dark.";
+Themes: auto (light, dark under the reader's dark mode; the default), light, dark.
+--system-font leaves the text to the reader's font instead of embedding Geist.
+  The text is still measured with Geist, so a wider system font can crowd or
+  overflow a card; embedding (the default) draws exactly what was measured.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -68,6 +71,7 @@ fn build_options(rest: &[&str]) -> Result<(Option<PathBuf>, Options), String> {
                     }
                 };
             }
+            "--system-font" => options.embed_font = false,
             other => return Err(format!("unrecognised option {other}")),
         }
     }
@@ -116,10 +120,31 @@ fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
         Ok(t) => t,
         Err(code) => return code,
     };
-    let svg = match archgram_core::build(&text, options) {
-        Ok(svg) => svg,
+    let spec = match archgram_core::parse_spec(&text) {
+        Ok(spec) => spec,
         Err(errors) => return report(path, &errors),
     };
+    if options.embed_font {
+        let missing = archgram_core::uncovered_characters(&spec);
+        if !missing.is_empty() {
+            let list = missing
+                .iter()
+                .map(|c| format!("{c} (U+{:04X})", u32::from(*c)))
+                .collect::<Vec<_>>()
+                .join(" ");
+            eprintln!(
+                "archgram: warning: the embedded font lacks {}; the reader's font will draw {}: {}",
+                if missing.len() == 1 {
+                    "a character"
+                } else {
+                    "some characters"
+                },
+                if missing.len() == 1 { "it" } else { "them" },
+                list
+            );
+        }
+    }
+    let svg = archgram_core::draw(&spec, options);
     let out = out.unwrap_or_else(|| Path::new(path).with_extension("svg"));
     if let Err(e) = std::fs::write(&out, svg) {
         eprintln!("archgram: cannot write {}: {e}", out.display());

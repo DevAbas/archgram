@@ -1,5 +1,6 @@
 //! A node's card (DESIGN.md, Components: Node card and Variants).
 
+use crate::font::baseline_in_line;
 use crate::geometry::Rect;
 use crate::render::icons::{GRID, icon};
 use crate::render::svg::{Svg, escape, num};
@@ -8,11 +9,6 @@ use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE,
     CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
-
-/// Where a text baseline sits in its line box, as a share of the line's height
-/// from its top. A stand-in for the font's own ascent, which M3 reads from the
-/// embedded font.
-const BASELINE_IN_LINE: f64 = 0.8;
 
 /// The CSS class that gives an icon its category's hue (DESIGN.md, Colors).
 pub fn category_class(c: Category) -> &'static str {
@@ -56,7 +52,7 @@ impl Lines<'_> {
         } else {
             format!(r#" text-anchor="{anchor}""#)
         };
-        let title_y = top + BASELINE_IN_LINE * Self::title_height();
+        let title_y = top + baseline_in_line(&TYPOGRAPHY_TITLE);
         svg.line(&format!(
             r#"<text class="title" x="{}" y="{}"{anchor}>{}</text>"#,
             num(x),
@@ -64,7 +60,7 @@ impl Lines<'_> {
             escape(self.title)
         ));
         if let Some(note) = self.note {
-            let note_y = top + Self::title_height() + BASELINE_IN_LINE * Self::note_height();
+            let note_y = top + Self::title_height() + baseline_in_line(&TYPOGRAPHY_SUBTITLE);
             svg.line(&format!(
                 r#"<text class="sub" x="{}" y="{}"{anchor}>{}</text>"#,
                 num(x),
@@ -119,7 +115,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
                 h: CARD_HORIZONTAL_BADGE,
             };
             badge_with_icon(svg, badge, CARD_HORIZONTAL_ICON, node, hue);
-            let text_x = badge.right() + CARD_PADDING;
+            let text_x = r.x + crate::measure::horizontal_text_inset();
             lines.write(svg, text_x, r.centre_y() - lines.height() / 2.0, "start");
         }
         CardStyle::Vertical => {

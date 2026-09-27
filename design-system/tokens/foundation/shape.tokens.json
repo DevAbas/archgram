@@ -114,7 +114,7 @@
         "unit": "px"
       }
     },
-    "vertical-width": {
+    "vertical-min-width": {
       "$value": {
         "value": 132,
         "unit": "px"
