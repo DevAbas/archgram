@@ -4,10 +4,10 @@
 
 use crate::font::text_width;
 use crate::geometry::Size;
-use crate::spec::{CardStyle, Node, Spec};
+use crate::spec::{CardStyle, Node, Spec, Variant};
 use crate::tokens::{
-    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_HEIGHT, CARD_HORIZONTAL_MIN_WIDTH, CARD_PADDING,
-    CARD_VERTICAL_HEIGHT, CARD_VERTICAL_MIN_WIDTH, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_HEIGHT, CARD_HORIZONTAL_MIN_WIDTH, CARD_MULTI_OFFSET,
+    CARD_PADDING, CARD_VERTICAL_HEIGHT, CARD_VERTICAL_MIN_WIDTH, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The width of a card's widest line of text.
@@ -27,9 +27,24 @@ pub fn horizontal_text_inset() -> f64 {
     CARD_PADDING + CARD_HORIZONTAL_BADGE + CARD_PADDING
 }
 
-/// The size of one node's card.
+/// The size of one node's footprint: its card, and for several instances
+/// the two copies stepping up and to the right behind it, `card.multi-offset`
+/// apart (DESIGN.md, Components: Variants).
 #[must_use]
 pub fn card_size(node: &Node, style: CardStyle) -> Size {
+    let card = front_card_size(node, style);
+    if node.variant == Variant::Multi {
+        Size {
+            w: card.w + 2.0 * CARD_MULTI_OFFSET,
+            h: card.h + 2.0 * CARD_MULTI_OFFSET,
+        }
+    } else {
+        card
+    }
+}
+
+/// The size of the card a reader sees first.
+fn front_card_size(node: &Node, style: CardStyle) -> Size {
     let text = text_width_of(node);
     match style {
         // The text's right side gets twice the padding its left side has: room
@@ -55,6 +70,27 @@ pub fn label_size(label: &str) -> Size {
         w: text_width(label, &TYPOGRAPHY_SUBTITLE) + CARD_PADDING,
         h: TYPOGRAPHY_SUBTITLE.size * TYPOGRAPHY_SUBTITLE.line_height,
     }
+}
+
+/// Every piece of text the drawing shows, with the weight it is set in, in
+/// drawing order: node titles and notes, then edge labels. The font subset
+/// and the check for characters the font lacks both read this list, so
+/// neither can miss a text the other covers.
+#[must_use]
+pub fn text_runs(spec: &Spec) -> Vec<(u16, &str)> {
+    let mut runs = Vec::new();
+    for node in &spec.nodes {
+        runs.push((TYPOGRAPHY_TITLE.weight, node.label.as_str()));
+        if let Some(note) = &node.note {
+            runs.push((TYPOGRAPHY_SUBTITLE.weight, note.as_str()));
+        }
+    }
+    for edge in &spec.edges {
+        if let Some(label) = &edge.label {
+            runs.push((TYPOGRAPHY_SUBTITLE.weight, label.as_str()));
+        }
+    }
+    runs
 }
 
 /// The size of every node's card, in spec order.

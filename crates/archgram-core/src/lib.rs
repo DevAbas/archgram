@@ -1,6 +1,5 @@
 //! archgram's engine: a spec in, a picture out, with no I/O
-//! (ARCHITECTURE.md, Bird's eye view). Until the router exists (M5), edges
-//! are drawn as straight segments through the layout's bends.
+//! (ARCHITECTURE.md, Bird's eye view).
 
 mod error;
 pub mod font;
@@ -66,14 +65,9 @@ pub fn draw(spec: &Spec, options: render::Options) -> Result<String, Vec<SpecErr
 /// in order and without repeats. They are drawn in the reader's font.
 #[must_use]
 pub fn uncovered_characters(spec: &Spec) -> Vec<char> {
-    use crate::tokens::{TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE};
     let mut out: Vec<char> = Vec::new();
-    for node in &spec.nodes {
-        let mut found = font::uncovered(&node.label, TYPOGRAPHY_TITLE.weight);
-        if let Some(note) = &node.note {
-            found.extend(font::uncovered(note, TYPOGRAPHY_SUBTITLE.weight));
-        }
-        for c in found {
+    for (weight, text) in measure::text_runs(spec) {
+        for c in font::uncovered(text, weight) {
             if !out.contains(&c) {
                 out.push(c);
             }

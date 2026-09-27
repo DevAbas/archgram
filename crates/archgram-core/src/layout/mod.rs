@@ -29,13 +29,16 @@ mod route;
 
 use crate::error::SpecError;
 use crate::geometry::{Point, Rect, Size};
-use crate::spec::{Direction, Spec};
-use crate::tokens::{ROUNDED_CARD, SPACING_EDGE_EDGE, SPACING_LAYER_LAYER, SPACING_NODE_NODE};
+use crate::spec::{Direction, Spec, Variant};
+use crate::tokens::{
+    CARD_MULTI_OFFSET, ROUNDED_CARD, SPACING_EDGE_EDGE, SPACING_LAYER_LAYER, SPACING_NODE_NODE,
+};
 
 /// Where everything goes.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Placement {
-    /// Each node's card, in spec order.
+    /// Each node's footprint in spec order: its card, and for several
+    /// instances the stack behind it (`measure::card_size`).
     pub nodes: Vec<Rect>,
     /// Each edge's path in spec order: an orthogonal line from a side of its
     /// `from` node to a side of its `to` node.
@@ -201,6 +204,25 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             cross_sizes[*v] = *across;
         }
     }
+    // Each vertex's anchor is the middle of its cross extent, except for a
+    // stack of several instances: its anchor is the middle of its front card,
+    // so a straight edge meets the card a reader sees first. The stack steps
+    // up and to the right, so the extra extent lies before the anchor when
+    // the flow runs right (up) and after it when the flow runs down (right).
+    let stack: Vec<f64> = (0..total)
+        .map(|v| {
+            if v < n && spec.nodes[v].variant == Variant::Multi {
+                match spec.direction {
+                    Direction::Right => CARD_MULTI_OFFSET,
+                    Direction::Down => -CARD_MULTI_OFFSET,
+                }
+            } else {
+                0.0
+            }
+        })
+        .collect();
+    let cross_lo: Vec<f64> = (0..total).map(|v| cross_sizes[v] / 2.0 + stack[v]).collect();
+    let cross_hi: Vec<f64> = (0..total).map(|v| cross_sizes[v] / 2.0 - stack[v]).collect();
     let mut layers: Vec<Vec<usize>> =
         vec![Vec::new(); vertex_layer.iter().copied().max().map_or(0, |m| m + 1)];
     for (v, &l) in vertex_layer.iter().enumerate() {
@@ -222,7 +244,8 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         &layers,
         &short,
         &position::Vertices {
-            size: &cross_sizes,
+            lo: &cross_lo,
+            hi: &cross_hi,
             dummy: &dummy,
             node_gap: SPACING_NODE_NODE,
             edge_gap: SPACING_EDGE_EDGE,
@@ -255,12 +278,19 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         .flat_map(|(e, chain)| chain.windows(2).map(move |w| (e, w[0], w[1])))
         .collect();
     // For a card, its hops on one side, ordered by where their other ends lie
-    // across the layers, get ports spread around the side's middle.
+    // across the layers, get ports spread around the side's middle. The
+    // plain ones share a single port, as a bundle: edges leaving a side
+    // leave as one trunk and fork in the gap; edges entering a side merge
+    // into one point. An edge with its label near the card, and an edge
+    // drawn against the flow (its arrowhead would sit among lines leaving),
+    // keeps a port of its own.
     let mut out_port = vec![0.0; hops.len()];
     let mut in_port = vec![0.0; hops.len()];
+    let mut out_bundle: Vec<Option<usize>> = vec![None; hops.len()];
+    let mut in_bundle: Vec<Option<usize>> = vec![None; hops.len()];
     for v in 0..total {
         for (outgoing, ports_of) in [(true, &mut out_port), (false, &mut in_port)] {
-            let mut mine: Vec<usize> = (0..hops.len())
+            let mine: Vec<usize> = (0..hops.len())
                 .filter(|&h| if outgoing { hops[h].1 == v } else { hops[h].2 == v })
                 .collect();
             if v >= n {
@@ -269,25 +299,60 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
                 }
                 continue;
             }
-            mine.sort_by(|&a, &b| {
-                let other = |h: usize| {
-                    if outgoing {
-                        cross[hops[h].2]
-                    } else {
-                        cross[hops[h].1]
+            let other = |h: usize| {
+                if outgoing {
+                    cross[hops[h].2]
+                } else {
+                    cross[hops[h].1]
+                }
+            };
+            // A label on an edge between neighbouring layers sits just past
+            // the card it leaves, across its line: its port leaves it room.
+            let reach = |h: usize| {
+                let e = hops[h].0;
+                match label_extent[e] {
+                    Some((_, across)) if outgoing && chains[e].len() == 2 => across / 2.0,
+                    _ => 0.0,
+                }
+            };
+            let alone = |h: usize| reach(h) > 0.0 || reversed[hops[h].0];
+            // One entry per port: the bundle, then each hop on its own,
+            // ordered by where their other ends lie (a bundle by its middle).
+            let bundle: Vec<usize> = mine.iter().copied().filter(|&h| !alone(h)).collect();
+            let mut entries: Vec<(f64, Vec<usize>)> = mine
+                .iter()
+                .copied()
+                .filter(|&h| alone(h))
+                .map(|h| (other(h), vec![h]))
+                .collect();
+            if !bundle.is_empty() {
+                let lo = bundle.iter().map(|&h| other(h)).fold(f64::INFINITY, f64::min);
+                let hi = bundle.iter().map(|&h| other(h)).fold(f64::NEG_INFINITY, f64::max);
+                entries.push((f64::midpoint(lo, hi), bundle.clone()));
+                if bundle.len() > 1 {
+                    for &h in &bundle {
+                        if outgoing {
+                            out_bundle[h] = Some(v);
+                        } else {
+                            in_bundle[h] = Some(v);
+                        }
                     }
-                };
-                other(a).total_cmp(&other(b)).then(a.cmp(&b))
-            });
+                }
+            }
+            entries.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1[0].cmp(&b.1[0])));
+            let reach: Vec<f64> = entries.iter().map(|(_, hs)| reach(hs[0])).collect();
+            // Ports stay on the front card's side, centred on its anchor.
             let places = route::ports(
-                mine.len(),
+                &reach,
                 cross[v],
-                cross_size[v],
+                2.0 * cross_lo[v].min(cross_hi[v]),
                 SPACING_EDGE_EDGE,
                 ROUNDED_CARD,
             );
-            for (h, p) in mine.into_iter().zip(places) {
-                ports_of[h] = p;
+            for ((_, hs), p) in entries.iter().zip(places) {
+                for &h in hs {
+                    ports_of[h] = p;
+                }
             }
         }
     }
@@ -297,19 +362,46 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let mut track = vec![0usize; hops.len()];
     let mut track_count = vec![0usize; gaps];
     for (g, count) in track_count.iter_mut().enumerate() {
-        let here: Vec<usize> = (0..hops.len())
-            .filter(|&h| vertex_layer[hops[h].1] == g && !level(h))
-            .collect();
-        let risers: Vec<route::Riser> = here
+        // A bundle turns at one track, so its trunk forks, or its branches
+        // merge, in one place. A hop in both kinds follows the one leaving.
+        let mut units: Vec<Vec<usize>> = Vec::new();
+        let mut unit_of_bundle: std::collections::BTreeMap<(bool, usize), usize> =
+            std::collections::BTreeMap::new();
+        for h in (0..hops.len()).filter(|&h| vertex_layer[hops[h].1] == g && !level(h)) {
+            let key = match (out_bundle[h], in_bundle[h]) {
+                (Some(b), _) => Some((true, b)),
+                (None, Some(b)) => Some((false, b)),
+                (None, None) => None,
+            };
+            match key {
+                Some(b) => {
+                    let u = *unit_of_bundle.entry(b).or_insert_with(|| {
+                        units.push(Vec::new());
+                        units.len() - 1
+                    });
+                    units[u].push(h);
+                }
+                None => units.push(vec![h]),
+            }
+        }
+        let risers: Vec<route::Riser> = units
             .iter()
-            .map(|&h| route::Riser {
-                from: out_port[h],
-                to: in_port[h],
+            .map(|hs| {
+                if hs.len() > 1 && out_bundle[hs[0]].is_none() {
+                    // Branches merging: the shared port is where they arrive.
+                    let starts: Vec<f64> = hs.iter().map(|&h| out_port[h]).collect();
+                    route::Riser::bundle(in_port[hs[0]], &starts)
+                } else {
+                    let ends: Vec<f64> = hs.iter().map(|&h| in_port[h]).collect();
+                    route::Riser::bundle(out_port[hs[0]], &ends)
+                }
             })
             .collect();
         let (t, c) = route::tracks(&risers, SPACING_EDGE_EDGE);
-        for (&h, t) in here.iter().zip(t) {
-            track[h] = t;
+        for (hs, t) in units.iter().zip(t) {
+            for &h in hs {
+                track[h] = t;
+            }
         }
         *count = c;
     }
@@ -354,7 +446,7 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
 
     // Into the drawing's frame, the smallest coordinate at 0.
     let cross_min = (0..total)
-        .map(|v| cross[v] - cross_sizes[v] / 2.0)
+        .map(|v| cross[v] - cross_lo[v])
         .fold(f64::INFINITY, f64::min);
     let point = |main: f64, across: f64| match spec.direction {
         Direction::Right => Point {
@@ -368,16 +460,13 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     };
     let nodes: Vec<Rect> = (0..n)
         .map(|v| {
-            let c = point(centre_main(v), cross[v]);
-            let (w, h) = match spec.direction {
-                Direction::Right => (main_size[v], cross_size[v]),
-                Direction::Down => (cross_size[v], main_size[v]),
-            };
+            let from = point(centre_main(v) - main_size[v] / 2.0, cross[v] - cross_lo[v]);
+            let to = point(centre_main(v) + main_size[v] / 2.0, cross[v] + cross_hi[v]);
             Rect {
-                x: c.x - w / 2.0,
-                y: c.y - h / 2.0,
-                w,
-                h,
+                x: from.x,
+                y: from.y,
+                w: to.x - from.x,
+                h: to.y - from.y,
             }
         })
         .collect();
@@ -412,13 +501,11 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             } else {
                 // The hop's segment leaving its first card, in the room the gap keeps.
                 let hop = hops.iter().position(|&(k, _, _)| k == e).expect("one hop");
-                let (_, a, b) = hops[hop];
+                let (_, a, _) = hops[hop];
+                // In the room the gap keeps before its tracks, level or not:
+                // another edge's riser may stand in the rest of the gap.
                 let gap = vertex_layer[a];
-                let end = if level(hop) {
-                    enter_main(b)
-                } else {
-                    start[gap] + depth[gap] + lead[gap]
-                };
+                let end = start[gap] + depth[gap] + lead[gap];
                 (f64::midpoint(leave_main(a), end), out_port[hop])
             };
             let (width, height) = match spec.direction {
@@ -450,11 +537,17 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         })
         .collect();
     for path in &mut paths {
-        for p in path.iter_mut() {
-            *p = Point {
+        let rounded: Vec<Point> = path
+            .iter()
+            .map(|p| Point {
                 x: p.x.round(),
                 y: p.y.round(),
-            };
+            })
+            .collect();
+        // Rounding can make neighbours meet: merge them again.
+        path.clear();
+        for p in rounded {
+            push_point(path, p);
         }
     }
     let w = nodes

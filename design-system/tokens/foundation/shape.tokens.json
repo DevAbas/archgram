@@ -17,7 +17,7 @@
     },
     "connector": {
       "$value": {
-        "value": 8,
+        "value": 16,
         "unit": "px"
       }
     },
@@ -50,7 +50,7 @@
     },
     "connector": {
       "$value": {
-        "value": 1.5,
+        "value": 2,
         "unit": "px"
       }
     },
@@ -111,16 +111,22 @@
   },
   "arrowhead": {
     "$type": "dimension",
-    "$description": "The filled arrowhead at an edge's end: its length along the line and its width across it.",
+    "$description": "The open arrowhead at an edge's end: how far its legs reach back along the line, how wide it opens across it, and the gap its tip leaves before the card.",
     "length": {
       "$value": {
-        "value": 8,
+        "value": 7,
         "unit": "px"
       }
     },
     "width": {
       "$value": {
-        "value": 8,
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "gap": {
+      "$value": {
+        "value": 3,
         "unit": "px"
       }
     }

@@ -78,20 +78,31 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
         Variant::External => "card external",
         Variant::Single | Variant::Multi => "card",
     };
-    if node.variant == Variant::Multi {
-        // Two copies of the outline behind, stepping up and to the right.
+    // `r` is the footprint. For several instances the front card sits at
+    // its lower left and two copies of the outline step up and to the right
+    // behind it; the rest of the card is drawn on the front one.
+    let r = if node.variant == Variant::Multi {
+        let front = Rect {
+            x: r.x,
+            y: r.y + 2.0 * CARD_MULTI_OFFSET,
+            w: r.w - 2.0 * CARD_MULTI_OFFSET,
+            h: r.h - 2.0 * CARD_MULTI_OFFSET,
+        };
         for step in [2.0, 1.0] {
             let d = step * CARD_MULTI_OFFSET;
             svg.line(&format!(
                 r#"<rect class="card" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-                num(r.x + d),
-                num(r.y - d),
-                num(r.w),
-                num(r.h),
+                num(front.x + d),
+                num(front.y - d),
+                num(front.w),
+                num(front.h),
                 num(ROUNDED_CARD)
             ));
         }
-    }
+        front
+    } else {
+        r
+    };
     svg.line(&format!(
         r#"<rect class="{class}" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
         num(r.x),

@@ -13,7 +13,7 @@ use crate::layout::Placement;
 use crate::spec::Spec;
 use crate::tokens::{
     ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CARD,
-    TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE, TextStyle, theme,
+    STROKE_CONNECTOR, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE, TextStyle, theme,
 };
 use svg::{Svg, escape, num};
 
@@ -73,15 +73,14 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         num(h),
         num(ROUNDED_CANVAS)
     ));
-    // Arrowhead: a filled triangle in the connector colour (DESIGN.md,
-    // Components: Connector), in user space so its size is the tokens' and
-    // not scaled by the line's stroke. The line stops `edge::INSET` short;
-    // `refX` puts the tip back on the line's end.
+    // Arrowhead: an open chevron in the connector colour and the line's own
+    // stroke (DESIGN.md, Components: Connector), in user space so its size is
+    // the tokens' and not scaled by the stroke. Its tip is the line's end;
+    // `overflow` keeps the stroke's round ends from being clipped.
     svg.line(&format!(
-        r#"<defs><marker id="arrow" viewBox="0 0 {l} {w}" refX="{rx}" refY="{ry}" markerWidth="{l}" markerHeight="{w}" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path class="arrowhead" d="M0 0L{l} {ry}L0 {w}Z"/></marker></defs>"#,
+        r#"<defs><marker id="arrow" viewBox="0 0 {l} {w}" refX="{l}" refY="{ry}" markerWidth="{l}" markerHeight="{w}" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L{l} {ry}L0 {w}"/></marker></defs>"#,
         l = num(ARROWHEAD_LENGTH),
         w = num(ARROWHEAD_WIDTH),
-        rx = num(ARROWHEAD_LENGTH - edge::INSET),
         ry = num(ARROWHEAD_WIDTH / 2.0)
     ));
     svg.open(r#"<g class="edges">"#);
@@ -89,13 +88,13 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         let path: Vec<crate::geometry::Point> = path
             .iter()
             .map(|p| crate::geometry::Point {
-                x: p.x + OFFSET,
-                y: p.y + OFFSET,
+                x: p.x + EDGE_OFFSET,
+                y: p.y + EDGE_OFFSET,
             })
             .collect();
         let label = label.map(|r| Rect {
-            x: r.x + OFFSET,
-            y: r.y + OFFSET,
+            x: r.x + EDGE_OFFSET,
+            y: r.y + EDGE_OFFSET,
             ..r
         });
         edge::edge(&mut svg, e, &path, label);
@@ -123,6 +122,11 @@ const HALF_PIXEL: f64 = 0.5;
 /// Where the layout's origin lands on the canvas: past the margin, and half a
 /// pixel in.
 const OFFSET: f64 = SPACING_MARGIN + HALF_PIXEL;
+
+/// Where the layout's origin lands for edges: past the margin, and shifted
+/// so the line's stroke covers whole pixels: by half a pixel for a stroke
+/// of an odd number of pixels, by none for an even one.
+const EDGE_OFFSET: f64 = SPACING_MARGIN + (STROKE_CONNECTOR / 2.0) % 1.0;
 
 /// The style sheet: the theme's roles as custom properties, then the classes
 /// that read them (DESIGN.md, front matter: components).
@@ -179,14 +183,17 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
     svg.line(".badge { fill: var(--badge); }");
     svg.line(".label-patch { fill: var(--canvas); }");
     svg.line(&format!(
-        ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linejoin: round; }}",
+        ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}",
         num(crate::tokens::STROKE_CONNECTOR)
     ));
     svg.line(&format!(
         ".edge.dashed {{ stroke-dasharray: {}; }}",
         dash(crate::tokens::DASH_EDGE)
     ));
-    svg.line(".arrowhead { fill: var(--connector); }");
+    svg.line(&format!(
+        ".arrowhead {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}",
+        num(crate::tokens::STROKE_CONNECTOR)
+    ));
     svg.line(".icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }");
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".icon.{hue} {{ stroke: var(--icon-{hue}); }}"));
@@ -224,17 +231,8 @@ fn dash(d: &[f64]) -> String {
 /// which case the text falls back to the system font.
 fn embed_fonts(svg: &mut Svg, spec: &Spec) -> bool {
     let mut by_weight: std::collections::BTreeMap<u16, BTreeSet<char>> = std::collections::BTreeMap::new();
-    for node in &spec.nodes {
-        by_weight
-            .entry(TYPOGRAPHY_TITLE.weight)
-            .or_default()
-            .extend(node.label.chars());
-        if let Some(note) = &node.note {
-            by_weight
-                .entry(TYPOGRAPHY_SUBTITLE.weight)
-                .or_default()
-                .extend(note.chars());
-        }
+    for (weight, text) in crate::measure::text_runs(spec) {
+        by_weight.entry(weight).or_default().extend(text.chars());
     }
     let mut faces = Vec::new();
     for (weight, chars) in &by_weight {

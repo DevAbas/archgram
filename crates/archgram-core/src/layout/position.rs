@@ -16,11 +16,12 @@
 //! block graph gives the same alignments a valid, compact placement and is
 //! easy to check.
 //!
-//! Vertices have sizes across the layers (a card's height when the flow
-//! runs right, its width when it runs down); dummy vertices, the bends of
-//! long edges, have none. Neighbours in a layer are kept apart by half of
-//! each one's size plus a gap: the node gap between two cards, the edge gap
-//! when either is a dummy.
+//! Vertices have extents across the layers on either side of their anchor
+//! (a card's height when the flow runs right, its width when it runs down);
+//! the two sides differ for a stack of several instances, whose anchor is
+//! its front card. Dummy vertices, the bends of long edges, have none.
+//! Neighbours in a layer are kept apart by the facing extents plus a gap:
+//! the node gap between two cards, the edge gap when either is a dummy.
 
 // Names follow the paper's notation: vertices u, v, w; layers l; coordinates x.
 #![allow(clippy::many_single_char_names)]
@@ -29,26 +30,31 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// What `coordinates` needs to know about the vertices.
 pub struct Vertices<'a> {
-    pub size: &'a [f64],
+    /// Extent before the anchor, towards the start of the layer.
+    pub lo: &'a [f64],
+    /// Extent after the anchor, towards the end of the layer.
+    pub hi: &'a [f64],
     pub dummy: &'a [bool],
     pub node_gap: f64,
     pub edge_gap: f64,
 }
 
 impl Vertices<'_> {
+    /// The least distance between the anchors of `a` and `b` when `a` comes
+    /// first. Not symmetric: `a`'s far side faces `b`'s near side.
     fn separation(&self, a: usize, b: usize) -> f64 {
         let gap = if self.dummy[a] || self.dummy[b] {
             self.edge_gap
         } else {
             self.node_gap
         };
-        f64::midpoint(self.size[a], self.size[b]) + gap
+        self.hi[a] + self.lo[b] + gap
     }
 }
 
 /// The centre of every vertex across the layers.
 pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices<'_>) -> Vec<f64> {
-    let n = v.size.len();
+    let n = v.lo.len();
     let mut up = vec![Vec::new(); n];
     let mut down = vec![Vec::new(); n];
     for &(a, b) in edges {
@@ -72,7 +78,7 @@ pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices
             }
             let before = if looking_up { &up } else { &down };
             let (root, _) = align(&ls, before, &conflicts, n);
-            let mut x = compact(&ls, &root, v, n);
+            let mut x = compact(&ls, &root, v, n, !from_left);
             if !from_left {
                 for c in &mut x {
                     *c = -*c;
@@ -86,7 +92,7 @@ pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices
     // right-based ones by their maximum.
     let span = |x: &[f64]| {
         let (lo, hi) = (0..n).fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), i| {
-            (lo.min(x[i] - v.size[i] / 2.0), hi.max(x[i] + v.size[i] / 2.0))
+            (lo.min(x[i] - v.lo[i]), hi.max(x[i] + v.hi[i]))
         });
         (lo, hi)
     };
@@ -213,14 +219,21 @@ fn align(
 
 /// Places the blocks: as far towards the start as the separations allow,
 /// then each pulled towards the blocks after it as far as they allow.
-fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize) -> Vec<f64> {
+/// `mirrored` layers run from the end of the drawing's layers to their start
+/// (the result is negated afterwards), so each neighbour pair is measured
+/// the other way round.
+fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize, mirrored: bool) -> Vec<f64> {
     // Separation constraints between blocks: block(a) + sep <= block(b).
     let mut sep: BTreeMap<(usize, usize), f64> = BTreeMap::new();
     for layer in layers {
         for w in layer.windows(2) {
             let (a, b) = (w[0], w[1]);
             let key = (root[a], root[b]);
-            let s = v.separation(a, b);
+            let s = if mirrored {
+                v.separation(b, a)
+            } else {
+                v.separation(a, b)
+            };
             let e = sep.entry(key).or_insert(s);
             *e = e.max(s);
         }
@@ -276,19 +289,21 @@ fn compact(layers: &[Vec<usize>], root: &[usize], v: &Vertices<'_>, n: usize) ->
 mod tests {
     use super::*;
 
+    /// Cards 56 across: 28 on either side of the anchor.
     fn cards(n: usize) -> (Vec<f64>, Vec<bool>) {
-        (vec![56.0; n], vec![false; n])
+        (vec![28.0; n], vec![false; n])
     }
 
     #[test]
     fn a_chain_is_a_straight_line() {
         let layers = vec![vec![0], vec![1], vec![2]];
-        let (size, dummy) = cards(3);
+        let (half, dummy) = cards(3);
         let x = coordinates(
             &layers,
             &[(0, 1), (1, 2)],
             &Vertices {
-                size: &size,
+                lo: &half,
+                hi: &half,
                 dummy: &dummy,
                 node_gap: 24.0,
                 edge_gap: 12.0,
@@ -301,9 +316,10 @@ mod tests {
     fn neighbours_in_a_layer_never_overlap() {
         // a -> c, a -> d, b -> d: c and d share a layer.
         let layers = vec![vec![0, 1], vec![2, 3]];
-        let (size, dummy) = cards(4);
+        let (half, dummy) = cards(4);
         let v = Vertices {
-            size: &size,
+            lo: &half,
+            hi: &half,
             dummy: &dummy,
             node_gap: 24.0,
             edge_gap: 12.0,
@@ -316,14 +332,36 @@ mod tests {
     #[test]
     fn a_fork_centres_its_source_between_the_branches() {
         let layers = vec![vec![0], vec![1, 2]];
-        let (size, dummy) = cards(3);
+        let (half, dummy) = cards(3);
         let v = Vertices {
-            size: &size,
+            lo: &half,
+            hi: &half,
             dummy: &dummy,
             node_gap: 24.0,
             edge_gap: 12.0,
         };
         let x = coordinates(&layers, &[(0, 1), (0, 2)], &v);
         assert!((x[0] - f64::midpoint(x[1], x[2])).abs() < 1e-9, "{x:?}");
+    }
+
+    #[test]
+    fn uneven_sides_keep_their_facing_gap_in_every_run() {
+        // `a` reaches 40 past its anchor towards `b`; `b` reaches 5 back
+        // towards `a`. Measured the wrong way round in the mirrored runs,
+        // the gap would be 50 + 10 instead of 40 + 5.
+        let layers = vec![vec![0, 1]];
+        let (lo, hi, dummy) = ([10.0, 5.0], [40.0, 50.0], [false, false]);
+        let x = coordinates(
+            &layers,
+            &[],
+            &Vertices {
+                lo: &lo,
+                hi: &hi,
+                dummy: &dummy,
+                node_gap: 24.0,
+                edge_gap: 12.0,
+            },
+        );
+        assert!((x[1] - x[0] - (40.0 + 5.0 + 24.0)).abs() < 1e-9, "{x:?}");
     }
 }

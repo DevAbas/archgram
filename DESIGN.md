@@ -161,9 +161,10 @@ Four styles, all from `font.sans`:
 
 Labels are sentence case except frame names. Text is measured with the
 font the renderer embeds, so a card is exactly as wide as its title needs.
-In a README the SVG shows the system font of the reader's machine, which is
-why `font.sans` lists a fallback stack. The embedded font is an open
-question (PRD, Open questions).
+The renderer embeds a subset of that font, holding only the characters the
+diagram shows, so the reader sees the text as it was measured. On request
+the text is left to the reader's system font, which is why `font.sans`
+lists a fallback stack.
 
 ## Layout
 
@@ -211,7 +212,8 @@ say "several instances" rather than "raised".
   `rounded.frame` for frames, `rounded.canvas` for the canvas. Radii grow
   with the size of the thing, so nested shapes stay concentric.
   `rounded.connector` rounds an edge's bends, never by more than half of
-  the segment beside it, so a short step stays a step.
+  the segment beside it; a step too short for two such bends is drawn as
+  one S curve.
 - Strokes: `stroke.card` for card edges, `stroke.icon` for icon lines,
   `stroke.connector` for edges, `stroke.frame` for frames.
 - Three dash patterns, never mixed up: `dash.external` marks a node we do
@@ -276,14 +278,17 @@ with `dash.frame` in `color.frame`, no fill, its name at the top left
 ### Connector
 
 An edge (`connector`): an orthogonal line in `color.connector`, its bends
-rounded by `rounded.connector`, ending in a filled arrowhead of the same
-colour, `arrowhead.length` along the line and `arrowhead.width` across it.
-The line stops inside the arrowhead, so its end never shows past the tip,
-and the tip touches the card. It leaves and enters a card at the
-middle of a side, or, when several edges share the side, `spacing.edge-edge`
-apart around the middle; it never passes through a card. Where it must
-change level between two layers it turns twice in the gap between them, a
-symmetric step, never a slant. An edge label, when
+rounded by `rounded.connector`, ending in an open arrowhead drawn with the
+line's own stroke, `arrowhead.length` back along the line and
+`arrowhead.width` across it. The tip stops `arrowhead.gap` short of the
+card, so the arrowhead never touches the card's edge. Edges leaving one
+side of a card leave from its middle as one trunk and fork in the gap;
+edges entering one side merge into one point. An edge with a label near
+the card, or one drawn against the flow, keeps a port of its own,
+`spacing.edge-edge` or more from the trunk. It never passes through a
+card. Where it must change level between two layers it turns twice in the
+gap between them, a symmetric step, never a slant; a step shorter than two
+radii is one S curve instead, so it never kinks. An edge label, when
 there is one, uses `typography.subtitle` on a straight stretch of the line,
 in room kept for it: it never covers a card.
 

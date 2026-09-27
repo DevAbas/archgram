@@ -54,7 +54,7 @@
           "value": 11,
           "unit": "px"
         },
-        "fontWeight": 600,
+        "fontWeight": 500,
         "lineHeight": 1.2,
         "letterSpacing": {
           "value": 0.88,

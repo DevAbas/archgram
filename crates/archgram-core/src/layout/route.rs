@@ -18,20 +18,47 @@
 use std::collections::BTreeSet;
 
 /// One hop's vertical part, in one gap: it arrives at `from` (cross) and
-/// leaves at `to` (cross).
+/// leaves at `to` (cross). A bundle of hops that share a port shares one
+/// riser, spanning from its lowest end to its highest.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Riser {
     pub from: f64,
     pub to: f64,
+    low: f64,
+    high: f64,
 }
 
 impl Riser {
+    /// One hop's riser.
+    #[cfg(test)]
+    pub fn new(from: f64, to: f64) -> Self {
+        Self {
+            from,
+            to,
+            low: from.min(to),
+            high: from.max(to),
+        }
+    }
+
+    /// A bundle's riser: from its shared port to each of `ends`. `to` is the
+    /// end farthest from the port, which decides the crossings it makes.
+    pub fn bundle(from: f64, ends: &[f64]) -> Self {
+        let to = ends
+            .iter()
+            .copied()
+            .max_by(|a, b| (a - from).abs().total_cmp(&(b - from).abs()))
+            .unwrap_or(from);
+        let low = ends.iter().copied().fold(from, f64::min);
+        let high = ends.iter().copied().fold(from, f64::max);
+        Self { from, to, low, high }
+    }
+
     fn low(&self) -> f64 {
-        self.from.min(self.to)
+        self.low
     }
 
     fn high(&self) -> f64 {
-        self.from.max(self.to)
+        self.high
     }
 
     /// Whether two risers share any stretch of the gap, and so need tracks
@@ -110,20 +137,38 @@ pub fn tracks(risers: &[Riser], clearance: f64) -> (Vec<usize>, usize) {
     (track, count)
 }
 
-/// Where `count` ports go along a side centred at `centre`: one in the
-/// middle, several spread `step` apart around it, never nearer the side's
-/// ends than `margin`.
-pub fn ports(count: usize, centre: f64, side: f64, step: f64, margin: f64) -> Vec<f64> {
-    if count <= 1 {
-        return vec![centre];
+/// Where ports go along a side centred at `centre`, one per entry of
+/// `reach`, in order: one in the middle, several spread around it, never
+/// nearer the side's ends than `margin`. Neighbours are `step` apart, or
+/// further when a label sits on one of their lines near the card: `reach`
+/// is how far that label reaches across the line on either side (0 for a
+/// line without one), and a label keeps half a `step` clear of the next
+/// line. When the side is too short, every gap shrinks in proportion.
+pub fn ports(reach: &[f64], centre: f64, side: f64, step: f64, margin: f64) -> Vec<f64> {
+    if reach.len() <= 1 {
+        return vec![centre; reach.len()];
     }
-    #[allow(clippy::cast_precision_loss)] // port counts are small
-    let gaps = (count - 1) as f64;
+    let gaps: Vec<f64> = reach
+        .windows(2)
+        .map(|w| {
+            let labelled = w[0] + w[1];
+            if labelled > 0.0 {
+                step.max(labelled + step / 2.0)
+            } else {
+                step
+            }
+        })
+        .collect();
+    let total: f64 = gaps.iter().sum();
     let room = (side - 2.0 * margin).max(0.0);
-    let spacing = step.min(room / gaps);
-    let first = centre - spacing * gaps / 2.0;
-    #[allow(clippy::cast_precision_loss)]
-    (0..count).map(|i| first + spacing * i as f64).collect()
+    let scale = if total > room { room / total } else { 1.0 };
+    let mut at = centre - total * scale / 2.0;
+    let mut out = vec![at];
+    for g in gaps {
+        at += g * scale;
+        out.push(at);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -132,13 +177,13 @@ mod tests {
 
     #[test]
     fn risers_that_do_not_overlap_share_a_track() {
-        let r = [Riser { from: 0.0, to: 10.0 }, Riser { from: 40.0, to: 60.0 }];
+        let r = [Riser::new(0.0, 10.0), Riser::new(40.0, 60.0)];
         assert_eq!(tracks(&r, 12.0), (vec![0, 0], 1));
     }
 
     #[test]
     fn overlapping_risers_get_their_own_tracks() {
-        let r = [Riser { from: 0.0, to: 50.0 }, Riser { from: 20.0, to: 70.0 }];
+        let r = [Riser::new(0.0, 50.0), Riser::new(20.0, 70.0)];
         let (t, count) = tracks(&r, 12.0);
         assert_eq!(count, 2);
         assert_ne!(t[0], t[1]);
@@ -152,7 +197,7 @@ mod tests {
         // (0..50): two crossings. With b first, b's outgoing at 70 passes
         // below a's riser and a's incoming at 0 above b's: none. So b takes
         // the earlier track.
-        let r = [Riser { from: 0.0, to: 50.0 }, Riser { from: 20.0, to: 70.0 }];
+        let r = [Riser::new(0.0, 50.0), Riser::new(20.0, 70.0)];
         assert_eq!(crossings_if_before(&r[0], &r[1]), 2);
         assert_eq!(crossings_if_before(&r[1], &r[0]), 0);
         let (t, _) = tracks(&r, 12.0);
@@ -161,10 +206,18 @@ mod tests {
 
     #[test]
     fn ports_sit_in_the_middle_or_spread_around_it() {
-        assert_eq!(ports(1, 28.0, 56.0, 12.0, 10.0), vec![28.0]);
-        assert_eq!(ports(3, 28.0, 56.0, 12.0, 10.0), vec![16.0, 28.0, 40.0]);
+        assert_eq!(ports(&[0.0], 28.0, 56.0, 12.0, 10.0), vec![28.0]);
+        assert_eq!(ports(&[0.0; 3], 28.0, 56.0, 12.0, 10.0), vec![16.0, 28.0, 40.0]);
         // Too many for the step: squeezed inside the margins.
-        let p = ports(6, 28.0, 56.0, 12.0, 10.0);
+        let p = ports(&[0.0; 6], 28.0, 56.0, 12.0, 10.0);
         assert!(p[0] >= 10.0 - 1e-9 && p[5] <= 46.0 + 1e-9, "{p:?}");
+    }
+
+    #[test]
+    fn a_label_keeps_its_neighbours_clear() {
+        // The first line carries a label reaching 30 either side: the next
+        // line is 30 + 6 away, not 12.
+        let p = ports(&[30.0, 0.0], 100.0, 200.0, 12.0, 10.0);
+        assert_eq!(p, vec![82.0, 118.0]);
     }
 }

@@ -195,25 +195,50 @@ fn check_random(seeds: u64, direction: &str) {
                 }
             }
         }
-        for (k, (e, label)) in spec.edges.iter().zip(&p.labels).enumerate() {
-            assert_eq!(e.label.is_some(), label.is_some(), "seed {seed}: edge {k}");
-            let Some(r) = label else { continue };
-            let centre = archgram_core::geometry::Point {
-                x: r.x + r.w / 2.0,
-                y: r.y + r.h / 2.0,
-            };
+        check_labels(seed, &spec, &p);
+        assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
+    }
+}
+
+/// Every label sits on its edge, covers no card, and no other edge runs
+/// under it.
+fn check_labels(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::layout::Placement) {
+    for (k, (e, label)) in spec.edges.iter().zip(&p.labels).enumerate() {
+        assert_eq!(e.label.is_some(), label.is_some(), "seed {seed}: edge {k}");
+        let Some(r) = label else { continue };
+        let centre = archgram_core::geometry::Point {
+            x: r.x + r.w / 2.0,
+            y: r.y + r.h / 2.0,
+        };
+        assert!(
+            p.edges[k].windows(2).any(|w| on_segment(w[0], w[1], centre)),
+            "seed {seed}: the label of edge {k} is off its path"
+        );
+        for (i, n) in p.nodes.iter().enumerate() {
             assert!(
-                p.edges[k].windows(2).any(|w| on_segment(w[0], w[1], centre)),
-                "seed {seed}: the label of edge {k} is off its path"
+                !r.overlaps(n),
+                "seed {seed}: the label of edge {k} covers node {i}"
             );
-            for (i, n) in p.nodes.iter().enumerate() {
+        }
+        // An edge sharing a card with the labelled one keeps clear of the
+        // label too, unless that card's side is too short for all its
+        // ports and every gap shrinks (`route::ports`); any other edge
+        // never runs under it.
+        let same_card = |j: usize| {
+            let (a, b) = (&spec.edges[k], &spec.edges[j]);
+            a.from == b.from || a.to == b.to || a.from == b.to || a.to == b.from
+        };
+        for (j, other) in p.edges.iter().enumerate() {
+            if j == k || same_card(j) {
+                continue;
+            }
+            for w in other.windows(2) {
                 assert!(
-                    !r.overlaps(n),
-                    "seed {seed}: the label of edge {k} covers node {i}"
+                    !crosses_interior(r, w[0], w[1]),
+                    "seed {seed}: edge {j} runs under the label of edge {k}"
                 );
             }
         }
-        assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
     }
 }
 

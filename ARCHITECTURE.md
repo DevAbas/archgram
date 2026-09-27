@@ -75,7 +75,15 @@ Labels are measured with the advance widths of Geist, read with
 `skrifa`. The static Regular and Medium TTF files ship inside the binary
 under their OFL licence, so measurements do not depend on the fonts
 installed on a machine. A box's size comes from its kind's template (icon
-area, padding) and its measured label.
+area, padding) and its measured label. A node with several instances
+takes the footprint of its whole stack, the front card plus
+`card.multi-offset` twice in each direction, so the layout keeps the
+stack clear of its neighbours; its anchor across the layers is the front
+card's middle, so a straight edge meets the card a reader sees first.
+
+One list of text runs, each with its weight (node titles and notes, edge
+labels), feeds both the embedded font's subset and the warning for
+characters Geist lacks, so neither can miss a text the other covers.
 
 ### Layout
 
@@ -119,9 +127,19 @@ does) rather than a general search:
   gap, and into its end. A long edge runs straight through the layers it
   crosses, at the place the layout kept for it, `spacing.edge-edge` clear of
   the cards beside it.
-- Each card's edges on one side get ports: the side's middle for one edge,
-  spread `spacing.edge-edge` apart around it for several, ordered by where
-  their other ends lie so they do not cross as they leave.
+- Each card's edges on one side get ports. The plain ones share one port
+  as a bundle, and a bundle turns at one track: edges leaving a side leave
+  as a trunk that forks in the gap, edges entering a side merge into one
+  point along one trunk (the look of hand-drawn flow diagrams). A hop in
+  both kinds of bundle follows the one leaving. An edge whose label sits
+  just past the card, and an edge reversed against the flow, get ports of
+  their own; all ports are spread `spacing.edge-edge` apart around the
+  side's middle, ordered by where their other ends lie (a bundle by its
+  middle) so they do not cross as they leave. A port whose
+  edge carries its label just past the card keeps its neighbours that
+  label's reach plus half of `spacing.edge-edge` away. When a side is too
+  short for all its ports every gap shrinks in proportion, and a label may
+  then touch a neighbouring edge from the same card.
 - Vertical segments that overlap in a gap get separate tracks. For each
   overlapping pair, the order that crosses fewer of the other hop's
   horizontal segments wins; each segment then takes the lowest track clear
@@ -131,8 +149,9 @@ does) rather than a general search:
   the label, so crossing reduction and coordinates keep it clear of cards.
   On an edge between neighbouring layers, the gap it leaves into reserves
   the label's length plus `spacing.edge-edge` on each side before its
-  tracks, and the label sits on the segment leaving the first card. The
-  label is drawn on a patch of canvas colour.
+  tracks, and the label sits on the segment leaving the first card, in
+  that room, straight edge or not. The label is drawn on a patch of canvas
+  colour.
 
 A general orthogonal router (visibility graph and A*, as in libavoid) is
 not needed while every edge follows the layers; it stays an option should

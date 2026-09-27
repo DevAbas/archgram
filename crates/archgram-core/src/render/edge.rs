@@ -1,16 +1,15 @@
 //! Edges (DESIGN.md, Components: Connector): the router's orthogonal line
-//! with its bends rounded, a filled arrowhead at its end, and its label, if
+//! with its bends rounded, an open arrowhead at its end, and its label, if
 //! any, in the box the layout kept for it.
 
 use crate::geometry::{Point, Rect};
 use crate::render::svg::{Svg, escape, num};
 use crate::spec::{Edge, EdgeStyle};
-use crate::tokens::{ARROWHEAD_LENGTH, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_SUBTITLE};
+use crate::tokens::{ARROWHEAD_GAP, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_SUBTITLE};
 
-/// How far the line stops short of its end: halfway into the arrowhead, so
-/// the line's end never shows past the tip (as D2 and Mermaid draw it). The
-/// arrowhead's marker puts the tip back on the end.
-pub const INSET: f64 = ARROWHEAD_LENGTH / 2.0;
+/// How far the line stops short of the card it points at: the arrowhead's
+/// tip is the line's end, so the tip leaves `arrowhead.gap` of air.
+const INSET: f64 = ARROWHEAD_GAP;
 
 /// Draws one edge along `path`, which already starts and ends on the sides
 /// of its cards, with its label in `label`.
@@ -47,25 +46,52 @@ fn rounded(path: &[Point]) -> String {
         };
     }
     let mut d = vec![format!("M{} {}", num(points[0].x), num(points[0].y))];
-    for w in points.windows(3) {
-        let (from, corner, to) = (w[0], w[1], w[2]);
+    let p = &points;
+    let mut i = 1;
+    while i + 1 < count {
+        let (from, corner, to) = (p[i - 1], p[i], p[i + 1]);
+        // A jog: this bend and the next turn opposite ways across a step
+        // shorter than two radii. Two arcs that small would kink, so the
+        // jog is one S curve over a run of up to a radius on either side,
+        // leaving the half of each segment that a neighbouring bend uses.
+        if i + 2 < count {
+            let next = p[i + 2];
+            let step = length(corner, to);
+            if step < 2.0 * ROUNDED_CONNECTOR && turn(from, corner, to) * turn(corner, to, next) < 0.0 {
+                let before = length(from, corner);
+                let after = length(to, next);
+                let room_before = if i == 1 { before } else { before / 2.0 };
+                let room_after = if i + 2 == count - 1 { after } else { after / 2.0 };
+                let run = ROUNDED_CONNECTOR.min(room_before).min(room_after);
+                if run > 0.0 {
+                    let start = toward(corner, from, run);
+                    let end = toward(to, next, run);
+                    d.push(format!("L{} {}", num(start.x), num(start.y)));
+                    d.push(format!(
+                        "C{} {} {} {} {} {}",
+                        num(corner.x),
+                        num(corner.y),
+                        num(to.x),
+                        num(to.y),
+                        num(end.x),
+                        num(end.y)
+                    ));
+                    i += 2;
+                    continue;
+                }
+            }
+        }
         let (before, after) = (length(from, corner), length(corner, to));
         let radius = ROUNDED_CONNECTOR.min(before / 2.0).min(after / 2.0);
         if radius <= 0.0 {
             d.push(format!("L{} {}", num(corner.x), num(corner.y)));
+            i += 1;
             continue;
         }
-        let enter = Point {
-            x: corner.x - (corner.x - from.x) / before * radius,
-            y: corner.y - (corner.y - from.y) / before * radius,
-        };
-        let leave = Point {
-            x: corner.x + (to.x - corner.x) / after * radius,
-            y: corner.y + (to.y - corner.y) / after * radius,
-        };
+        let enter = toward(corner, from, radius);
+        let leave = toward(corner, to, radius);
         // A clockwise turn on screen (y grows downwards) sweeps positively.
-        let turn = (corner.x - from.x) * (to.y - corner.y) - (corner.y - from.y) * (to.x - corner.x);
-        let sweep = u8::from(turn > 0.0);
+        let sweep = u8::from(turn(from, corner, to) > 0.0);
         d.push(format!("L{} {}", num(enter.x), num(enter.y)));
         d.push(format!(
             "A{r} {r} 0 0 {sweep} {} {}",
@@ -73,6 +99,7 @@ fn rounded(path: &[Point]) -> String {
             num(leave.y),
             r = num(radius)
         ));
+        i += 1;
     }
     d.push(format!(
         "L{} {}",
@@ -80,6 +107,21 @@ fn rounded(path: &[Point]) -> String {
         num(points[count - 1].y)
     ));
     d.join(" ")
+}
+
+/// Which way the path turns at `b`: positive clockwise on screen, negative
+/// counter-clockwise, zero straight on.
+fn turn(a: Point, b: Point, c: Point) -> f64 {
+    (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
+}
+
+/// The point `distance` from `from` towards `to` along their segment.
+fn toward(from: Point, to: Point, distance: f64) -> Point {
+    let whole = length(from, to);
+    Point {
+        x: from.x + (to.x - from.x) / whole * distance,
+        y: from.y + (to.y - from.y) / whole * distance,
+    }
 }
 
 /// The length of an axis-aligned segment.
@@ -120,13 +162,17 @@ mod tests {
     fn a_step_turns_twice_with_opposite_arcs_and_stops_short() {
         // Right, down, right: a clockwise turn, then a counter-clockwise one.
         let d = rounded(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 40.0), pt(60.0, 40.0)]);
-        assert_eq!(d, "M0 0 L12 0 A8 8 0 0 1 20 8 L20 32 A8 8 0 0 0 28 40 L56 40");
+        assert_eq!(
+            d,
+            "M0 0 L10 0 A10 10 0 0 1 20 10 L20 24 A16 16 0 0 0 36 40 L57 40"
+        );
     }
 
     #[test]
-    fn a_short_jog_rounds_by_half_its_length() {
-        // The middle segment is 6 long: each bend takes 3, and no more.
+    fn a_short_jog_is_one_s_curve() {
+        // A step of 6 is too short for two bends: one S over a radius of run
+        // on either side, 16 here.
         let d = rounded(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 6.0), pt(60.0, 6.0)]);
-        assert_eq!(d, "M0 0 L17 0 A3 3 0 0 1 20 3 L20 3 A3 3 0 0 0 23 6 L56 6");
+        assert_eq!(d, "M0 0 L4 0 C20 0 20 6 36 6 L57 6");
     }
 }
