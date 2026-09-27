@@ -327,6 +327,16 @@ spec generator are small helpers inside the workspace.
 - One npm package built with `wasm-bindgen-cli` and `wasm-opt`, for Node
   and the browser; the PNG module is a separate, optional package.
 - Crates on crates.io once the API is stable.
+- One SVG carries both themes by default. `archgram build --split-themes`
+  lays the diagram out once and writes `<name>.light.svg` and
+  `<name>.dark.svg`, one theme each, for pages that choose per reader:
+
+  ```html
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="diagram.dark.svg">
+    <img alt="…" src="diagram.light.svg">
+  </picture>
+  ```
 
 ## References
 

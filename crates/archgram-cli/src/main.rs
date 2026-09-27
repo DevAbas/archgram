@@ -15,7 +15,7 @@ const USAGE: &str = "\
 archgram: architecture diagrams from a spec
 
 Usage:
-  archgram build <spec> [-o <out.svg>] [--theme auto|light|dark] [--system-font]
+  archgram build <spec> [-o <out.svg>] [--theme auto|light|dark | --split-themes] [--system-font]
                                Draw the diagram (default output: the spec's name with .svg)
   archgram check <spec>        Check a spec and list every problem
   archgram --version           Print the version
@@ -25,6 +25,8 @@ A spec is JSON (.json) or YAML (.yaml, .yml); YAML problems are shown at
 their line and column.
 
 Themes: auto (light, dark under the reader's dark mode; the default), light, dark.
+--split-themes writes <out>.light.svg and <out>.dark.svg from one layout, for a
+  page that picks one per reader (GitHub's <picture> with prefers-color-scheme).
 --system-font leaves the text to the reader's font instead of embedding Geist.
   The text is still measured with Geist, so a wider system font can crowd or
   overflow a card; embedding (the default) draws exactly what was measured.";
@@ -35,7 +37,7 @@ fn main() -> ExitCode {
     match args.as_slice() {
         ["check", path] => check(path),
         ["build", path, rest @ ..] => match build_options(rest) {
-            Ok((out, options)) => build(path, out, options),
+            Ok(b) => build(path, b),
             Err(message) => usage_error(&message),
         },
         ["--version" | "-V"] => {
@@ -55,14 +57,24 @@ fn usage_error(message: &str) -> ExitCode {
     ExitCode::from(2)
 }
 
-fn build_options(rest: &[&str]) -> Result<(Option<PathBuf>, Options), String> {
+/// What `build` was asked for.
+struct Build {
+    out: Option<PathBuf>,
+    options: Options,
+    /// Write one file per theme instead of one with both.
+    split: bool,
+}
+
+fn build_options(rest: &[&str]) -> Result<Build, String> {
     let mut out = None;
     let mut options = Options::default();
+    let (mut split, mut themed) = (false, false);
     let mut it = rest.iter();
     while let Some(arg) = it.next() {
         match *arg {
             "-o" | "--output" => out = Some(PathBuf::from(it.next().ok_or("-o needs a file")?)),
             "--theme" => {
+                themed = true;
                 options.mode = match it.next().copied() {
                     Some("auto") => Mode::Auto,
                     Some("light") => Mode::Light,
@@ -76,10 +88,14 @@ fn build_options(rest: &[&str]) -> Result<(Option<PathBuf>, Options), String> {
                 };
             }
             "--system-font" => options.embed_font = false,
+            "--split-themes" => split = true,
             other => return Err(format!("unrecognised option {other}")),
         }
     }
-    Ok((out, options))
+    if split && themed {
+        return Err("--split-themes writes both themes; leave out --theme".into());
+    }
+    Ok(Build { out, options, split })
 }
 
 fn read(path: &str) -> Result<String, ExitCode> {
@@ -161,7 +177,7 @@ fn check(path: &str) -> ExitCode {
     }
 }
 
-fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
+fn build(path: &str, Build { out, options, split }: Build) -> ExitCode {
     let format = match format_of(path) {
         Ok(f) => f,
         Err(code) => return code,
@@ -194,15 +210,29 @@ fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
             );
         }
     }
-    let svg = match archgram_core::draw_with(&spec, options, &Icons::load()) {
-        Ok(svg) => svg,
-        Err(errors) => return report(path, &errors),
-    };
     let out = out.unwrap_or_else(|| Path::new(path).with_extension("svg"));
-    if let Err(e) = std::fs::write(&out, svg) {
-        eprintln!("archgram: cannot write {}: {e}", out.display());
-        return ExitCode::from(2);
+    let files = if split {
+        match archgram_core::draw_themes(&spec, options, &Icons::load()) {
+            Ok((light, dark)) => vec![(themed(&out, "light"), light), (themed(&out, "dark"), dark)],
+            Err(errors) => return report(path, &errors),
+        }
+    } else {
+        match archgram_core::draw_with(&spec, options, &Icons::load()) {
+            Ok(svg) => vec![(out, svg)],
+            Err(errors) => return report(path, &errors),
+        }
+    };
+    for (file, svg) in files {
+        if let Err(e) = std::fs::write(&file, svg) {
+            eprintln!("archgram: cannot write {}: {e}", file.display());
+            return ExitCode::from(2);
+        }
+        println!("wrote {}", file.display());
     }
-    println!("wrote {}", out.display());
     ExitCode::SUCCESS
+}
+
+/// `diagram.svg` as `diagram.light.svg`, for one theme's file.
+fn themed(out: &Path, theme: &str) -> PathBuf {
+    out.with_extension(format!("{theme}.svg"))
 }

@@ -96,6 +96,24 @@ pub fn draw_with(
     Ok(render::render(spec, &placement, options, logos))
 }
 
+/// The spec laid out once and drawn twice, light then dark, each file with
+/// one theme only: for a page that chooses one per reader, such as GitHub's
+/// `<picture>` with `prefers-color-scheme` sources.
+///
+/// # Errors
+///
+/// Layout hints that contradict the edges.
+pub fn draw_themes(
+    spec: &Spec,
+    options: render::Options,
+    logos: &dyn logos::Logos,
+) -> Result<(String, String), Vec<SpecError>> {
+    let sizes = measure::card_sizes(spec);
+    let placement = layout::place(spec, &sizes)?;
+    let theme = |mode| render::render(spec, &placement, render::Options { mode, ..options }, logos);
+    Ok((theme(render::Mode::Light), theme(render::Mode::Dark)))
+}
+
 /// Each `tech` that `logos` does not have, located in the spec, with the
 /// nearest slugs suggested. Empty when `logos` has none at all.
 #[must_use]
