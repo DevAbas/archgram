@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.3        |
+| Version | 0.4        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -135,7 +135,12 @@ a dashed border).
 
 A node may name its technology (`tech: postgresql`, a Simple Icons slug);
 archgram then shows the technology's logo, in one of two places the
-diagram chooses: the card's corner or a chip on the icon.
+diagram chooses: the card's corner or a chip on the icon. Logos come from
+a pinned Simple Icons release, CC0 data; a logo under a licence of its
+own is left out. They are drawn in one neutral colour to name a
+technology, as Simple Icons intends; the brands' guidelines stay with
+whoever publishes a diagram, and archgram records each logo's source and
+guidelines for them.
 
 ## 8. Success criteria
 
@@ -161,8 +166,6 @@ diagram chooses: the card's corner or a chip on the icon.
 
 ## 10. Open questions
 
-- How the Simple Icons logos are used within each brand's trademark
-  guidelines.
 - A trademark check of the name before the public release.
 
 ## 11. Changelog
@@ -172,3 +175,4 @@ diagram chooses: the card's corner or a chip on the icon.
 | 0.1     | 2026-09-27 | First draft: problem, users, principles, scope by version, node vocabulary, success criteria, non-goals. |
 | 0.2     | 2026-09-27 | The mono palette, colour only in icon lines; horizontal and vertical cards; logos in the corner or on a chip (§5, §6.3, §7). Palettes removed from the open questions. |
 | 0.3     | 2026-09-27 | The font is Geist, measured and embedded as a subset; removed from the open questions. |
+| 0.4     | 2026-09-27 | Logos: a pinned Simple Icons release, CC0 data only, drawn neutral, sources and guidelines recorded (§7); removed from the open questions. |

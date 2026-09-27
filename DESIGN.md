@@ -274,7 +274,8 @@ one of two places, chosen per diagram:
   right corner, edged like a card.
 
 The logo is always `color.text-muted`. It says which technology; the icon
-still says which kind of thing.
+still says which kind of thing. A card with its logo in the corner keeps
+room for it beside the title, so the two never meet.
 
 ### Frame
 

@@ -54,7 +54,12 @@ impl Default for Options {
 /// When `spec` has not passed validation (an edge names a node that does
 /// not exist) or `placement` was made for another spec.
 #[must_use]
-pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
+pub fn render(
+    spec: &Spec,
+    placement: &Placement,
+    options: Options,
+    logos: &dyn crate::logos::Logos,
+) -> String {
     let w = placement.size.w + 2.0 * SPACING_MARGIN;
     let h = placement.size.h + 2.0 * SPACING_MARGIN;
     let mut svg = Svg::default();
@@ -92,30 +97,7 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
         y: r.y + OFFSET,
         ..r
     };
-    let depth = |f: usize| {
-        let mut d = 0;
-        let mut p = spec.frames[f].parent.as_deref();
-        while let Some(id) = p {
-            d += 1;
-            p = spec
-                .frames
-                .iter()
-                .find(|g| g.id == id)
-                .and_then(|g| g.parent.as_deref());
-        }
-        d
-    };
-    let mut outer_first: Vec<usize> = (0..spec.frames.len())
-        .filter(|&f| placement.frames[f].is_some())
-        .collect();
-    outer_first.sort_by_key(|&f| (depth(f), f));
-    if !outer_first.is_empty() {
-        svg.open(r#"<g class="frames">"#);
-        for &f in &outer_first {
-            frame::frame(&mut svg, at(placement.frames[f].expect("placed")));
-        }
-        svg.close("</g>");
-    }
+    let outer_first = frames_outer_first(&mut svg, spec, placement, at);
     svg.open(r#"<g class="edges">"#);
     for ((e, path), label) in spec.edges.iter().zip(&placement.edges).zip(&placement.labels) {
         let path: Vec<crate::geometry::Point> = path
@@ -144,7 +126,12 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
             y: r.y + OFFSET,
             ..*r
         };
-        card::card(&mut svg, node, at, spec.card);
+        let logo = node
+            .tech
+            .as_deref()
+            .and_then(|t| logos.path(t))
+            .map(|p| (p, spec.logo));
+        card::card(&mut svg, node, at, spec.card, logo);
     }
     let entries: Vec<crate::layout::legend::Entry> = placement
         .legend
@@ -158,6 +145,41 @@ pub fn render(spec: &Spec, placement: &Placement, options: Options) -> String {
     legend::legend(&mut svg, &entries);
     svg.close("</svg>");
     svg.finish()
+}
+
+/// Draws the frames, the outermost below the ones inside it, and returns
+/// them in that order for their names.
+fn frames_outer_first(
+    svg: &mut Svg,
+    spec: &Spec,
+    placement: &Placement,
+    at: impl Fn(Rect) -> Rect,
+) -> Vec<usize> {
+    let depth = |f: usize| {
+        let mut d = 0;
+        let mut p = spec.frames[f].parent.as_deref();
+        while let Some(id) = p {
+            d += 1;
+            p = spec
+                .frames
+                .iter()
+                .find(|g| g.id == id)
+                .and_then(|g| g.parent.as_deref());
+        }
+        d
+    };
+    let mut outer_first: Vec<usize> = (0..spec.frames.len())
+        .filter(|&f| placement.frames[f].is_some())
+        .collect();
+    outer_first.sort_by_key(|&f| (depth(f), f));
+    if !outer_first.is_empty() {
+        svg.open(r#"<g class="frames">"#);
+        for &f in &outer_first {
+            frame::frame(svg, at(placement.frames[f].expect("placed")));
+        }
+        svg.close("</g>");
+    }
+    outer_first
 }
 
 /// Half a pixel. The layout puts cards and paths on whole pixels; a card's
@@ -229,6 +251,11 @@ fn style(svg: &mut Svg, spec: &Spec, options: Options) {
         dash(crate::tokens::DASH_EXTERNAL)
     ));
     svg.line(".badge { fill: var(--badge); }");
+    svg.line(".logo { fill: var(--text-muted); }");
+    svg.line(&format!(
+        ".logo-chip {{ fill: var(--card); stroke: var(--card-edge); stroke-width: {}; }}",
+        num(STROKE_CARD)
+    ));
     svg.line(&format!(
         ".frame {{ fill: none; stroke: var(--frame); stroke-width: {}; stroke-dasharray: {}; }}",
         num(crate::tokens::STROKE_FRAME),

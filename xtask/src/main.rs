@@ -9,6 +9,12 @@
 //!
 //! A licence outside the list or a known vulnerability fails the task. An
 //! informational advisory (unmaintained, unsound) is reported but does not.
+//!
+//! `icons <tag>` writes `crates/archgram-icons/data` from a pinned release
+//! of Simple Icons (ARCHITECTURE.md, Code map): a shallow clone of the tag
+//! under `target/`, its `data/simple-icons.json` for titles and licences,
+//! `slugs.md` for each title's slug, and `icons/<slug>.svg` for its path.
+//! An icon that carries a licence of its own other than CC0 is left out.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -21,6 +27,8 @@ const ALLOWED_LICENCES: &[&str] = &[
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
+    // Simple Icons' logo data, carried by archgram-icons.
+    "CC0-1.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
@@ -33,11 +41,172 @@ const ADVISORY_DB: &str = "https://github.com/rustsec/advisory-db";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if let Some("deps") = args.first().map(String::as_str) {
-        deps()
-    } else {
-        eprintln!("usage: cargo xtask deps");
-        ExitCode::from(2)
+    match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+        ["deps"] => deps(),
+        ["icons", tag] => icons(tag),
+        _ => {
+            eprintln!("usage: cargo xtask deps | cargo xtask icons <simple-icons tag>");
+            ExitCode::from(2)
+        }
+    }
+}
+
+const SIMPLE_ICONS: &str = "https://github.com/simple-icons/simple-icons";
+
+fn icons(tag: &str) -> ExitCode {
+    match write_icons(tag) {
+        Ok(report) => {
+            println!("{report}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("icons: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn write_icons(tag: &str) -> Result<String, String> {
+    let root = workspace_root();
+    let dir = root.join("target").join(format!("simple-icons-{tag}"));
+    if !dir.join(".git").exists() {
+        let status = Command::new("git")
+            .args(["clone", "--depth", "1", "--quiet", "--branch", tag, SIMPLE_ICONS])
+            .arg(&dir)
+            .status()
+            .map_err(|e| format!("cannot run git: {e}"))?;
+        if !status.success() {
+            return Err(format!("git clone of {tag} failed: {status}"));
+        }
+    }
+    let commit = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(&dir)
+        .output()
+        .map_err(|e| format!("cannot run git: {e}"))?;
+    let commit = String::from_utf8_lossy(&commit.stdout).trim().to_owned();
+    let read = |p: &str| std::fs::read_to_string(dir.join(p)).map_err(|e| format!("{p}: {e}"));
+
+    let slug_of = slug_table(&read("slugs.md")?);
+    let data: Value = serde_json::from_str(&read("data/simple-icons.json")?).map_err(|e| e.to_string())?;
+    let entries = data.as_array().ok_or("simple-icons.json is not an array")?;
+    // Slugs the data names outright; a title shared by two icons leaves the
+    // other one to the icon without a slug of its own.
+    let claimed: std::collections::BTreeSet<&str> =
+        entries.iter().filter_map(|e| e["slug"].as_str()).collect();
+    let mut rows = Vec::new();
+    let mut provenance = Vec::new();
+    let mut left_out = 0;
+    for entry in entries {
+        let title = entry["title"].as_str().ok_or("an icon without a title")?;
+        let licence = entry["license"]["type"].as_str();
+        if licence.is_some_and(|l| l != "CC0-1.0") {
+            left_out += 1;
+            continue;
+        }
+        let slug = if let Some(s) = entry["slug"].as_str() {
+            s.to_owned()
+        } else {
+            slug_for(title, &slug_of, &claimed, &dir)?
+        };
+        let svg = read(&format!("icons/{slug}.svg"))?;
+        let path = svg
+            .split_once(" d=\"")
+            .and_then(|(_, rest)| rest.split_once('"'))
+            .map(|(d, _)| d)
+            .ok_or(format!("icons/{slug}.svg has no path"))?;
+        if title.contains('\t') || path.contains('\t') {
+            return Err(format!("`{slug}` holds a tab"));
+        }
+        rows.push(format!("{slug}\t{title}\t{path}"));
+        provenance.push(format!(
+            "{slug}\t{}\t{}\t{}",
+            entry["source"].as_str().unwrap_or(""),
+            entry["guidelines"].as_str().unwrap_or(""),
+            licence.unwrap_or("")
+        ));
+    }
+    rows.sort();
+    provenance.sort();
+    if rows
+        .windows(2)
+        .any(|w| w[0].split('\t').next() == w[1].split('\t').next())
+    {
+        return Err("two icons share a slug".into());
+    }
+    let out = root.join("crates/archgram-icons/data");
+    std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+    let write =
+        |name: &str, text: String| std::fs::write(out.join(name), text).map_err(|e| format!("{name}: {e}"));
+    write("icons.tsv", rows.join("\n") + "\n")?;
+    write("provenance.tsv", provenance.join("\n") + "\n")?;
+    write(
+        "RELEASE",
+        format!(
+            "simple-icons {tag}\ncommit {commit}\nicons {}\nleft out (a licence other than CC0) {left_out}\n",
+            rows.len()
+        ),
+    )?;
+    Ok(format!(
+        "icons: {} from simple-icons {tag} ({commit}); {left_out} left out for a licence other than CC0",
+        rows.len()
+    ))
+}
+
+/// Title to slugs, from the table Simple Icons publishes with a release.
+fn slug_table(md: &str) -> std::collections::BTreeMap<String, Vec<String>> {
+    let mut slug_of: std::collections::BTreeMap<String, Vec<String>> = std::collections::BTreeMap::new();
+    for line in md.lines() {
+        let cells: Vec<&str> = line.split('|').map(str::trim).collect();
+        let unquote = |c: &str| {
+            c.strip_prefix('`')
+                .and_then(|c| c.strip_suffix('`'))
+                .map(str::to_owned)
+        };
+        if let [_, title, slug, _] = cells.as_slice()
+            && let (Some(t), Some(s)) = (unquote(title), unquote(slug))
+        {
+            slug_of.entry(t).or_default().push(s);
+        }
+    }
+    slug_of
+}
+
+/// An icon's slug from its title: the table's, less slugs other icons
+/// claim; for a title the table lacks, Simple Icons' rule for a plain ASCII
+/// title (lower case, `+` plus, `.` dot, `&` and, nothing else but letters
+/// and digits), taken only when that icon's file exists.
+fn slug_for(
+    title: &str,
+    slug_of: &std::collections::BTreeMap<String, Vec<String>>,
+    claimed: &std::collections::BTreeSet<&str>,
+    dir: &Path,
+) -> Result<String, String> {
+    let free: Vec<&String> = slug_of
+        .get(title)
+        .map(|all| all.iter().filter(|s| !claimed.contains(s.as_str())).collect())
+        .unwrap_or_default();
+    match free.as_slice() {
+        [one] => Ok((*one).clone()),
+        [] if title.is_ascii() => {
+            let slug: String = title
+                .to_lowercase()
+                .replace('+', "plus")
+                .replace('.', "dot")
+                .replace('&', "and")
+                .chars()
+                .filter(char::is_ascii_alphanumeric)
+                .collect();
+            if dir.join(format!("icons/{slug}.svg")).exists() {
+                Ok(slug)
+            } else {
+                Err(format!(
+                    "`{title}` is not in slugs.md, and icons/{slug}.svg does not exist"
+                ))
+            }
+        }
+        [] => Err(format!("`{title}` is not in slugs.md")),
+        many => Err(format!("`{title}` has several slugs in slugs.md: {many:?}")),
     }
 }
 

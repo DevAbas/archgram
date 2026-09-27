@@ -31,14 +31,18 @@ The repository is one Cargo workspace.
 | Crate | Holds | Depends on |
 |---|---|---|
 | `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
+| `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr` |
 | `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
-| `archgram-cli` | The `archgram` binary: files, flags, exit codes | the three above |
+| `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
 | `archgram-wasm` | The npm package for Node and the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
 | `xtask` | Repository tasks run with `cargo xtask`, such as the dependency check; never shipped | `serde_json` |
 
 `archgram-core` does no I/O. Anything that touches the file system or the
-terminal lives in `archgram-cli`.
+terminal lives in `archgram-cli`. The core carries no logos either: it
+draws those it is given through `Logos`, so the WASM package stays small
+and can hand over only the logos a diagram names, while the CLI passes
+all of `archgram-icons`.
 
 ### Design tokens in the build
 
@@ -208,7 +212,12 @@ the dark values under `prefers-color-scheme`, or one file per theme on
 request. The legend is generated from the categories and variants the
 diagram uses and laid out below it (`layout::legend`), in rows no wider
 than the diagram; its text is part of the text runs, so the font subset
-carries it. Technology logos come from a vendored subset of Simple Icons.
+carries it. A technology logo is its Simple Icons path scaled from the
+24 by 24 grid into the card's corner or a round chip on the badge, in
+`color.text-muted`. A card whose logo goes in the corner keeps its width
+of room beside the title. `tech` is checked against the logos given, with
+the nearest slugs suggested; with none given it is neither checked nor
+drawn.
 
 The text is drawn in the same font it was measured with. archgram's own
 subsetter cuts Geist down to the glyphs the diagram uses (keeping the
@@ -272,6 +281,12 @@ These hold for every output and are checked by tests on every change.
   RustSec advisory database, fetched as a git repository. Any finding fails
   the check.
 - Cargo's own `cargo tree` shows where each indirect dependency comes from.
+- Logo data is pinned like a dependency: `archgram-icons/data/RELEASE`
+  names the Simple Icons tag and commit, `cargo xtask icons <tag>`
+  rewrites the data from that tag alone, and an update is a reviewed
+  change. The data is CC0-1.0, on the allowed list for that crate; a logo
+  carrying a licence of its own other than CC0 is left out, and
+  `provenance.tsv` keeps each logo's source and brand guidelines.
 
 ## Testing
 

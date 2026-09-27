@@ -7,6 +7,7 @@ name = "archgram-cli"
 version = "0.1.0"
 dependencies = [
  "archgram-core",
+ "archgram-icons",
 ]
 
 [[package]]
@@ -16,6 +17,13 @@ dependencies = [
  "serde",
  "serde_json",
  "skrifa",
+]
+
+[[package]]
+name = "archgram-icons"
+version = "0.1.0"
+dependencies = [
+ "archgram-core",
 ]
 
 [[package]]

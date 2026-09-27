@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 archgram-core = { path = "../archgram-core" }
+archgram-icons = { path = "../archgram-icons" }
 
 [lints]
 workspace = true

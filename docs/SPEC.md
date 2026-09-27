@@ -65,7 +65,7 @@ Examples.
 | `kind` | yes | One of the kinds below; decides the icon and the category |
 | `label` | yes | The card's title |
 | `note` | no | The card's subtitle: one short line |
-| `tech` | no | A technology, by its Simple Icons slug (`postgresql`, `redis`, `react`); shows its logo |
+| `tech` | no | A technology, by its Simple Icons slug (`postgresql`, `redis`, `react`); shows its logo. Lowercase letters, digits and `_` |
 | `variant` | no | `single` (default), `multi` (several instances), `external` (not ours) |
 | `frame` | no | The id of the frame the node sits in |
 

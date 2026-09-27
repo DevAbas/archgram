@@ -1,0 +1,14 @@
+[package]
+name = "archgram-icons"
+description = "Technology logos for archgram, from a pinned release of Simple Icons."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# The code is archgram's; the logos' data is Simple Icons', released as CC0.
+license = "MIT AND CC0-1.0"
+
+[dependencies]
+archgram-core = { path = "../archgram-core" }
+
+[lints]
+workspace = true

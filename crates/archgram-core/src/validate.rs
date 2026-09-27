@@ -122,7 +122,10 @@ impl<'a> Validator<'a> {
                 );
             }
             if let Some(tech) = &n.tech
-                && (tech.is_empty() || !tech.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()))
+                && (tech.is_empty()
+                    || !tech
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'))
             {
                 self.error(format!("/nodes/{i}/tech"), format!("`{tech}` is not a Simple Icons slug; slugs are lowercase letters and digits, such as `postgresql`"));
             }
@@ -340,6 +343,52 @@ fn is_valid_id(id: &str) -> bool {
 
 /// The closest candidate by edit distance, when it is close enough to be a typo:
 /// at most a third of the id's length, and at least one edit.
+/// Each `tech` names a logo in `logos` (docs/SPEC.md, Validation); the
+/// message suggests the nearest slugs. With no logos at all nothing is
+/// checked: the build that draws none cannot tell.
+pub fn logos(spec: &Spec, logos: &dyn crate::logos::Logos) -> Vec<SpecError> {
+    let slugs = logos.slugs();
+    if slugs.is_empty() {
+        return Vec::new();
+    }
+    let mut errors = Vec::new();
+    for (i, node) in spec.nodes.iter().enumerate() {
+        let Some(tech) = &node.tech else { continue };
+        if logos.path(tech).is_some() {
+            continue;
+        }
+        let close = nearest_few(tech, slugs.iter().copied(), 3);
+        let hint = match close.as_slice() {
+            [] => String::new(),
+            [one] => format!("; did you mean `{one}`?"),
+            [rest @ .., last] => format!(
+                "; did you mean {} or `{last}`?",
+                rest.iter()
+                    .map(|s| format!("`{s}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        };
+        errors.push(SpecError::at(
+            format!("/nodes/{i}/tech"),
+            format!("`{tech}` is not a logo archgram carries{hint}"),
+        ));
+    }
+    errors
+}
+
+/// Up to `count` candidates close to `id`, nearest first, ties in the
+/// candidates' order.
+fn nearest_few<'a>(id: &str, candidates: impl Iterator<Item = &'a str>, count: usize) -> Vec<&'a str> {
+    let limit = (id.chars().count() / 3).max(1);
+    let mut close: Vec<(usize, &str)> = candidates
+        .map(|c| (edit_distance(id, c), c))
+        .filter(|(d, _)| *d <= limit)
+        .collect();
+    close.sort_unstable();
+    close.into_iter().take(count).map(|(_, c)| c).collect()
+}
+
 fn nearest<'a>(id: &str, candidates: impl Iterator<Item = &'a str>) -> Option<&'a str> {
     let limit = (id.chars().count() / 3).max(1);
     candidates

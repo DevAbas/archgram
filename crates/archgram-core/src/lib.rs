@@ -5,6 +5,7 @@ mod error;
 pub mod font;
 pub mod geometry;
 pub mod layout;
+pub mod logos;
 pub mod measure;
 pub mod render;
 pub mod spec;
@@ -47,7 +48,27 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
 ///
 /// The spec's problems, as [`parse_spec`] reports them.
 pub fn build(json: &str, options: render::Options) -> Result<String, Vec<SpecError>> {
-    draw(&parse_spec(json)?, options)
+    build_with(json, options, &logos::NoLogos)
+}
+
+/// [`build`], with technology logos drawn from `logos`; each `tech` must
+/// name one of them.
+///
+/// # Errors
+///
+/// The spec's problems, as [`parse_spec`] reports them, and each `tech`
+/// that `logos` does not have.
+pub fn build_with(
+    json: &str,
+    options: render::Options,
+    logos: &dyn logos::Logos,
+) -> Result<String, Vec<SpecError>> {
+    let spec = parse_spec(json)?;
+    let errors = validate::logos(&spec, logos);
+    if !errors.is_empty() {
+        return Err(errors);
+    }
+    draw_with(&spec, options, logos)
 }
 
 /// Measures, lays out and draws a spec that has passed validation.
@@ -56,9 +77,30 @@ pub fn build(json: &str, options: render::Options) -> Result<String, Vec<SpecErr
 ///
 /// Layout hints that contradict the edges.
 pub fn draw(spec: &Spec, options: render::Options) -> Result<String, Vec<SpecError>> {
+    draw_with(spec, options, &logos::NoLogos)
+}
+
+/// [`draw`], with technology logos drawn from `logos` where a node names
+/// one it has.
+///
+/// # Errors
+///
+/// Layout hints that contradict the edges.
+pub fn draw_with(
+    spec: &Spec,
+    options: render::Options,
+    logos: &dyn logos::Logos,
+) -> Result<String, Vec<SpecError>> {
     let sizes = measure::card_sizes(spec);
     let placement = layout::place(spec, &sizes)?;
-    Ok(render::render(spec, &placement, options))
+    Ok(render::render(spec, &placement, options, logos))
+}
+
+/// Each `tech` that `logos` does not have, located in the spec, with the
+/// nearest slugs suggested. Empty when `logos` has none at all.
+#[must_use]
+pub fn check_logos(spec: &Spec, logos: &dyn logos::Logos) -> Vec<SpecError> {
+    validate::logos(spec, logos)
 }
 
 /// The characters in the spec's text that the embedded font does not have,

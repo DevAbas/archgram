@@ -9,6 +9,7 @@ use std::process::ExitCode;
 
 use archgram_core::SpecError;
 use archgram_core::render::{Mode, Options};
+use archgram_icons::Icons;
 
 const USAGE: &str = "\
 archgram: architecture diagrams from a spec
@@ -97,12 +98,19 @@ fn report(path: &str, errors: &[SpecError]) -> ExitCode {
     ExitCode::from(1)
 }
 
+/// Reads and checks a spec, each `tech` against the logos archgram carries.
+fn parse(text: &str) -> Result<archgram_core::Spec, Vec<SpecError>> {
+    let spec = archgram_core::parse_spec(text)?;
+    let errors = archgram_core::check_logos(&spec, &Icons::load());
+    if errors.is_empty() { Ok(spec) } else { Err(errors) }
+}
+
 fn check(path: &str) -> ExitCode {
     let text = match read(path) {
         Ok(t) => t,
         Err(code) => return code,
     };
-    match archgram_core::parse_spec(&text) {
+    match parse(&text) {
         Ok(spec) => {
             println!(
                 "{path}: valid ({} nodes, {} edges)",
@@ -120,7 +128,7 @@ fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
         Ok(t) => t,
         Err(code) => return code,
     };
-    let spec = match archgram_core::parse_spec(&text) {
+    let spec = match parse(&text) {
         Ok(spec) => spec,
         Err(errors) => return report(path, &errors),
     };
@@ -144,7 +152,7 @@ fn build(path: &str, out: Option<PathBuf>, options: Options) -> ExitCode {
             );
         }
     }
-    let svg = match archgram_core::draw(&spec, options) {
+    let svg = match archgram_core::draw_with(&spec, options, &Icons::load()) {
         Ok(svg) => svg,
         Err(errors) => return report(path, &errors),
     };

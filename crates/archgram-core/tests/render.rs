@@ -88,3 +88,29 @@ fn a_single_theme_has_no_media_query() {
     .unwrap();
     assert!(auto.contains("@media (prefers-color-scheme: dark)"));
 }
+
+#[test]
+fn a_logo_goes_in_the_corner_or_on_a_chip() {
+    use std::collections::BTreeMap;
+    let logos: BTreeMap<String, String> = [("redis".to_owned(), "M2 2h20v20H2z".to_owned())].into();
+    let spec = |logo: &str| {
+        format!(
+            r#"{{ "archgram": 1, "title": "t", "description": "d", "logo": "{logo}",
+            "nodes": [{{ "id": "c", "kind": "cache", "label": "Cache", "tech": "redis" }}, {{ "id": "a", "kind": "service", "label": "API" }}] }}"#
+        )
+    };
+    let corner = archgram_core::build_with(&spec("corner"), Options::default(), &logos).unwrap();
+    assert_eq!(corner.matches(r#"class="logo""#).count(), 1);
+    assert!(!corner.contains(r#"class="logo-chip""#));
+    let chip = archgram_core::build_with(&spec("chip"), Options::default(), &logos).unwrap();
+    assert_eq!(chip.matches(r#"class="logo-chip""#).count(), 1);
+    assert_eq!(chip.matches(r#"class="logo""#).count(), 1);
+    // A slug the set lacks is refused, with the nearest one offered.
+    let wrong = spec("corner").replace(r#""tech": "redis""#, r#""tech": "rediss""#);
+    let errors = archgram_core::build_with(&wrong, Options::default(), &logos).unwrap_err();
+    assert!(
+        errors[0].message.contains("did you mean `redis`?"),
+        "{}",
+        errors[0].message
+    );
+}

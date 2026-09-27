@@ -4,10 +4,11 @@ use crate::font::baseline_in_line;
 use crate::geometry::Rect;
 use crate::render::icons::{GRID, icon};
 use crate::render::svg::{Svg, escape, num};
-use crate::spec::{CardStyle, Category, Node, Variant};
+use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
-    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE,
-    CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING, CARD_LOGO_CORNER,
+    CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE, CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD,
+    STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The CSS class that gives an icon its category's hue (DESIGN.md, Colors).
@@ -71,8 +72,9 @@ impl Lines<'_> {
     }
 }
 
-/// Draws `node`'s card in `r`.
-pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
+/// Draws `node`'s card in `r`, with its technology's logo when `logo` gives
+/// its path and where it goes.
+pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle, logo: Option<(&str, LogoPlace)>) {
     svg.open(&format!(r#"<g data-node="{}">"#, escape(&node.id)));
     let class = match node.variant {
         Variant::External => "card external",
@@ -128,6 +130,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
             badge_with_icon(svg, badge, CARD_HORIZONTAL_ICON, node, hue);
             let text_x = r.x + crate::measure::horizontal_text_inset();
             lines.write(svg, text_x, r.centre_y() - lines.height() / 2.0, "start");
+            draw_logo(svg, logo, r, badge);
         }
         CardStyle::Vertical => {
             let content = CARD_VERTICAL_BADGE + CARD_PADDING + lines.height();
@@ -140,6 +143,7 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
             };
             badge_with_icon(svg, badge, CARD_VERTICAL_ICON, node, hue);
             lines.write(svg, r.centre_x(), badge.bottom() + CARD_PADDING, "middle");
+            draw_logo(svg, logo, r, badge);
         }
     }
     svg.close("</g>");
@@ -147,6 +151,42 @@ pub fn card(svg: &mut Svg, node: &Node, r: Rect, style: CardStyle) {
 
 /// The neutral badge and, centred in it, the kind's icon at `icon_size`, its
 /// lines kept at the token's width whatever the scale.
+/// The logo on card `r`: in its top-right corner, inside its padding, at
+/// `card.logo-corner`; or in a round chip of `card.logo-chip-ring`, filled
+/// and edged like a card, centred on the badge's lower-right corner, at
+/// `card.logo-chip`. Always in `color.text-muted` (DESIGN.md, Components:
+/// Technology logo).
+fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rect) {
+    let Some((path, place)) = logo else { return };
+    let (size, x, y) = match place {
+        LogoPlace::Corner => (
+            CARD_LOGO_CORNER,
+            r.right() - CARD_PADDING - CARD_LOGO_CORNER,
+            r.y + CARD_PADDING,
+        ),
+        LogoPlace::Chip => {
+            svg.line(&format!(
+                r#"<circle class="logo-chip" cx="{}" cy="{}" r="{}"/>"#,
+                num(badge.right()),
+                num(badge.bottom()),
+                num(CARD_LOGO_CHIP_RING / 2.0)
+            ));
+            (
+                CARD_LOGO_CHIP,
+                badge.right() - CARD_LOGO_CHIP / 2.0,
+                badge.bottom() - CARD_LOGO_CHIP / 2.0,
+            )
+        }
+    };
+    svg.line(&format!(
+        r#"<path class="logo" transform="translate({} {}) scale({})" d="{}"/>"#,
+        num(x),
+        num(y),
+        num(size / GRID),
+        escape(path)
+    ));
+}
+
 fn badge_with_icon(svg: &mut Svg, badge: Rect, icon_size: f64, node: &Node, hue: &str) {
     svg.line(&format!(
         r#"<rect class="badge" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
