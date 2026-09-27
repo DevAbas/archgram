@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.5        |
+| Version | 0.6        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -107,15 +107,21 @@ same file every time.
 - Output is self-contained: no script, no external file, no web font.
 
 ### 6.4 Animation
-- Off by default. A flow in the spec turns it on for that path.
-- A signal travelling a flow takes the colour of the node it leaves.
-- While the signal is at a card, the card's technology logo shows its
-  brand's own colour; when the signal leaves, the logo returns to its
-  usual colour.
+- Off by default. A flow in the spec turns it on for that path. A flow
+  may branch: one step may reach several nodes at once.
+- A signal travelling a flow takes the colour of the node it leaves. The
+  spec picks how it is drawn from a fixed set of styles; by default the
+  line fills with that colour.
+- A card is lit from the moment a signal reaches it until every signal it
+  sends has arrived: its border and a faint fill take its category's hue,
+  and its technology logo shows its brand's own colour. Then it returns
+  to its usual look.
 - archgram computes the timeline: branches start together, converging
   paths arrive together, the last node of a flow lights last.
 - Native SMIL only; every animation stops under
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`, and the still image shows what the spec
+  chooses: nothing more, the flows in words under the legend, or each
+  step's number on its lines. A screen reader hears each flow in words.
 
 ### 6.5 Outputs and interfaces
 - A command-line tool, one native binary per platform.
@@ -183,3 +189,4 @@ guidelines for them.
 | 0.3     | 2026-09-27 | The font is Geist, measured and embedded as a subset; removed from the open questions. |
 | 0.4     | 2026-09-27 | Logos: a pinned Simple Icons release, CC0 data only, drawn neutral, sources and guidelines recorded (§7); removed from the open questions. |
 | 0.5     | 2026-09-27 | Four places for a logo: corner, inline, chip, icon (§7); the brand's colour while a signal is at the card (§6.4). |
+| 0.6     | 2026-09-27 | Flows branch; seven signal styles, the line filling by default; a lit card takes its hue until its signals arrive; the still image lists or numbers the flows on request (§6.4). |

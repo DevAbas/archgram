@@ -67,6 +67,8 @@ pub struct Placement {
     pub frame_labels: Vec<Option<Rect>>,
     /// The legend's entries, under the diagram; none when it has none.
     pub legend: Vec<legend::Entry>,
+    /// The flows in words, under the legend, when the still image lists them.
+    pub flow_lines: Vec<legend::FlowLine>,
     /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
@@ -83,8 +85,9 @@ pub struct Placement {
 /// does not exist), or `sizes` does not hold one size per node.
 pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let mut placement = place_units(spec, sizes)?;
-    let (entries, size) = legend::place(spec, placement.size);
+    let (entries, flow_lines, size) = legend::place(spec, placement.size);
     placement.legend = entries;
+    placement.flow_lines = flow_lines;
     placement.size = size;
     Ok(placement)
 }
@@ -849,6 +852,7 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         frames: frame_rects,
         frame_labels,
         legend: Vec::new(),
+        flow_lines: Vec::new(),
         layers: layer,
         size: Size { w, h },
     })

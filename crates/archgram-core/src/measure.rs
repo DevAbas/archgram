@@ -142,6 +142,17 @@ pub fn text_runs_with<'a>(spec: &'a Spec, logos: &'a dyn Logos) -> Vec<(u16, std
     for (_, text) in crate::layout::legend::entries(spec) {
         runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
     }
+    for text in crate::layout::legend::flow_texts(spec) {
+        runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
+    }
+    if spec.still == crate::spec::Still::Numbers {
+        for numbers in crate::motion::step_numbers(spec).iter().filter(|n| !n.is_empty()) {
+            runs.push((
+                crate::tokens::TYPOGRAPHY_LEGEND.weight,
+                crate::render::step_label(numbers).into(),
+            ));
+        }
+    }
     runs
 }
 

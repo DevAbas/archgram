@@ -1,7 +1,7 @@
 //! Reading and checking specs: the examples in docs/SPEC.md are valid, and
 //! each rule in docs/SPEC.md (Validation) reports its problem where it is.
 
-use archgram_core::spec::{CardStyle, Category, Direction, Kind, Variant};
+use archgram_core::spec::{CardStyle, Category, Direction, Kind, SignalStyle, Still, Variant};
 use archgram_core::{Location, SpecError, parse_spec};
 
 fn example(name: &str) -> String {
@@ -143,6 +143,55 @@ fn a_flow_follows_existing_edges() {
     assert_eq!(
         e[0].message,
         "flow `back` goes from `db` to `api`, but no edge goes from `db` to `api`"
+    );
+}
+
+#[test]
+fn a_branch_is_reached_and_leads_on() {
+    let nodes = format!(
+        r#"{TWO}, {{ "id": "x", "kind": "service", "label": "X" }}, {{ "id": "y", "kind": "service", "label": "Y" }}"#
+    );
+    let edges = r#""edges": [{ "from": "api", "to": "x" }, { "from": "api", "to": "y" }, { "from": "x", "to": "db" }]"#;
+    let ok = format!(r#", {edges}, "flows": [{{ "name": "fan", "steps": ["api", ["x", "y"]] }}]"#);
+    let spec = parse_spec(&spec_with(&nodes, &ok)).expect("a branch along edges");
+    assert_eq!(spec.flows[0].steps[1].nodes(), ["x", "y"]);
+    // y leads nowhere next; db is reached from x; a step lists no nodes; x twice.
+    let bad = format!(
+        r#", {edges}, "flows": [{{ "name": "f", "steps": ["api", ["x", "y"], "db"] }}, {{ "name": "g", "steps": ["api", [], ["x", "x"]] }}]"#
+    );
+    let e = errors(&spec_with(&nodes, &bad));
+    assert_eq!(
+        pointers(&e),
+        ["/flows/0/steps/1/1", "/flows/1/steps/1/0", "/flows/1/steps/2/1"]
+    );
+    assert_eq!(
+        e[0].message,
+        "flow `f` leaves `y` for `db`, but no edge goes from `y` to any of them"
+    );
+    assert_eq!(e[1].message, "flow `g` has a step with no nodes");
+    assert_eq!(e[2].message, "flow `g` lists `x` twice in one step");
+    // A merge reached from none of its step's nodes names them all.
+    let merge = format!(r#", {edges}, "flows": [{{ "name": "m", "steps": [["x", "y"], "api"] }}]"#);
+    let e = errors(&spec_with(&nodes, &merge));
+    assert_eq!(pointers(&e), ["/flows/0/steps/1"]);
+    assert_eq!(
+        e[0].message,
+        "flow `m` reaches `api` from none of `x`, `y`: no edge goes from any of them to `api`"
+    );
+}
+
+#[test]
+fn signal_and_still_take_their_named_values() {
+    let spec = parse_spec(&spec_with(TWO, "")).unwrap();
+    assert_eq!(spec.signal, SignalStyle::Wire);
+    assert_eq!(spec.still, Still::None);
+    let spec = parse_spec(&spec_with(TWO, r#", "signal": "comet", "still": "numbers""#)).unwrap();
+    assert_eq!((spec.signal, spec.still), (SignalStyle::Comet, Still::Numbers));
+    let e = errors(&spec_with(TWO, r#", "signal": "neon""#));
+    assert!(
+        e[0].message.starts_with("unknown variant `neon`"),
+        "{}",
+        e[0].message
     );
 }
 

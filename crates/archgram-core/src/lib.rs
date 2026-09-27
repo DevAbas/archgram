@@ -1,12 +1,14 @@
 //! archgram's engine: a spec in, a picture out, with no I/O
 //! (ARCHITECTURE.md, Bird's eye view).
 
+pub mod color;
 mod error;
 pub mod font;
 pub mod geometry;
 pub mod layout;
 pub mod logos;
 pub mod measure;
+pub mod motion;
 pub mod render;
 pub mod spec;
 pub mod tokens;

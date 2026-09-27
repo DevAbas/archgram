@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::error::SpecError;
-use crate::spec::Spec;
+use crate::spec::{Spec, Step};
 
 use crate::tokens::PALETTES;
 
@@ -240,22 +240,84 @@ impl<'a> Validator<'a> {
                     format!("flow `{}` needs at least two steps", f.name),
                 );
             }
+            // Where each node of a step is: the step itself, or its place in
+            // the step's list.
+            let at = |j: usize, k: usize| match &f.steps[j] {
+                Step::One(_) => format!("/flows/{i}/steps/{j}"),
+                Step::Many(_) => format!("/flows/{i}/steps/{j}/{k}"),
+            };
             for (j, step) in f.steps.iter().enumerate() {
-                if let Some(message) = Self::reference(ids, step, Named::Node) {
-                    self.error(format!("/flows/{i}/steps/{j}"), message);
+                let nodes = step.nodes();
+                if nodes.is_empty() {
+                    self.error(at(j, 0), format!("flow `{}` has a step with no nodes", f.name));
+                }
+                for (k, id) in nodes.iter().enumerate() {
+                    if let Some(message) = Self::reference(ids, id, Named::Node) {
+                        self.error(at(j, k), message);
+                    } else if nodes[..k].contains(id) {
+                        self.error(
+                            at(j, k),
+                            format!("flow `{}` lists `{id}` twice in one step", f.name),
+                        );
+                    }
                 }
             }
-            for (j, pair) in f.steps.windows(2).enumerate() {
-                let (a, b) = (pair[0].as_str(), pair[1].as_str());
-                if ids.get(a) == Some(&Named::Node)
-                    && ids.get(b) == Some(&Named::Node)
-                    && !edges.contains(&(a, b))
-                {
-                    self.error(
-                        format!("/flows/{i}/steps/{}", j + 1),
-                        format!(
+            let is_node = |id: &str| ids.get(id) == Some(&Named::Node);
+            for j in 0..f.steps.len().saturating_sub(1) {
+                let (from, to) = (f.steps[j].nodes(), f.steps[j + 1].nodes());
+                // An empty step is reported already, and a repeat once.
+                if from.is_empty() || to.is_empty() {
+                    continue;
+                }
+                let first = |list: &[String], k: usize| !list[..k].contains(&list[k]);
+                let joined = |list: &[String]| {
+                    list.iter()
+                        .map(|id| format!("`{id}`"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
+                // Every node of a step is reached from the step before it...
+                let reported = self.errors.len();
+                for (k, b) in to.iter().enumerate().filter(|&(k, b)| is_node(b) && first(to, k)) {
+                    if from
+                        .iter()
+                        .filter(|a| is_node(a))
+                        .any(|a| edges.contains(&(a.as_str(), b.as_str())))
+                    {
+                        continue;
+                    }
+                    let message = match from {
+                        [a] => format!(
                             "flow `{}` goes from `{a}` to `{b}`, but no edge goes from `{a}` to `{b}`",
                             f.name
+                        ),
+                        _ => format!(
+                            "flow `{}` reaches `{b}` from none of {}: no edge goes from any of them to `{b}`",
+                            f.name,
+                            joined(from)
+                        ),
+                    };
+                    self.error(at(j + 1, k), message);
+                }
+                // ...and every branch of a step leads on to the next one; a
+                // step reached from none of them says so once, above.
+                if from.len() < 2 || self.errors.len() > reported {
+                    continue;
+                }
+                for (k, a) in from
+                    .iter()
+                    .enumerate()
+                    .filter(|&(k, a)| is_node(a) && first(from, k))
+                {
+                    if to.iter().any(|b| edges.contains(&(a.as_str(), b.as_str()))) {
+                        continue;
+                    }
+                    self.error(
+                        at(j, k),
+                        format!(
+                            "flow `{}` leaves `{a}` for {}, but no edge goes from `{a}` to any of them",
+                            f.name,
+                            joined(to)
                         ),
                     );
                 }

@@ -24,6 +24,12 @@ pub struct Spec {
     pub palette: String,
     #[serde(default = "default_true")]
     pub legend: bool,
+    /// How a flow's signal is drawn along the lines (DESIGN.md, Components: Signal).
+    #[serde(default)]
+    pub signal: SignalStyle,
+    /// What the still image shows of the flows, where nothing moves.
+    #[serde(default)]
+    pub still: Still,
     pub nodes: Vec<Node>,
     #[serde(default)]
     pub frames: Vec<Frame>,
@@ -33,6 +39,32 @@ pub struct Spec {
     pub flows: Vec<Flow>,
     #[serde(default)]
     pub hints: Hints,
+}
+
+impl Spec {
+    /// A flow in words, its steps' labels in order: `A → B, C → D`, a
+    /// branch's nodes joined by commas. For a screen reader, which sees no
+    /// motion, and for the still image's legend.
+    #[must_use]
+    pub fn flow_words(&self, flow: &Flow) -> String {
+        let label = |id: &str| -> String {
+            self.nodes
+                .iter()
+                .find(|n| n.id == id)
+                .map_or_else(|| id.to_owned(), |n| n.label.clone())
+        };
+        flow.steps
+            .iter()
+            .map(|s| {
+                s.nodes()
+                    .iter()
+                    .map(|id| label(id))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .collect::<Vec<_>>()
+            .join(" \u{2192} ")
+    }
 }
 
 fn default_palette() -> String {
@@ -72,6 +104,42 @@ pub enum LogoPlace {
     Inline,
     /// In the badge, in place of the kind's icon.
     Icon,
+}
+
+/// How a flow's signal is drawn along the lines (DESIGN.md, Components:
+/// Signal). Every style keeps the same timing; only the mark differs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SignalStyle {
+    /// The line fills with colour from its start to its end.
+    #[default]
+    Wire,
+    /// A glowing spark with a bright trail.
+    Spark,
+    /// A spark whose whole line flickers.
+    Arc,
+    /// A dot with a long tail that thins and fades.
+    Comet,
+    /// A plain dot in a soft ring.
+    Dot,
+    /// A dot sending out rings.
+    Pulse,
+    /// Dashes flowing along the line behind a dot.
+    Current,
+}
+
+/// What the still image shows of the flows: the picture where nothing moves,
+/// as a PNG or under `prefers-reduced-motion`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Still {
+    /// Nothing: the diagram alone.
+    #[default]
+    None,
+    /// Each flow as a line of text under the legend.
+    Legend,
+    /// Each step's number on the lines the flows take.
+    Numbers,
 }
 
 /// One thing in the system.
@@ -186,7 +254,26 @@ pub enum EdgeStyle {
 #[serde(deny_unknown_fields)]
 pub struct Flow {
     pub name: String,
-    pub steps: Vec<String>,
+    pub steps: Vec<Step>,
+}
+
+/// One step of a flow: a node, or several reached at once (a branch).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum Step {
+    One(String),
+    Many(Vec<String>),
+}
+
+impl Step {
+    /// The step's nodes, in order.
+    #[must_use]
+    pub fn nodes(&self) -> &[String] {
+        match self {
+            Step::One(id) => std::slice::from_ref(id),
+            Step::Many(ids) => ids,
+        }
+    }
 }
 
 /// Optional help for the layout.

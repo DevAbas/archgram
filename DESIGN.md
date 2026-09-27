@@ -77,6 +77,14 @@ components:
     typography: "{typography.legend}"
   signal:
     size: "{signal.dot}"
+    backgroundColor: "{color.signal-core}"
+  lit-card:
+    size: "{signal.lit}"
+  step-number:
+    backgroundColor: "{color.card}"
+    textColor: "{color.text}"
+    typography: "{typography.legend}"
+    size: "{signal.number}"
 ---
 
 # archgram: Design System
@@ -137,16 +145,21 @@ The one palette today is `mono`: neutral greys and four muted hues.
   text.
 - **Icon hues** (`color.icon-core`, `color.icon-ai`, `color.icon-build`,
   `color.icon-client`): the stroke of a node's icon, by its category.
-  Nothing else takes these colours except the flow signal.
+  Nothing else takes these colours except a flow's signal and the card it
+  lights.
+- **Signal core** (`color.signal-core`): the bright centre of a signal's
+  dot, in the styles that have one. Only the signal takes it.
 
 Rules:
 
 - Colour lives in icon lines only. Cards, badges, frames and connectors
-  stay neutral, whatever the category.
-- Hues are muted. No neon, no fully saturated brand colours, no glow.
+  stay neutral, whatever the category; a card turns its hue only while a
+  flow's signal lights it (Components: Signal).
+- Hues are muted. No neon and no fully saturated brand colours; the only
+  glow is a signal's, and only in the styles that have one.
 - A flow's signal takes the icon hue of the node it leaves.
-- Technology logos are drawn in `color.text-muted`, never in their brand
-  colours.
+- Technology logos are drawn in `color.text-muted`; a logo shows its
+  brand's colour only while a flow's signal lights its card.
 - Contrast follows WCAG 2.1 AA in both themes: text 4.5:1 against what it
   sits on; icon lines, connectors and frame borders 3:1 against their
   background (1.4.11).
@@ -205,12 +218,19 @@ Motion:
 - A diagram is still by default. Motion appears only along the flows the
   spec names, to show order: where a request starts, where it branches,
   where it ends.
-- A hop lasts between `motion.hop-min` and `motion.hop-max`, in proportion
-  to its length, eased with `motion.ease`; consecutive hops are
-  `motion.hop-gap` apart; `motion.rest` passes before the cycle repeats.
-- Nothing moves for decoration: no ambient background, no pulsing.
+- A signal travels at `motion.speed`, so a hop lasts in proportion to its
+  length, never less than `motion.hop-min` nor more than `motion.hop-max`,
+  eased with `motion.ease`. It waits `motion.hop-gap` at each card before
+  it leaves; `motion.rest` passes before the cycle repeats. A branch's
+  signals leave together; signals that meet at a card arrive together.
+- Anything that appears or goes, a signal, a lit card or a brand colour,
+  fades over `motion.fade`.
+- Nothing moves for decoration: no ambient background, nothing moving
+  where no flow goes.
 - Under `prefers-reduced-motion` the diagram is the still image, and the
-  still image must carry the whole meaning.
+  still image must carry the whole meaning: the spec chooses whether it
+  lists the flows under the legend or numbers their steps on the lines
+  (Components: Signal).
 
 ## Elevation & Depth
 
@@ -288,10 +308,12 @@ In the first three the logo is `color.text-muted`: it says which
 technology, and the icon still says which kind of thing. In the fourth
 the logo says both, so it takes the icon's hue.
 
-While a flow's signal is at a card, its logo shows its brand's own colour
-(the logo's `hex` in Simple Icons); when the signal leaves the card, the
+While a flow's signal lights a card, its logo shows its brand's own
+colour (the logo's `hex` in Simple Icons); when the card goes dark, the
 logo returns to its usual colour. That is the only place a brand colour
-appears, and only for as long as the signal is there.
+appears, and only for as long as the card is lit. A brand colour below
+3:1 against the card in a theme (a black logo on a dark card) shows as
+`color.text` in that theme instead.
 
 ### Frame
 
@@ -321,11 +343,44 @@ in room kept for it: it never covers a card.
 
 ### Signal
 
-A flow's moving marker (`signal`): a solid dot of `signal.dot` in the icon
-hue of the node it leaves, with a thin ring of `signal.ring` at
-`signal.ring-opacity`. No blur and no glow. The node a signal reaches keeps
-still; only the signal moves, and the card's technology logo shows its
-brand's colour while the signal is there (Technology logo).
+A flow's moving marker (`signal`), in the icon hue of the node it leaves.
+The spec picks one style for the whole diagram; each keeps the same
+timing (Layout: Motion), and lines are drawn with the connector's own
+stroke:
+
+- **Wire** (the default): no marker; the line fills with the hue from its
+  start to its end, under a glow of `signal.glow` at
+  `signal.glow-opacity`, blurred by `signal.blur`. It stays filled while
+  the card it reached is lit.
+- **Spark**: a dot of `signal.dot` with a core of `signal.core` in
+  `color.signal-core`, in a halo of `signal.halo` that flickers every
+  `signal.flicker`; behind it a bright stretch of `signal.bolt` at
+  `signal.bolt-width` and a trail of `signal.trail` at
+  `signal.trail-opacity`, glowing.
+- **Arc**: a spark whose whole line glows and flickers every
+  `signal.flicker-fast`.
+- **Comet**: a dot and a tail of `signal.comet` that thins from
+  `signal.bolt-width` and fades toward its end.
+- **Dot**: a dot in a ring of `signal.ring` at `signal.ring-opacity`.
+- **Pulse**: a dot with a core, sending out rings to `signal.ripple`,
+  each over `signal.ripple-period`.
+- **Current**: the line runs as dashes of `signal.dash`, moving on by one
+  dash and gap every `signal.dash-period`, behind a dot.
+
+A card is lit from the moment a signal reaches it until every signal it
+sends has arrived (`lit-card`): a border of `signal.lit` in its hue just
+outside its own edge, over a fill of that hue at `signal.tint`, and its
+technology logo in its brand's colour (Technology logo). The last card of
+a flow stays lit for `motion.hop-gap`.
+
+Where nothing moves, the still image shows what the spec chooses: nothing
+more than the diagram; each flow in words under the legend, its steps'
+labels joined by arrows and a branch's by commas, in the legend's type; or
+each step's number on the lines it takes (`step-number`): a pill
+`signal.number` high, edged like a line, just before the arrowhead where
+the step arrives, or as near as it fits clear of cards, labels and other
+numbers. Lines that meet before a card share their number there. Steps
+are counted on from one flow to the next.
 
 ### Legend
 
@@ -343,13 +398,14 @@ variant.
 
 - Do let the icon say what a thing is and the title say which one.
 - Do keep colour in icon lines; a coloured card or frame is a new rule,
-  written here first.
+  written here first. The one written so far is a card a signal lights.
 - Do use the external variant for anything the system calls but does not
   own, including managed services and third-party APIs.
 - Do name technologies with `tech`, so the logo appears. A logo takes the
   kind's icon's place only when the diagram asks for it (`logo: icon`).
 - Don't use brand colours, neon hues, gradients, shadows or glow; a
-  logo's brand colour shows only while a flow's signal is at its card.
+  logo's brand colour shows only while a flow's signal lights its card,
+  and glow belongs to the signal styles that have it.
 - Don't animate for decoration; if the flow does not need it, the diagram
   is still.
 - Don't write a value in this file. A new value is a token first.

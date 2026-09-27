@@ -2,14 +2,14 @@
 //! its text in `typography.legend` and `color.text-muted`.
 
 use crate::font::baseline_in_line;
-use crate::layout::legend::{Entry, Swatch, stack_step};
+use crate::layout::legend::{Entry, FlowLine, Swatch, stack_step};
 use crate::render::card::category_class;
 use crate::render::svg::{Svg, escape, num};
 use crate::tokens::TYPOGRAPHY_LEGEND;
 
-/// Draws the legend's entries.
-pub fn legend(svg: &mut Svg, entries: &[Entry]) {
-    if entries.is_empty() {
+/// Draws the legend's entries, then the flows in words.
+pub fn legend(svg: &mut Svg, entries: &[Entry], flow_lines: &[FlowLine]) {
+    if entries.is_empty() && flow_lines.is_empty() {
         return;
     }
     svg.open(r#"<g class="legend">"#);
@@ -49,6 +49,14 @@ pub fn legend(svg: &mut Svg, entries: &[Entry]) {
             num(e.text_box.x),
             num(e.text_box.y + baseline_in_line(&TYPOGRAPHY_LEGEND)),
             escape(e.text)
+        ));
+    }
+    for l in flow_lines {
+        svg.line(&format!(
+            r#"<text class="legend-text" x="{}" y="{}">{}</text>"#,
+            num(l.text_box.x),
+            num(l.text_box.y + baseline_in_line(&TYPOGRAPHY_LEGEND)),
+            escape(&l.text)
         ));
     }
     svg.close("</g>");

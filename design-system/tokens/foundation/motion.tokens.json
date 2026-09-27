@@ -1,43 +1,56 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "The flow signal and its timing.",
+  "$description": "The flow signal, its timing and the card it lights.",
   "motion": {
     "ease": {
       "$type": "cubicBezier",
       "$value": [
-        0.2,
+        0.45,
         0,
-        0,
+        0.55,
         1
       ]
+    },
+    "speed": {
+      "$type": "number",
+      "$value": 190,
+      "$description": "How fast a signal travels, in pixels per second; a hop's duration follows from its length."
     },
     "hop-min": {
       "$type": "duration",
       "$value": {
-        "value": 400,
+        "value": 700,
         "unit": "ms"
       }
     },
     "hop-max": {
       "$type": "duration",
       "$value": {
-        "value": 800,
+        "value": 1900,
         "unit": "ms"
       }
     },
     "hop-gap": {
       "$type": "duration",
       "$value": {
-        "value": 150,
+        "value": 400,
         "unit": "ms"
       }
     },
     "rest": {
       "$type": "duration",
       "$value": {
-        "value": 1000,
+        "value": 1600,
         "unit": "ms"
       }
+    },
+    "fade": {
+      "$type": "duration",
+      "$value": {
+        "value": 160,
+        "unit": "ms"
+      },
+      "$description": "How long a signal, a lit card or a brand colour takes to appear or go."
     }
   },
   "signal": {
@@ -48,6 +61,13 @@
         "unit": "px"
       }
     },
+    "core": {
+      "$value": {
+        "value": 1.4,
+        "unit": "px"
+      },
+      "$description": "The bright centre of a spark."
+    },
     "ring": {
       "$value": {
         "value": 7,
@@ -57,6 +77,136 @@
     "ring-opacity": {
       "$type": "number",
       "$value": 0.35
+    },
+    "halo": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      },
+      "$description": "The blurred light round a spark's head."
+    },
+    "blur": {
+      "$value": {
+        "value": 2.5,
+        "unit": "px"
+      },
+      "$description": "The glow's blur (a Gaussian's standard deviation)."
+    },
+    "glow": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "The width of a line's glow."
+    },
+    "glow-opacity": {
+      "$type": "number",
+      "$value": 0.35
+    },
+    "trail": {
+      "$value": {
+        "value": 90,
+        "unit": "px"
+      },
+      "$description": "The length of a spark's faint trail."
+    },
+    "trail-opacity": {
+      "$type": "number",
+      "$value": 0.45
+    },
+    "bolt": {
+      "$value": {
+        "value": 26,
+        "unit": "px"
+      },
+      "$description": "The length of a spark's bright head on the line."
+    },
+    "bolt-width": {
+      "$value": {
+        "value": 2.5,
+        "unit": "px"
+      }
+    },
+    "comet": {
+      "$value": {
+        "value": 140,
+        "unit": "px"
+      },
+      "$description": "The length of a comet's tail."
+    },
+    "ripple": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      },
+      "$description": "How far a pulse's ring spreads."
+    },
+    "lit": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "The border of a card the signal is at."
+    },
+    "tint": {
+      "$type": "number",
+      "$value": 0.1,
+      "$description": "The opacity of a lit card's fill in its hue."
+    },
+    "dash": {
+      "$type": "strokeStyle",
+      "$value": {
+        "dashArray": [
+          {
+            "value": 8,
+            "unit": "px"
+          },
+          {
+            "value": 8,
+            "unit": "px"
+          }
+        ],
+        "lineCap": "butt"
+      }
+    },
+    "flicker": {
+      "$type": "duration",
+      "$value": {
+        "value": 360,
+        "unit": "ms"
+      },
+      "$description": "One flicker of a spark's light."
+    },
+    "flicker-fast": {
+      "$type": "duration",
+      "$value": {
+        "value": 240,
+        "unit": "ms"
+      },
+      "$description": "One flicker of an arc, quicker than a spark's."
+    },
+    "ripple-period": {
+      "$type": "duration",
+      "$value": {
+        "value": 900,
+        "unit": "ms"
+      },
+      "$description": "How long one ring of a pulse takes to spread."
+    },
+    "dash-period": {
+      "$type": "duration",
+      "$value": {
+        "value": 240,
+        "unit": "ms"
+      },
+      "$description": "How long a current's dashes take to move on by one dash and gap."
+    },
+    "number": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      },
+      "$description": "The height of a step's number on a line in the still image, and its width at the least."
     }
   }
 }

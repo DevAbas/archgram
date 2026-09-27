@@ -31,6 +31,8 @@ must be quoted to stay text.
   "logo": "corner",
   "palette": "mono",
   "legend": true,
+  "signal": "wire",
+  "still": "none",
   "nodes": [],
   "frames": [],
   "edges": [],
@@ -49,6 +51,8 @@ must be quoted to stay text.
 | `logo` | no | `corner`, `inline`, `chip`, `icon` | `corner` | Where technology logos go: the card's corner, before the note (or the technology's name), a chip on the icon, or in place of the icon |
 | `palette` | no | a palette name | `mono` | The palette; light and dark are chosen when rendering |
 | `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
+| `signal` | no | `wire`, `spark`, `arc`, `comet`, `dot`, `pulse`, `current` | `wire` | How a flow's signal is drawn along the lines (DESIGN.md, Components: Signal) |
+| `still` | no | `none`, `legend`, `numbers` | `none` | What the still image shows of the flows, where nothing moves: nothing more, each flow in words under the legend, or each step's number on its lines |
 | `nodes` | yes | list | | At least one node |
 | `frames`, `edges`, `flows` | no | list | empty | |
 | `hints` | no | object | empty | Layout hints, below |
@@ -113,13 +117,24 @@ with a label.
 ## Flows
 
 ```json
-{ "name": "a visit", "steps": ["browser", "api", "redis", "worker", "postgres"] }
+[
+  { "name": "a visit", "steps": ["browser", "api", "redis", "worker", "postgres"] },
+  { "name": "a question", "steps": ["chat", "llm", ["find", "count"], "index"] }
+]
 ```
 
-A flow is a path through the diagram that archgram animates, in order.
-Every consecutive pair of steps must be an edge, in that direction. A
-spec without flows gives a still diagram. When several flows exist they
-play one after another, in the order listed.
+A flow is a path through the diagram that archgram animates, in order. A
+step is a node id, or a list of ids reached at once: a branch. Every node
+of a step must be reached by an edge from a node of the step before it,
+and when a step has several nodes, each must have an edge to a node of
+the step after it. A spec without flows gives a still diagram. When
+several flows exist they play one after another, in the order listed.
+
+archgram times the flows itself (DESIGN.md, Layout: Motion): a signal's
+speed is fixed, so a longer line takes longer; a branch's signals leave
+together; signals that meet at a node arrive together. A card is lit
+from the moment a signal reaches it until every signal it sends has
+arrived. A screen reader hears each flow in words, after the description.
 
 ## Hints
 
@@ -157,7 +172,9 @@ its JSON pointer (or its line and column in YAML), when:
 - frames nest in a cycle, or a frame is empty;
 - the nodes of an `order` hint do not share a frame (a frame keeps its
   nodes together, so a hint cannot sort them among others);
-- a flow step is not followed by an edge to the next step;
+- a flow step is not reached by an edge from the step before it, a node
+  of a branching step has no edge to the step after it, a step lists no
+  nodes, or a step lists a node twice;
 - `tech` names a logo archgram does not carry (the error suggests the
   nearest slugs).
 

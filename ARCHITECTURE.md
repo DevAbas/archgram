@@ -30,7 +30,7 @@ The repository is one Cargo workspace.
 
 | Crate | Holds | Depends on |
 |---|---|---|
-| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
+| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
@@ -228,7 +228,7 @@ or the badge in place of the icon, in the category's hue. A card whose
 logo goes in the corner keeps its width of room beside the title; an
 inline logo widens the second line, which without a note shows the
 technology's name from the logo set. The set also carries each brand's
-colour, which the animation (v0.3) shows while a signal is at the card. `tech` is checked against the logos given, with
+colour, which the animation shows while a signal lights the card. `tech` is checked against the logos given, with
 the nearest slugs suggested; with none given it is neither checked nor
 drawn.
 
@@ -243,12 +243,31 @@ skips the embedding and falls back to the system font stack.
 
 ### Animate
 
-Flows turn into a timeline: each hop lasts in proportion to its path
-length, within a minimum and a maximum; a branch starts all its signals
-together; converging signals arrive together; each node lights when its
-signal arrives. The output is SMIL: one cycle shared by every animation,
-`keyTimes` checked before writing, everything that moves hidden under
-`prefers-reduced-motion`.
+Flows turn into a timeline (`motion`), in whole milliseconds. Each hop
+lasts in proportion to its edge's length as drawn, within a minimum and
+a maximum: the render stage splits every edge into its pieces (lines,
+quarter circles, the S curves of short jogs) and measures them with
+`+ * / sqrt` only, a curve by Gauss–Legendre quadrature, so the timing
+is the same on every machine. A step may branch: its signals leave
+together, and signals meeting at a node arrive together, when the slowest
+does. A card is lit from its signal's arrival until every signal it
+sends has arrived; lit times of one card closer than two fades are
+joined, so one fade ends before the next begins.
+
+The output is SMIL, which runs where CSS and scripts do not (an `<img>`,
+GitHub): one cycle shared by every animation; each signal follows its
+edge's own path by `mpath`; a lit card is a border and tint over the
+card, a brand-coloured copy over the logo, each an opacity animation.
+Everything starts invisible, so a reader that runs no animation shows
+the still diagram. `KeyTrack` is the only writer of `keyTimes`, and holds
+SMIL's rules on them (Invariants). A brand colour too faint on a theme's
+card falls back to the text colour; the contrast is computed from a
+fixed table of the sRGB curve (`color`), not the platform's `powf`.
+Under `prefers-reduced-motion` the signals, lit cards and brand colours
+are hidden. What the still image shows of the flows is the spec's: the
+flows in words, laid out under the legend (`layout::legend`), or each
+step's number on its lines, placed by the render stage clear of cards
+and labels.
 
 ### Rasterise
 
@@ -266,7 +285,8 @@ These hold for every output and are checked by tests on every change.
 - A frame holds its nodes and child frames with its padding around them;
   nothing else reaches into it, and frames that do not nest stay apart.
 - Every text pair meets WCAG 2.1 AA in both themes.
-- Every `keyTimes` starts at 0, ends at 1 and increases.
+- Every `keyTimes` starts at 0, ends at 1 and never goes back, with one
+  value per time and one spline per interval.
 - `archgram-core` performs no I/O.
 - archgram's own crates contain no `unsafe` code
   (`#![forbid(unsafe_code)]`).

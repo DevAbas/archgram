@@ -240,5 +240,30 @@
       "to": "pdf",
       "label": "source link"
     }
+  ],
+  "flows": [
+    {
+      "name": "a question",
+      "steps": [
+        "chat",
+        "route",
+        "llm",
+        [
+          "find",
+          "count",
+          "get"
+        ],
+        "index"
+      ]
+    },
+    {
+      "name": "an answer",
+      "steps": [
+        "llm",
+        "present",
+        "answercheck",
+        "chat"
+      ]
+    }
   ]
 }

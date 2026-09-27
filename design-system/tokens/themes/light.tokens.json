@@ -38,6 +38,9 @@
     },
     "icon-client": {
       "$value": "{palette.light.teal}"
+    },
+    "signal-core": {
+      "$value": "{palette.light.neutral-0}"
     }
   }
 }

@@ -7,7 +7,7 @@
 
 use crate::font::text_width;
 use crate::geometry::{Rect, Size};
-use crate::spec::{Category, Spec, Variant};
+use crate::spec::{Category, Spec, Still, Variant};
 use crate::tokens::{
     LEGEND_SWATCH, LEGEND_SWATCH_GAP, SPACING_LEGEND, SPACING_LEGEND_ENTRY, SPACING_LEGEND_ROW,
     TYPOGRAPHY_LEGEND,
@@ -31,6 +31,25 @@ pub struct Entry {
     pub swatch_box: Rect,
     pub text: &'static str,
     pub text_box: Rect,
+}
+
+/// A flow in words under the legend: its name, then its steps.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FlowLine {
+    pub text: String,
+    pub text_box: Rect,
+}
+
+/// The flows in words, when the still image lists them.
+#[must_use]
+pub fn flow_texts(spec: &Spec) -> Vec<String> {
+    if spec.still != Still::Legend {
+        return Vec::new();
+    }
+    spec.flows
+        .iter()
+        .map(|f| format!("{}: {}", f.name.trim(), spec.flow_words(f)))
+        .collect()
 }
 
 /// The categories in the order the legend lists them, with their names.
@@ -91,13 +110,46 @@ fn swatch_size(s: Swatch) -> Size {
 }
 
 /// Lays the legend out under a drawing of `size`, left-aligned, in rows no
-/// wider than it (or than the widest entry). Returns the entries and the
-/// drawing's new size.
+/// wider than it (or than the widest entry), then the flows in words, one a
+/// line. Returns the entries, the flow lines and the drawing's new size.
 #[must_use]
-pub fn place(spec: &Spec, size: Size) -> (Vec<Entry>, Size) {
+pub fn place(spec: &Spec, size: Size) -> (Vec<Entry>, Vec<FlowLine>, Size) {
+    let (entries, size, placed) = place_entries(spec, size);
+    let texts = flow_texts(spec);
+    if texts.is_empty() {
+        return (entries, Vec::new(), size);
+    }
+    let line = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
+    let mut y = size.h
+        + if placed {
+            SPACING_LEGEND_ROW
+        } else {
+            SPACING_LEGEND
+        };
+    let mut lines = Vec::with_capacity(texts.len());
+    for text in texts {
+        let w = text_width(&text, &TYPOGRAPHY_LEGEND);
+        lines.push(FlowLine {
+            text,
+            text_box: Rect {
+                x: 0.0,
+                y,
+                w,
+                h: line,
+            },
+        });
+        y += line + SPACING_LEGEND_ROW;
+    }
+    let right = lines.iter().map(|l| l.text_box.right()).fold(size.w, f64::max);
+    let bottom = y - SPACING_LEGEND_ROW;
+    (entries, lines, Size { w: right, h: bottom })
+}
+
+/// The entries alone, and whether there were any.
+fn place_entries(spec: &Spec, size: Size) -> (Vec<Entry>, Size, bool) {
     let list = entries(spec);
     if list.is_empty() {
-        return (Vec::new(), size);
+        return (Vec::new(), size, false);
     }
     let line = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
     let widths: Vec<f64> = list
@@ -137,5 +189,5 @@ pub fn place(spec: &Spec, size: Size) -> (Vec<Entry>, Size) {
     }
     let right = out.iter().map(|e| e.text_box.right()).fold(size.w, f64::max);
     let bottom = y + row_height;
-    (out, Size { w: right, h: bottom })
+    (out, Size { w: right, h: bottom }, true)
 }

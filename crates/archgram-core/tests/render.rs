@@ -40,7 +40,13 @@ fn golden(name: &str, mode: Mode) {
 
 #[test]
 fn examples_match_their_golden_files() {
-    for name in ["linkshort", "rag", "kinds", "kinds-vertical"] {
+    for name in [
+        "linkshort",
+        "rag",
+        "kinds",
+        "kinds-vertical",
+        "cv-screener-architecture",
+    ] {
         golden(name, Mode::Auto);
     }
     golden("kinds", Mode::Light);

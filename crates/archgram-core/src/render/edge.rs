@@ -11,29 +11,158 @@ use crate::tokens::{ARROWHEAD_GAP, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_S
 /// tip is the line's end, so the tip leaves `arrowhead.gap` of air.
 const INSET: f64 = ARROWHEAD_GAP;
 
-/// Draws one edge along `path`, which already starts and ends on the sides
-/// of its cards, with its label in `label`.
-pub fn edge(svg: &mut Svg, e: &Edge, path: &[Point], label: Option<Rect>) {
-    if path.len() < 2 {
+/// Draws one edge along `drawn`, with its label in `label`. An edge a flow
+/// takes carries `id`, for the signal to follow.
+pub fn edge(svg: &mut Svg, e: &Edge, drawn: &Drawn, label: Option<Rect>, id: Option<&str>) {
+    if drawn.pieces.is_empty() {
         return;
     }
-    let d = rounded(path);
     let class = match e.style {
         EdgeStyle::Solid => "edge",
         EdgeStyle::Dashed => "edge dashed",
     };
+    let id = id.map(|i| format!(r#"id="{i}" "#)).unwrap_or_default();
     svg.line(&format!(
-        r#"<path class="{class}" d="{d}" marker-end="url(#arrow)"/>"#
+        r#"<path {id}class="{class}" d="{}" marker-end="url(#arrow)"/>"#,
+        drawn.d()
     ));
     if let (Some(text), Some(at)) = (&e.label, label) {
         edge_label(svg, text, at);
     }
 }
 
-/// The path's `d`: the line stopped `INSET` short of its end, each bend
-/// rounded by `rounded.connector`, never more than half of either segment
-/// beside it, so a short step stays a step and does not turn into an S.
-fn rounded(path: &[Point]) -> String {
+/// One piece of an edge as drawn, from where the one before it ends.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Piece {
+    Line(Point),
+    /// A quarter circle of radius `r`: every bend of an orthogonal line turns
+    /// by a right angle. `clockwise` on screen, where y grows downwards.
+    Arc {
+        r: f64,
+        clockwise: bool,
+        to: Point,
+    },
+    /// The S curve of a short jog.
+    Cubic {
+        c1: Point,
+        c2: Point,
+        to: Point,
+    },
+}
+
+/// An edge as drawn: its start and its pieces.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Drawn {
+    pub start: Point,
+    pub pieces: Vec<Piece>,
+}
+
+impl Drawn {
+    /// The path's `d`.
+    #[must_use]
+    pub fn d(&self) -> String {
+        let mut d = vec![format!("M{} {}", num(self.start.x), num(self.start.y))];
+        for piece in &self.pieces {
+            d.push(match *piece {
+                Piece::Line(to) => format!("L{} {}", num(to.x), num(to.y)),
+                Piece::Arc { r, clockwise, to } => format!(
+                    "A{r} {r} 0 0 {} {} {}",
+                    u8::from(clockwise),
+                    num(to.x),
+                    num(to.y),
+                    r = num(r)
+                ),
+                Piece::Cubic { c1, c2, to } => format!(
+                    "C{} {} {} {} {} {}",
+                    num(c1.x),
+                    num(c1.y),
+                    num(c2.x),
+                    num(c2.y),
+                    num(to.x),
+                    num(to.y)
+                ),
+            });
+        }
+        d.join(" ")
+    }
+
+    /// The length along the path: straight pieces exactly, a quarter circle
+    /// as `π·r/2`, an S curve by Gauss–Legendre quadrature. Only `+ * /` and
+    /// `sqrt`, which IEEE 754 rounds the same everywhere, so the length, and
+    /// the timing drawn from it, is the same on every machine.
+    #[must_use]
+    pub fn length(&self) -> f64 {
+        let mut at = self.start;
+        let mut total = 0.0;
+        for piece in &self.pieces {
+            total += match *piece {
+                Piece::Line(to) => distance(at, to),
+                Piece::Arc { r, .. } => std::f64::consts::FRAC_PI_2 * r,
+                Piece::Cubic { c1, c2, to } => cubic_length(at, c1, c2, to),
+            };
+            at = end(*piece);
+        }
+        total
+    }
+
+    /// The straight pieces, each from its start to its end, in order.
+    #[must_use]
+    pub fn straights(&self) -> Vec<(Point, Point)> {
+        let mut at = self.start;
+        let mut out = Vec::new();
+        for piece in &self.pieces {
+            if let Piece::Line(to) = *piece {
+                out.push((at, to));
+            }
+            at = end(*piece);
+        }
+        out
+    }
+}
+
+fn end(piece: Piece) -> Point {
+    match piece {
+        Piece::Line(to) | Piece::Arc { to, .. } | Piece::Cubic { to, .. } => to,
+    }
+}
+
+fn distance(a: Point, b: Point) -> f64 {
+    ((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y)).sqrt()
+}
+
+/// A cubic Bézier's length: five-point Gauss–Legendre quadrature of its
+/// speed over `t` in 0..1.
+fn cubic_length(p0: Point, c1: Point, c2: Point, p3: Point) -> f64 {
+    // Nodes on -1..1 and their weights (Abramowitz and Stegun, table 25.4).
+    const NODES: [(f64, f64); 5] = [
+        (0.0, 0.568_888_888_888_888_9),
+        (-0.538_469_310_105_683_1, 0.478_628_670_499_366_5),
+        (0.538_469_310_105_683_1, 0.478_628_670_499_366_5),
+        (-0.906_179_845_938_664, 0.236_926_885_056_189_1),
+        (0.906_179_845_938_664, 0.236_926_885_056_189_1),
+    ];
+    let speed = |t: f64| {
+        let u = 1.0 - t;
+        let (a, b, c) = (3.0 * u * u, 6.0 * u * t, 3.0 * t * t);
+        let dx = a * (c1.x - p0.x) + b * (c2.x - c1.x) + c * (p3.x - c2.x);
+        let dy = a * (c1.y - p0.y) + b * (c2.y - c1.y) + c * (p3.y - c2.y);
+        (dx * dx + dy * dy).sqrt()
+    };
+    NODES.iter().map(|&(x, w)| w * speed(0.5 * x + 0.5)).sum::<f64>() * 0.5
+}
+
+/// The edge along `path`, which starts and ends on the sides of its cards:
+/// the line stopped `INSET` short of its end, each bend rounded by
+/// `rounded.connector`, never more than half of either segment beside it,
+/// so a short step stays a step and does not turn into an S.
+#[must_use]
+pub fn drawn(path: &[Point]) -> Drawn {
+    if path.len() < 2 {
+        return Drawn {
+            start: path.first().copied().unwrap_or(Point { x: 0.0, y: 0.0 }),
+            pieces: Vec::new(),
+        };
+    }
     let mut points = path.to_vec();
     let count = points.len();
     let (before_end, end) = (points[count - 2], points[count - 1]);
@@ -45,7 +174,7 @@ fn rounded(path: &[Point]) -> String {
             y: end.y - (end.y - before_end.y) * t,
         };
     }
-    let mut d = vec![format!("M{} {}", num(points[0].x), num(points[0].y))];
+    let mut pieces = Vec::new();
     let p = &points;
     let mut i = 1;
     while i + 1 < count {
@@ -66,16 +195,12 @@ fn rounded(path: &[Point]) -> String {
                 if run > 0.0 {
                     let start = toward(corner, from, run);
                     let end = toward(to, next, run);
-                    d.push(format!("L{} {}", num(start.x), num(start.y)));
-                    d.push(format!(
-                        "C{} {} {} {} {} {}",
-                        num(corner.x),
-                        num(corner.y),
-                        num(to.x),
-                        num(to.y),
-                        num(end.x),
-                        num(end.y)
-                    ));
+                    pieces.push(Piece::Line(start));
+                    pieces.push(Piece::Cubic {
+                        c1: corner,
+                        c2: to,
+                        to: end,
+                    });
                     i += 2;
                     continue;
                 }
@@ -84,29 +209,26 @@ fn rounded(path: &[Point]) -> String {
         let (before, after) = (length(from, corner), length(corner, to));
         let radius = ROUNDED_CONNECTOR.min(before / 2.0).min(after / 2.0);
         if radius <= 0.0 {
-            d.push(format!("L{} {}", num(corner.x), num(corner.y)));
+            pieces.push(Piece::Line(corner));
             i += 1;
             continue;
         }
         let enter = toward(corner, from, radius);
         let leave = toward(corner, to, radius);
         // A clockwise turn on screen (y grows downwards) sweeps positively.
-        let sweep = u8::from(turn(from, corner, to) > 0.0);
-        d.push(format!("L{} {}", num(enter.x), num(enter.y)));
-        d.push(format!(
-            "A{r} {r} 0 0 {sweep} {} {}",
-            num(leave.x),
-            num(leave.y),
-            r = num(radius)
-        ));
+        pieces.push(Piece::Line(enter));
+        pieces.push(Piece::Arc {
+            r: radius,
+            clockwise: turn(from, corner, to) > 0.0,
+            to: leave,
+        });
         i += 1;
     }
-    d.push(format!(
-        "L{} {}",
-        num(points[count - 1].x),
-        num(points[count - 1].y)
-    ));
-    d.join(" ")
+    pieces.push(Piece::Line(points[count - 1]));
+    Drawn {
+        start: points[0],
+        pieces,
+    }
 }
 
 /// Which way the path turns at `b`: positive clockwise on screen, negative
@@ -161,7 +283,7 @@ mod tests {
     #[test]
     fn a_step_turns_twice_with_opposite_arcs_and_stops_short() {
         // Right, down, right: a clockwise turn, then a counter-clockwise one.
-        let d = rounded(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 40.0), pt(60.0, 40.0)]);
+        let d = drawn(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 40.0), pt(60.0, 40.0)]).d();
         assert_eq!(
             d,
             "M0 0 L10 0 A10 10 0 0 1 20 10 L20 24 A16 16 0 0 0 36 40 L57 40"
@@ -172,7 +294,21 @@ mod tests {
     fn a_short_jog_is_one_s_curve() {
         // A step of 6 is too short for two bends: one S over a radius of run
         // on either side, 16 here.
-        let d = rounded(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 6.0), pt(60.0, 6.0)]);
+        let d = drawn(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 6.0), pt(60.0, 6.0)]).d();
         assert_eq!(d, "M0 0 L4 0 C20 0 20 6 36 6 L57 6");
+    }
+
+    #[test]
+    fn length_counts_lines_arcs_and_curves() {
+        // 10 + a quarter of radius 10 + 14 + a quarter of radius 16 + 21.
+        let step = drawn(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 40.0), pt(60.0, 40.0)]);
+        let want = 45.0 + std::f64::consts::FRAC_PI_2 * 26.0;
+        assert!((step.length() - want).abs() < 1e-9);
+        // A straight cubic is as long as its chord.
+        let straight = cubic_length(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
+        assert!((straight - 30.0).abs() < 1e-9);
+        // The jog's S: longer than its chord, shorter than its control polygon.
+        let s = cubic_length(pt(4.0, 0.0), pt(20.0, 0.0), pt(20.0, 6.0), pt(36.0, 6.0));
+        assert!(s > 32.56 && s < 38.0, "{s}");
     }
 }
