@@ -1,0 +1,12 @@
+# Pull requests that keep the pinned actions and the Rust dependencies up to
+# date, once a week; each is reviewed like any other change.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
