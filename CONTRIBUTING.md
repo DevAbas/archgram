@@ -10,6 +10,20 @@ You need Rust, through [rustup](https://rustup.rs): the toolchain is pinned
 in `rust-toolchain.toml` and installs itself on the first `cargo` command.
 Node 22 or later is needed only for the npm launcher's tests.
 
+## Build and try a change
+
+```sh
+cargo run -p archgram-cli -- build examples/linkshort.json -o target/linkshort.svg
+```
+
+Open `target/linkshort.svg` in a browser, in light and in dark mode.
+
+## Where things are
+
+- `crates/archgram-core`: the engine, from spec to SVG.
+- `crates/archgram-cli`: the `archgram` command.
+- `examples/`: specs to try; `docs/SPEC.md`: what a spec may say.
+
 ## Before a pull request
 
 Each of these must pass; CI runs them on macOS, Linux and Windows.
