@@ -15,6 +15,12 @@
 //! under `target/`, its `data/simple-icons.json` for titles and licences,
 //! `slugs.md` for each title's slug, and `icons/<slug>.svg` for its path.
 //! An icon that carries a licence of its own other than CC0 is left out.
+//!
+//! `fonts` writes the fonts archgram embeds (`crates/archgram-core/fonts/`)
+//! from Geist's release files in `fonts/source/`: every character each one
+//! maps, through the core's own subsetter, which keeps only the tables a
+//! renderer needs. Kerning, ligatures, glyph names and hinting go; no
+//! glyph's outline or advance changes.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -44,11 +50,43 @@ fn main() -> ExitCode {
     match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
         ["deps"] => deps(),
         ["icons", tag] => icons(tag),
+        ["fonts"] => fonts(),
         _ => {
-            eprintln!("usage: cargo xtask deps | cargo xtask icons <simple-icons tag>");
+            eprintln!(
+                "usage: cargo xtask deps | cargo xtask icons <simple-icons tag> | cargo xtask fonts"
+            );
             ExitCode::from(2)
         }
     }
+}
+
+fn fonts() -> ExitCode {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../crates/archgram-core/fonts");
+    for name in ["Geist-Regular", "Geist-Medium"] {
+        let source = dir.join(format!("source/{name}.ttf"));
+        let written = std::fs::read(&source)
+            .map_err(|e| format!("{}: {e}", source.display()))
+            .and_then(|font| {
+                let chars = archgram_core::font::characters(&font)?;
+                let out = archgram_core::font::subset::subset(&font, &chars).map_err(|e| format!("{e:?}"))?;
+                Ok((font.len(), chars.len(), out))
+            });
+        match written {
+            Ok((before, chars, out)) => {
+                let target = dir.join(format!("{name}.ttf"));
+                if let Err(e) = std::fs::write(&target, &out) {
+                    eprintln!("xtask: {}: {e}", target.display());
+                    return ExitCode::FAILURE;
+                }
+                println!("{name}: {chars} characters, {before} bytes to {}", out.len());
+            }
+            Err(e) => {
+                eprintln!("xtask: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    ExitCode::SUCCESS
 }
 
 const SIMPLE_ICONS: &str = "https://github.com/simple-icons/simple-icons";

@@ -8,6 +8,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+archgram-core = { path = "../crates/archgram-core" }
 serde_json = { workspace = true }
 
 [lints]

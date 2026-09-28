@@ -16,6 +16,21 @@ pub static REGULAR: &[u8] = include_bytes!("../../fonts/Geist-Regular.ttf");
 /// Geist Medium, weight 500.
 pub static MEDIUM: &[u8] = include_bytes!("../../fonts/Geist-Medium.ttf");
 
+/// Every character a font maps to a glyph, from its `cmap`.
+///
+/// # Errors
+///
+/// When `font` does not parse.
+pub fn characters(font: &[u8]) -> Result<std::collections::BTreeSet<char>, String> {
+    let font = FontRef::new(font).map_err(|e| e.to_string())?;
+    Ok(font
+        .charmap()
+        .mappings()
+        .filter(|(_, gid)| gid.to_u32() != 0)
+        .filter_map(|(c, _)| char::from_u32(c))
+        .collect())
+}
+
 /// The family name the embedded subsets take in CSS: our own, so a copy of
 /// Geist installed on the reader's machine never stands in for the subset.
 pub const FAMILY: &str = "archgram-geist";
