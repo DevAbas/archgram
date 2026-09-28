@@ -230,9 +230,17 @@ frames or free placement ever call for it.
 
 ### Render
 
-The SVG is built as a string with fixed number formatting (two decimals)
-and a fixed attribute order, the second half of determinism. Each node
-kind has a shape function; the theme becomes CSS custom properties, with
+Rendering first builds a scene (`render::scene`): every shape in drawing
+order, typed (canvas, rectangle, circle, path, text, icon, group), each
+naming its style by class, with the style sheet beside it. The classes a
+still drawing uses and their declarations are one table (`render::styles`):
+the SVG writes it as CSS, and a rasterizer reads the same rules, so a PNG
+cannot drift from the SVG. What moves is SVG markup kept as it is written,
+invisible in the still image. The icons are lists of shapes, not markup.
+
+The SVG writer (`render::svg`) turns the scene into a string with fixed
+number formatting (two decimals) and a fixed attribute order, the second
+half of determinism. Each node kind has a shape function; the theme becomes CSS custom properties, with
 the dark values under `prefers-color-scheme`, or one file per theme on
 request. The legend is generated from the categories and variants the
 diagram uses and laid out below it (`layout::legend`), in rows no wider

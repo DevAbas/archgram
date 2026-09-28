@@ -7,7 +7,8 @@
 
 use crate::motion::{Hop, Lit, Timeline, fade};
 use crate::render::edge::Drawn;
-use crate::render::svg::{Svg, num};
+use crate::render::scene::{GroupOf, Item};
+use crate::render::svg::num;
 use crate::spec::SignalStyle;
 use crate::tokens::{
     MOTION_EASE, MOTION_HOP_GAP_MS, SIGNAL_BOLT, SIGNAL_BOLT_WIDTH, SIGNAL_COMET, SIGNAL_CORE, SIGNAL_DASH,
@@ -184,15 +185,14 @@ fn streak(d: &str, length: f64, px: f64, class: &str, style: &str, hop: &Hop, pe
     )
 }
 
-/// Draws every signal, above the cards.
+/// Every signal, drawn above the cards.
 pub fn signals(
-    svg: &mut Svg,
     style: SignalStyle,
     timeline: &Timeline,
     drawn: &[Drawn],
     hue: impl Fn(usize) -> &'static str,
-) {
-    svg.open(r#"<g class="signals">"#);
+) -> Item {
+    let mut items = Vec::new();
     let period = timeline.period;
     for hop in &timeline.hops {
         let id = edge_id(hop.edge);
@@ -207,12 +207,15 @@ pub fn signals(
         } else {
             seen(hop.start, hop.end, period)
         };
-        svg.line(&format!(
+        items.push(Item::Motion(format!(
             r#"<g class="signal {}" opacity="0">{shown}{body}</g>"#,
             hue(hop.from)
-        ));
+        )));
     }
-    svg.close("</g>");
+    Item::Group {
+        of: GroupOf::Class("signals"),
+        items,
+    }
 }
 
 /// The mark one hop draws in `style`: along edge `id`, whose path is `d`

@@ -5,7 +5,9 @@ mod edge;
 mod frame;
 mod icons;
 mod legend;
+pub mod scene;
 pub mod signal;
+pub mod styles;
 pub mod svg;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -18,10 +20,11 @@ use crate::layout::Placement;
 use crate::motion::Timeline;
 use crate::spec::{SignalStyle, Spec};
 use crate::tokens::{
-    ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CARD,
-    STROKE_CONNECTOR, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE, TextStyle, theme,
+    ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CONNECTOR,
+    theme,
 };
-use svg::{Svg, escape, num};
+use scene::{Anchor, GroupOf, Item, Scene, StyleLine};
+use svg::num;
 
 /// Which theme the SVG carries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -55,7 +58,7 @@ impl Default for Options {
     }
 }
 
-/// Draws a laid-out diagram.
+/// Draws a laid-out diagram as SVG.
 ///
 /// # Panics
 ///
@@ -68,51 +71,48 @@ pub fn render(
     options: Options,
     logos: &dyn crate::logos::Logos,
 ) -> String {
+    svg::write(&scene(spec, placement, options, logos))
+}
+
+/// A laid-out diagram as a scene: every shape in drawing order, with its
+/// style sheet.
+///
+/// # Panics
+///
+/// As [`render`].
+#[must_use]
+pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn crate::logos::Logos) -> Scene {
     let w = placement.size.w + 2.0 * SPACING_MARGIN;
     let h = placement.size.h + 2.0 * SPACING_MARGIN;
-    let mut svg = Svg::default();
-    svg.open(&format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-labelledby="title desc">"#,
-        w = num(w),
-        h = num(h)
-    ));
-    svg.line(&format!(r#"<title id="title">{}</title>"#, escape(&spec.title)));
-    svg.line(&format!(
-        r#"<desc id="desc">{}</desc>"#,
-        escape(&description(spec))
-    ));
     // Every edge as drawn, moved onto the canvas, and the flows' timing
     // along them.
     let drawn = drawn_edges(placement);
     let lengths: Vec<f64> = drawn.iter().map(edge::Drawn::length).collect();
     let timeline = crate::motion::timeline(spec, &lengths);
     let brands = brands(spec, timeline.as_ref(), logos);
-    style(&mut svg, spec, options, logos, (timeline.as_ref(), &brands));
-    svg.line(&format!(
-        r#"<rect class="canvas" width="{}" height="{}" rx="{}"/>"#,
-        num(w),
-        num(h),
-        num(ROUNDED_CANVAS)
-    ));
-    // Arrowhead: an open chevron in the connector colour and the line's own
-    // stroke (DESIGN.md, Components: Connector), in user space so its size is
-    // the tokens' and not scaled by the stroke. Its tip is the line's end;
-    // `overflow` keeps the stroke's round ends from being clipped.
-    svg.line(&format!(
-        r#"<defs><marker id="arrow" viewBox="0 0 {l} {w}" refX="{l}" refY="{ry}" markerWidth="{l}" markerHeight="{w}" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L{l} {ry}L0 {w}"/></marker></defs>"#,
-        l = num(ARROWHEAD_LENGTH),
-        w = num(ARROWHEAD_WIDTH),
-        ry = num(ARROWHEAD_WIDTH / 2.0)
-    ));
+    let style = style(spec, options, logos, (timeline.as_ref(), &brands));
+    let mut items = vec![
+        Item::Canvas {
+            width: w,
+            height: h,
+            rx: ROUNDED_CANVAS,
+        },
+        // An open chevron in the connector colour and the line's own stroke
+        // (DESIGN.md, Components: Connector), its tip at the line's end.
+        Item::Arrowhead {
+            length: ARROWHEAD_LENGTH,
+            width: ARROWHEAD_WIDTH,
+        },
+    ];
     // The glow's blur, over the whole canvas: measured against a line's own
     // box, a straight line's zero height would leave it no room at all.
     if timeline.is_some() && signal::glows(spec.signal) {
-        svg.line(&format!(
+        items.push(Item::Motion(format!(
             r#"<defs><filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="{}" height="{}"><feGaussianBlur stdDeviation="{}"/></filter></defs>"#,
             num(w),
             num(h),
             num(crate::tokens::SIGNAL_BLUR)
-        ));
+        )));
     }
     // Frames first, the outermost below the ones inside it; their names go
     // over the edges, below the cards.
@@ -121,12 +121,12 @@ pub fn render(
         y: r.y + OFFSET,
         ..r
     };
-    let outer_first = frames_outer_first(&mut svg, spec, placement, at);
-    svg.open(r#"<g class="edges">"#);
+    let outer_first = frames_outer_first(&mut items, spec, placement, at);
     let followed: BTreeSet<usize> = timeline
         .as_ref()
         .map(|t| t.hops.iter().map(|h| h.edge).collect())
         .unwrap_or_default();
+    let mut edges = Vec::new();
     for (k, ((e, d), label)) in spec.edges.iter().zip(&drawn).zip(&placement.labels).enumerate() {
         let label = label.map(|r| Rect {
             x: r.x + EDGE_OFFSET,
@@ -134,12 +134,15 @@ pub fn render(
             ..r
         });
         let id = followed.contains(&k).then(|| signal::edge_id(k));
-        edge::edge(&mut svg, e, d, label, id.as_deref());
+        edges.extend(edge::edge(e, d, label, id.as_deref()));
     }
-    svg.close("</g>");
+    items.push(Item::Group {
+        of: GroupOf::Class("edges"),
+        items: edges,
+    });
     for &f in &outer_first {
         if let Some(label) = placement.frame_labels[f] {
-            frame::name(&mut svg, &spec.frames[f].label, at(label));
+            items.extend(frame::name(&spec.frames[f].label, at(label)));
         }
     }
     if spec.still == crate::spec::Still::Numbers {
@@ -149,12 +152,12 @@ pub fn render(
             y: r.y + EDGE_OFFSET,
             ..*r
         }));
-        step_numbers(&mut svg, spec, &drawn, &blocked);
+        items.extend(step_numbers(spec, &drawn, &blocked));
     }
-    cards(&mut svg, spec, placement, logos, (timeline.as_ref(), &brands));
+    cards(&mut items, spec, placement, logos, (timeline.as_ref(), &brands));
     if let Some(t) = &timeline {
         let hue = |n: usize| card::category_class(spec.nodes[n].kind.category());
-        signal::signals(&mut svg, spec.signal, t, &drawn, hue);
+        items.push(signal::signals(spec.signal, t, &drawn, hue));
     }
     let entries: Vec<crate::layout::legend::Entry> = placement
         .legend
@@ -173,9 +176,15 @@ pub fn render(
             ..l.clone()
         })
         .collect();
-    legend::legend(&mut svg, &entries, &flow_lines);
-    svg.close("</svg>");
-    svg.finish()
+    items.extend(legend::legend(&entries, &flow_lines));
+    Scene {
+        width: w,
+        height: h,
+        title: spec.title.clone(),
+        description: description(spec),
+        style,
+        items,
+    }
 }
 
 /// Every edge as drawn, moved onto the canvas.
@@ -198,7 +207,7 @@ fn drawn_edges(placement: &Placement) -> Vec<edge::Drawn> {
 
 /// Every card, each lit while a flow's signal is at it.
 fn cards(
-    svg: &mut Svg,
+    items: &mut Vec<Item>,
     spec: &Spec,
     placement: &Placement,
     logos: &dyn crate::logos::Logos,
@@ -222,14 +231,20 @@ fn cards(
                 .filter(|t| brands.contains_key(*t))
                 .map(brand_class),
         });
-        card::card(svg, node, at, (spec.card, spec.logo), logos, brand.as_ref());
+        items.push(card::card(
+            node,
+            at,
+            (spec.card, spec.logo),
+            logos,
+            brand.as_ref(),
+        ));
     }
 }
 
 /// Draws the frames, the outermost below the ones inside it, and returns
 /// them in that order for their names.
 fn frames_outer_first(
-    svg: &mut Svg,
+    items: &mut Vec<Item>,
     spec: &Spec,
     placement: &Placement,
     at: impl Fn(Rect) -> Rect,
@@ -252,11 +267,13 @@ fn frames_outer_first(
         .collect();
     outer_first.sort_by_key(|&f| (depth(f), f));
     if !outer_first.is_empty() {
-        svg.open(r#"<g class="frames">"#);
-        for &f in &outer_first {
-            frame::frame(svg, at(placement.frames[f].expect("placed")));
-        }
-        svg.close("</g>");
+        items.push(Item::Group {
+            of: GroupOf::Class("frames"),
+            items: outer_first
+                .iter()
+                .map(|&f| frame::frame(at(placement.frames[f].expect("placed"))))
+                .collect(),
+        });
     }
     outer_first
 }
@@ -277,15 +294,28 @@ const OFFSET: f64 = SPACING_MARGIN + HALF_PIXEL;
 /// of an odd number of pixels, by none for an even one.
 const EDGE_OFFSET: f64 = SPACING_MARGIN + (STROKE_CONNECTOR / 2.0) % 1.0;
 
-/// The style sheet: the theme's roles as custom properties, then the classes
-/// that read them (DESIGN.md, front matter: components).
+/// The style sheet as it is written.
+#[derive(Default)]
+struct Sheet(Vec<StyleLine>);
+
+impl Sheet {
+    fn line(&mut self, text: &str) {
+        self.0.push(StyleLine::Raw(text.to_owned()));
+    }
+
+    fn rules(&mut self, rules: Vec<scene::Rule>) {
+        self.0.extend(rules.into_iter().map(StyleLine::Rule));
+    }
+}
+
+/// The style sheet: the theme's roles as custom properties, the fonts, then
+/// the classes that read them (`styles`).
 fn style(
-    svg: &mut Svg,
     spec: &Spec,
     options: Options,
     logos: &dyn crate::logos::Logos,
     (timeline, brands): (Option<&Timeline>, &BTreeMap<String, Rgb>),
-) {
+) -> Vec<StyleLine> {
     let (palette, mode) = (spec.palette.as_str(), options.mode);
     // Validation admits only known palettes; should one slip through, the
     // first palette stands in, in the same theme.
@@ -300,108 +330,33 @@ fn style(
         None => (pick("light"), pick("dark")),
     };
     let animated = timeline.is_some();
-    svg.open("<style>");
-    theme_vars(svg, mode, (&light, &dark), animated);
-    if options.embed_font && embed_fonts(svg, spec, logos) {
+    let mut sheet = Sheet::default();
+    theme_vars(&mut sheet, mode, (&light, &dark), animated);
+    if options.embed_font && embed_fonts(&mut sheet, spec, logos) {
         // No kerning: the subset carries none and the text was measured without it.
-        svg.line(&format!(
+        sheet.line(&format!(
             "text {{ font-family: \"{}\", {FONT_SANS}; font-kerning: none; }}",
             font::FAMILY
         ));
     } else {
-        svg.line(&format!("text {{ font-family: {FONT_SANS}; }}"));
+        sheet.line(&format!("text {{ font-family: {FONT_SANS}; }}"));
     }
-
-    svg.line(&format!(
-        ".title {{ {} fill: var(--text); }}",
-        text(&TYPOGRAPHY_TITLE)
-    ));
-    svg.line(&format!(
-        ".sub {{ {} fill: var(--text-muted); }}",
-        text(&TYPOGRAPHY_SUBTITLE)
-    ));
-    svg.line(".canvas { fill: var(--canvas); }");
-    svg.line(&format!(
-        ".card {{ fill: var(--card); stroke: var(--card-edge); stroke-width: {}; }}",
-        num(STROKE_CARD)
-    ));
-    svg.line(&format!(
-        ".card.external {{ fill: var(--canvas); stroke: var(--connector); stroke-dasharray: {}; }}",
-        dash(crate::tokens::DASH_EXTERNAL)
-    ));
-    svg.line(".badge { fill: var(--badge); }");
-    svg.line(".logo { fill: var(--text-muted); }");
-    for hue in ["core", "ai", "build", "client"] {
-        svg.line(&format!(".logo-icon.{hue} {{ fill: var(--icon-{hue}); }}"));
-    }
-    svg.line(&format!(
-        ".logo-chip {{ fill: var(--card); stroke: var(--card-edge); stroke-width: {}; }}",
-        num(STROKE_CARD)
-    ));
-    svg.line(&format!(
-        ".frame {{ fill: none; stroke: var(--frame); stroke-width: {}; stroke-dasharray: {}; }}",
-        num(crate::tokens::STROKE_FRAME),
-        dash(crate::tokens::DASH_FRAME)
-    ));
-    svg.line(&format!(
-        ".frame-label {{ {} fill: var(--text-muted); }}",
-        text(&crate::tokens::TYPOGRAPHY_FRAME_LABEL)
-    ));
-    svg.line(".label-patch { fill: var(--canvas); }");
-    svg.line(&format!(
-        ".edge {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}",
-        num(crate::tokens::STROKE_CONNECTOR)
-    ));
-    svg.line(&format!(
-        ".edge.dashed {{ stroke-dasharray: {}; }}",
-        dash(crate::tokens::DASH_EDGE)
-    ));
-    svg.line(&format!(
-        ".arrowhead {{ fill: none; stroke: var(--connector); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }}",
-        num(crate::tokens::STROKE_CONNECTOR)
-    ));
-    svg.line(".icon { fill: none; stroke-linecap: round; stroke-linejoin: round; }");
-    for hue in ["core", "ai", "build", "client"] {
-        svg.line(&format!(".icon.{hue} {{ stroke: var(--icon-{hue}); }}"));
-    }
+    sheet.rules(styles::shapes());
     if animated {
-        motion_style(svg, spec.signal, brands, (&light, &dark, mode));
+        motion_style(&mut sheet, spec.signal, brands, (&light, &dark, mode));
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
-        step_style(svg);
+        sheet.rules(styles::steps());
     }
-    if !placement_has_legend(spec) {
-        return svg.close("</style>");
+    if placement_has_legend(spec) {
+        sheet.rules(styles::legend());
     }
-    svg.line(&format!(
-        ".swatch {{ fill: none; stroke-width: {}; }}",
-        num(crate::tokens::STROKE_ICON)
-    ));
-    for hue in ["core", "ai", "build", "client"] {
-        svg.line(&format!(".swatch.{hue} {{ stroke: var(--icon-{hue}); }}"));
-    }
-    svg.line(&format!(
-        ".legend-text {{ {} fill: var(--text-muted); }}",
-        text(&crate::tokens::TYPOGRAPHY_LEGEND)
-    ));
-    svg.close("</style>");
-}
-
-/// A step's number on a line: a badge edged like a line, its number like text.
-fn step_style(svg: &mut Svg) {
-    svg.line(&format!(
-        ".step {{ fill: var(--card); stroke: var(--connector); stroke-width: {}; }}",
-        num(STROKE_CARD)
-    ));
-    svg.line(&format!(
-        ".step-text {{ {} fill: var(--text); }}",
-        text(&crate::tokens::TYPOGRAPHY_LEGEND)
-    ));
+    sheet.0
 }
 
 /// The theme's roles for `mode`: light, dark, or light switching to dark
 /// under `prefers-color-scheme: dark`.
-fn theme_vars(svg: &mut Svg, mode: Mode, (light, dark): (&Colors, &Colors), animated: bool) {
+fn theme_vars(svg: &mut Sheet, mode: Mode, (light, dark): (&Colors, &Colors), animated: bool) {
     match mode {
         Mode::Auto => {
             svg.line(&format!(":root {{ {} }}", vars(light, animated)));
@@ -431,19 +386,6 @@ fn vars(c: &Colors, animated: bool) -> String {
         .join(" ")
 }
 
-fn text(t: &TextStyle) -> String {
-    let spacing = if t.letter_spacing == 0.0 {
-        String::new()
-    } else {
-        format!(" letter-spacing: {}px;", num(t.letter_spacing))
-    };
-    format!(
-        "font-size: {}px; font-weight: {};{spacing}",
-        num(t.size),
-        t.weight
-    )
-}
-
 fn dash(d: &[f64]) -> String {
     d.iter().map(|v| num(*v)).collect::<Vec<_>>().join(" ")
 }
@@ -451,7 +393,7 @@ fn dash(d: &[f64]) -> String {
 /// One `@font-face` per weight the diagram uses, each a subset holding only
 /// the characters set in that weight. False when a subset cannot be made, in
 /// which case the text falls back to the system font.
-fn embed_fonts(svg: &mut Svg, spec: &Spec, logos: &dyn crate::logos::Logos) -> bool {
+fn embed_fonts(svg: &mut Sheet, spec: &Spec, logos: &dyn crate::logos::Logos) -> bool {
     let mut by_weight: std::collections::BTreeMap<u16, BTreeSet<char>> = std::collections::BTreeMap::new();
     for (weight, text) in crate::measure::text_runs_with(spec, logos) {
         by_weight.entry(weight).or_default().extend(text.chars());
@@ -494,14 +436,14 @@ pub fn step_label(numbers: &[u32]) -> String {
 /// arrowhead, or else as near to it along the line as clears every card,
 /// label and badge in `blocked`. Lines that meet before a card share their
 /// last stretch, and show their number there once.
-fn step_numbers(svg: &mut Svg, spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) {
+fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<Item> {
     use crate::tokens::{SIGNAL_NUMBER, TYPOGRAPHY_LEGEND};
     let numbers = crate::motion::step_numbers(spec);
     if numbers.iter().all(Vec::is_empty) {
-        return;
+        return None;
     }
     let mut placed: Vec<(Rect, String)> = Vec::new();
-    svg.open(r#"<g class="steps">"#);
+    let mut items = Vec::new();
     for (e, list) in numbers.iter().enumerate().filter(|(_, n)| !n.is_empty()) {
         let text = step_label(list);
         let h = SIGNAL_NUMBER;
@@ -533,24 +475,28 @@ fn step_numbers(svg: &mut Svg, spec: &Spec, drawn: &[edge::Drawn], blocked: &[Re
         };
         let b = badge(centre);
         // Its outline on half pixels, so the one-pixel edge is sharp.
-        svg.line(&format!(
-            r#"<rect class="step" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-            num(b.x + HALF_PIXEL),
-            num(b.y + HALF_PIXEL),
-            num(b.w - 1.0),
-            num(b.h - 1.0),
-            num((h - 1.0) / 2.0)
-        ));
+        items.push(Item::Rect {
+            class: "step".into(),
+            x: b.x + HALF_PIXEL,
+            y: b.y + HALF_PIXEL,
+            w: b.w - 1.0,
+            h: b.h - 1.0,
+            rx: Some((h - 1.0) / 2.0),
+        });
         let line = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
-        svg.line(&format!(
-            r#"<text class="step-text" x="{}" y="{}" text-anchor="middle">{}</text>"#,
-            num(centre.x),
-            num(centre.y - line / 2.0 + font::baseline_in_line(&TYPOGRAPHY_LEGEND)),
-            escape(&text)
-        ));
+        items.push(Item::Text {
+            class: "step-text".into(),
+            x: centre.x,
+            y: centre.y - line / 2.0 + font::baseline_in_line(&TYPOGRAPHY_LEGEND),
+            anchor: Anchor::Middle,
+            text: text.clone(),
+        });
         placed.push((b, text));
     }
-    svg.close("</g>");
+    Some(Item::Group {
+        of: GroupOf::Class("steps"),
+        items,
+    })
 }
 
 /// Where a badge `width` wide may sit on a line, best first: on each
@@ -657,7 +603,7 @@ fn brand_fill(brand: Rgb, card: Rgb) -> String {
 /// The signal, the lit card and the brand colours; none of it under
 /// `prefers-reduced-motion`, where the diagram is still.
 fn motion_style(
-    svg: &mut Svg,
+    svg: &mut Sheet,
     style: SignalStyle,
     brands: &BTreeMap<String, Rgb>,
     (light, dark, mode): (&Colors, &Colors, Mode),

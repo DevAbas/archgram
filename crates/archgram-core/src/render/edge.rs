@@ -3,7 +3,8 @@
 //! any, in the box the layout kept for it.
 
 use crate::geometry::{Point, Rect};
-use crate::render::svg::{Svg, escape, num};
+use crate::render::scene::{Anchor, Item};
+use crate::render::svg::num;
 use crate::spec::{Edge, EdgeStyle};
 use crate::tokens::{ARROWHEAD_GAP, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_SUBTITLE};
 
@@ -11,24 +12,27 @@ use crate::tokens::{ARROWHEAD_GAP, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_S
 /// tip is the line's end, so the tip leaves `arrowhead.gap` of air.
 const INSET: f64 = ARROWHEAD_GAP;
 
-/// Draws one edge along `drawn`, with its label in `label`. An edge a flow
+/// One edge along `drawn`, then its label in `label`. An edge a flow
 /// takes carries `id`, for the signal to follow.
-pub fn edge(svg: &mut Svg, e: &Edge, drawn: &Drawn, label: Option<Rect>, id: Option<&str>) {
+pub fn edge(e: &Edge, drawn: &Drawn, label: Option<Rect>, id: Option<&str>) -> Vec<Item> {
     if drawn.pieces.is_empty() {
-        return;
+        return Vec::new();
     }
     let class = match e.style {
         EdgeStyle::Solid => "edge",
         EdgeStyle::Dashed => "edge dashed",
     };
-    let id = id.map(|i| format!(r#"id="{i}" "#)).unwrap_or_default();
-    svg.line(&format!(
-        r#"<path {id}class="{class}" d="{}" marker-end="url(#arrow)"/>"#,
-        drawn.d()
-    ));
+    let mut items = vec![Item::Path {
+        id: id.map(str::to_owned),
+        class: class.into(),
+        place: None,
+        d: drawn.d(),
+        arrowhead: true,
+    }];
     if let (Some(text), Some(at)) = (&e.label, label) {
-        edge_label(svg, text, at);
+        items.extend(edge_label(text, at));
     }
+    items
 }
 
 /// One piece of an edge as drawn, from where the one before it ends.
@@ -253,23 +257,25 @@ fn length(a: Point, b: Point) -> f64 {
 
 /// The label in its box, over a patch of canvas so the line does not run
 /// through the text.
-fn edge_label(svg: &mut Svg, label: &str, at: Rect) {
+fn edge_label(label: &str, at: Rect) -> [Item; 2] {
     let pad = CARD_PADDING / 2.0;
-    svg.line(&format!(
-        r#"<rect class="label-patch" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-        num(at.x),
-        num(at.y),
-        num(at.w),
-        num(at.h),
-        num(pad)
-    ));
-    let baseline = at.y + crate::font::baseline_in_line(&TYPOGRAPHY_SUBTITLE);
-    svg.line(&format!(
-        r#"<text class="sub" x="{}" y="{}" text-anchor="middle">{}</text>"#,
-        num(at.x + at.w / 2.0),
-        num(baseline),
-        escape(label)
-    ));
+    [
+        Item::Rect {
+            class: "label-patch".into(),
+            x: at.x,
+            y: at.y,
+            w: at.w,
+            h: at.h,
+            rx: Some(pad),
+        },
+        Item::Text {
+            class: "sub".into(),
+            x: at.x + at.w / 2.0,
+            y: at.y + crate::font::baseline_in_line(&TYPOGRAPHY_SUBTITLE),
+            anchor: Anchor::Middle,
+            text: label.to_owned(),
+        },
+    ]
 }
 
 #[cfg(test)]

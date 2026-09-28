@@ -4,7 +4,8 @@ use crate::font::baseline_in_line;
 use crate::geometry::Rect;
 use crate::logos::Logos;
 use crate::render::icons::{GRID, icon};
-use crate::render::svg::{Svg, escape, num};
+use crate::render::scene::{Anchor, GroupOf, Item, Place};
+use crate::render::svg::{escape, num};
 use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING, CARD_LOGO_CORNER,
@@ -42,20 +43,26 @@ pub struct Brand<'a> {
 
 /// A logo path; on a card a signal lights, a copy in the brand's colour
 /// over it that shows only while the card is lit.
-fn logo_path(svg: &mut Svg, class: &str, transform: &str, d: &str, brand: Option<&Brand>) {
-    svg.line(&format!(
-        r#"<path class="{class}" transform="{transform}" d="{}"/>"#,
-        escape(d)
-    ));
+fn logo_path(out: &mut Vec<Item>, class: &str, place: Place, d: &str, brand: Option<&Brand>) {
+    out.push(Item::Path {
+        id: None,
+        class: class.to_owned(),
+        place: Some(place),
+        d: d.to_owned(),
+        arrowhead: false,
+    });
     if let Some(Brand {
         animation,
         class: Some(colour),
     }) = brand
     {
-        svg.line(&format!(
-            r#"<path class="brand {colour}" transform="{transform}" d="{}" opacity="0">{animation}</path>"#,
+        out.push(Item::Motion(format!(
+            r#"<path class="brand {colour}" transform="translate({} {}) scale({})" d="{}" opacity="0">{animation}</path>"#,
+            num(place.x),
+            num(place.y),
+            num(place.scale),
             escape(d)
-        ));
+        )));
     }
 }
 
@@ -80,118 +87,76 @@ impl Lines<'_> {
 
     /// Writes the lines with the block's top at `top`, anchored at `x`. An
     /// inline logo leads the note line, the pair anchored as one.
-    fn write(&self, svg: &mut Svg, x: f64, top: f64, anchor: &str) {
-        let anchored = if anchor == "start" {
-            String::new()
-        } else {
-            format!(r#" text-anchor="{anchor}""#)
+    fn write(&self, out: &mut Vec<Item>, x: f64, top: f64, anchor: Anchor) {
+        let text = |class: &str, x: f64, y: f64, anchor: Anchor, text: &str| Item::Text {
+            class: class.to_owned(),
+            x,
+            y,
+            anchor,
+            text: text.to_owned(),
         };
-        let title_y = top + baseline_in_line(&TYPOGRAPHY_TITLE);
-        svg.line(&format!(
-            r#"<text class="title" x="{}" y="{}"{anchored}>{}</text>"#,
-            num(x),
-            num(title_y),
-            escape(self.title)
+        out.push(text(
+            "title",
+            x,
+            top + baseline_in_line(&TYPOGRAPHY_TITLE),
+            anchor,
+            self.title,
         ));
         let Some(note) = self.note else { return };
         let note_top = top + Self::title_height();
         let note_y = note_top + baseline_in_line(&TYPOGRAPHY_SUBTITLE);
         let Some(logo) = self.inline else {
-            svg.line(&format!(
-                r#"<text class="sub" x="{}" y="{}"{anchored}>{}</text>"#,
-                num(x),
-                num(note_y),
-                escape(note)
-            ));
+            out.push(text("sub", x, note_y, anchor, note));
             return;
         };
         let lead = CARD_LOGO_INLINE + CARD_LOGO_INLINE_GAP;
         let whole = lead + crate::font::text_width(note, &TYPOGRAPHY_SUBTITLE);
-        let start = if anchor == "start" { x } else { x - whole / 2.0 };
-        let transform = format!(
-            "translate({} {}) scale({})",
-            num(start),
-            num(note_top + (Self::note_height() - CARD_LOGO_INLINE) / 2.0),
-            num(CARD_LOGO_INLINE / GRID)
-        );
-        logo_path(svg, "logo", &transform, logo, self.brand);
-        svg.line(&format!(
-            r#"<text class="sub" x="{}" y="{}">{}</text>"#,
-            num(start + lead),
-            num(note_y),
-            escape(note)
-        ));
+        let start = if anchor == Anchor::Start {
+            x
+        } else {
+            x - whole / 2.0
+        };
+        let place = Place {
+            x: start,
+            y: note_top + (Self::note_height() - CARD_LOGO_INLINE) / 2.0,
+            scale: CARD_LOGO_INLINE / GRID,
+        };
+        logo_path(out, "logo", place, logo, self.brand);
+        out.push(text("sub", start + lead, note_y, Anchor::Start, note));
     }
 }
 
-/// Draws `node`'s card in `r`, with its technology's logo from `logos`, in
-/// the diagram's `place` for logos; lit while a signal is at it when
-/// `brand` says how.
+/// `node`'s card in `r`, with its technology's logo from `logos`, in the
+/// diagram's `place` for logos; lit while a signal is at it when `brand`
+/// says how.
 pub fn card(
-    svg: &mut Svg,
     node: &Node,
     r: Rect,
     (style, place): (CardStyle, LogoPlace),
     logos: &dyn Logos,
     brand: Option<&Brand>,
-) {
+) -> Item {
+    let mut out = Vec::new();
     let path = node.tech.as_deref().and_then(|t| logos.path(t));
     let in_badge = if place == LogoPlace::Icon { path } else { None };
     let logo = path
         .filter(|_| matches!(place, LogoPlace::Corner | LogoPlace::Chip))
         .map(|p| (p, place));
-    svg.open(&format!(r#"<g data-node="{}">"#, escape(&node.id)));
-    let class = match node.variant {
-        Variant::External => "card external",
-        Variant::Single | Variant::Multi => "card",
-    };
-    // `r` is the footprint. For several instances the front card sits at
-    // its lower left and two copies of the outline step up and to the right
-    // behind it; the rest of the card is drawn on the front one.
-    let r = if node.variant == Variant::Multi {
-        let front = Rect {
-            x: r.x,
-            y: r.y + 2.0 * CARD_MULTI_OFFSET,
-            w: r.w - 2.0 * CARD_MULTI_OFFSET,
-            h: r.h - 2.0 * CARD_MULTI_OFFSET,
-        };
-        for step in [2.0, 1.0] {
-            let d = step * CARD_MULTI_OFFSET;
-            svg.line(&format!(
-                r#"<rect class="card" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-                num(front.x + d),
-                num(front.y - d),
-                num(front.w),
-                num(front.h),
-                num(ROUNDED_CARD)
-            ));
-        }
-        front
-    } else {
-        r
-    };
-    svg.line(&format!(
-        r#"<rect class="{class}" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-        num(r.x),
-        num(r.y),
-        num(r.w),
-        num(r.h),
-        num(ROUNDED_CARD)
-    ));
+    let r = outline(&mut out, node, r);
     let hue = category_class(node.kind.category());
     if let Some(b) = brand {
         // Its border in the card's hue, `signal.lit` wide on whole pixels
         // just outside the card's own edge, over a tint of that hue.
-        let out = SIGNAL_LIT / 2.0 - STROKE_CARD / 2.0;
-        svg.line(&format!(
+        let o = SIGNAL_LIT / 2.0 - STROKE_CARD / 2.0;
+        out.push(Item::Motion(format!(
             r#"<rect class="lit {hue}" x="{}" y="{}" width="{}" height="{}" rx="{}" opacity="0">{}</rect>"#,
-            num(r.x - out),
-            num(r.y - out),
-            num(r.w + 2.0 * out),
-            num(r.h + 2.0 * out),
-            num(ROUNDED_CARD + out),
+            num(r.x - o),
+            num(r.y - o),
+            num(r.w + 2.0 * o),
+            num(r.h + 2.0 * o),
+            num(ROUNDED_CARD + o),
             b.animation
-        ));
+        )));
     }
 
     let second = crate::measure::note_line(node, place, logos);
@@ -209,10 +174,22 @@ pub fn card(
                 w: CARD_HORIZONTAL_BADGE,
                 h: CARD_HORIZONTAL_BADGE,
             };
-            badge_with_icon(svg, (badge, CARD_HORIZONTAL_ICON), node, hue, in_badge, brand);
+            badge_with_icon(
+                &mut out,
+                (badge, CARD_HORIZONTAL_ICON),
+                node,
+                hue,
+                in_badge,
+                brand,
+            );
             let text_x = r.x + crate::measure::horizontal_text_inset();
-            lines.write(svg, text_x, r.centre_y() - lines.height() / 2.0, "start");
-            draw_logo(svg, logo, r, badge, brand);
+            lines.write(
+                &mut out,
+                text_x,
+                r.centre_y() - lines.height() / 2.0,
+                Anchor::Start,
+            );
+            draw_logo(&mut out, logo, r, badge, brand);
         }
         CardStyle::Vertical => {
             let content = CARD_VERTICAL_BADGE + CARD_PADDING + lines.height();
@@ -223,12 +200,62 @@ pub fn card(
                 w: CARD_VERTICAL_BADGE,
                 h: CARD_VERTICAL_BADGE,
             };
-            badge_with_icon(svg, (badge, CARD_VERTICAL_ICON), node, hue, in_badge, brand);
-            lines.write(svg, r.centre_x(), badge.bottom() + CARD_PADDING, "middle");
-            draw_logo(svg, logo, r, badge, brand);
+            badge_with_icon(&mut out, (badge, CARD_VERTICAL_ICON), node, hue, in_badge, brand);
+            lines.write(
+                &mut out,
+                r.centre_x(),
+                badge.bottom() + CARD_PADDING,
+                Anchor::Middle,
+            );
+            draw_logo(&mut out, logo, r, badge, brand);
         }
     }
-    svg.close("</g>");
+    Item::Group {
+        of: GroupOf::Node(node.id.clone()),
+        items: out,
+    }
+}
+
+/// The card's outline in its footprint `r`, and the box the rest of the
+/// card is drawn on. For several instances the front card sits at the
+/// footprint's lower left and two copies of the outline step up and to the
+/// right behind it.
+fn outline(out: &mut Vec<Item>, node: &Node, r: Rect) -> Rect {
+    let class = match node.variant {
+        Variant::External => "card external",
+        Variant::Single | Variant::Multi => "card",
+    };
+    let r = if node.variant == Variant::Multi {
+        let front = Rect {
+            x: r.x,
+            y: r.y + 2.0 * CARD_MULTI_OFFSET,
+            w: r.w - 2.0 * CARD_MULTI_OFFSET,
+            h: r.h - 2.0 * CARD_MULTI_OFFSET,
+        };
+        for step in [2.0, 1.0] {
+            let d = step * CARD_MULTI_OFFSET;
+            out.push(Item::Rect {
+                class: "card".into(),
+                x: front.x + d,
+                y: front.y - d,
+                w: front.w,
+                h: front.h,
+                rx: Some(ROUNDED_CARD),
+            });
+        }
+        front
+    } else {
+        r
+    };
+    out.push(Item::Rect {
+        class: class.into(),
+        x: r.x,
+        y: r.y,
+        w: r.w,
+        h: r.h,
+        rx: Some(ROUNDED_CARD),
+    });
+    r
 }
 
 /// The neutral badge and, centred in it, the kind's icon at `icon_size`, its
@@ -238,7 +265,13 @@ pub fn card(
 /// and edged like a card, centred on the badge's lower-right corner, at
 /// `card.logo-chip`. Always in `color.text-muted` (DESIGN.md, Components:
 /// Technology logo).
-fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rect, brand: Option<&Brand>) {
+fn draw_logo(
+    out: &mut Vec<Item>,
+    logo: Option<(&str, LogoPlace)>,
+    r: Rect,
+    badge: Rect,
+    brand: Option<&Brand>,
+) {
     let Some((path, place)) = logo else { return };
     let (size, x, y) = match place {
         LogoPlace::Inline | LogoPlace::Icon => return,
@@ -248,12 +281,12 @@ fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rec
             r.y + CARD_PADDING,
         ),
         LogoPlace::Chip => {
-            svg.line(&format!(
-                r#"<circle class="logo-chip" cx="{}" cy="{}" r="{}"/>"#,
-                num(badge.right()),
-                num(badge.bottom()),
-                num(CARD_LOGO_CHIP_RING / 2.0)
-            ));
+            out.push(Item::Circle {
+                class: "logo-chip".into(),
+                cx: badge.right(),
+                cy: badge.bottom(),
+                r: CARD_LOGO_CHIP_RING / 2.0,
+            });
             (
                 CARD_LOGO_CHIP,
                 badge.right() - CARD_LOGO_CHIP / 2.0,
@@ -261,46 +294,51 @@ fn draw_logo(svg: &mut Svg, logo: Option<(&str, LogoPlace)>, r: Rect, badge: Rec
             )
         }
     };
-    let transform = format!("translate({} {}) scale({})", num(x), num(y), num(size / GRID));
-    logo_path(svg, "logo", &transform, path, brand);
+    logo_path(
+        out,
+        "logo",
+        Place {
+            x,
+            y,
+            scale: size / GRID,
+        },
+        path,
+        brand,
+    );
 }
 
 /// The badge and, in it, the kind's icon; or the technology's logo in the
 /// category's hue when logos go in place of the icon.
 fn badge_with_icon(
-    svg: &mut Svg,
+    out: &mut Vec<Item>,
     (badge, icon_size): (Rect, f64),
     node: &Node,
     hue: &str,
     logo: Option<&str>,
     brand: Option<&Brand>,
 ) {
-    svg.line(&format!(
-        r#"<rect class="badge" x="{}" y="{}" width="{}" height="{}" rx="{}"/>"#,
-        num(badge.x),
-        num(badge.y),
-        num(badge.w),
-        num(badge.h),
-        num(ROUNDED_BADGE)
-    ));
+    out.push(Item::Rect {
+        class: "badge".into(),
+        x: badge.x,
+        y: badge.y,
+        w: badge.w,
+        h: badge.h,
+        rx: Some(ROUNDED_BADGE),
+    });
     let scale = icon_size / GRID;
     let (ix, iy) = (
         badge.centre_x() - icon_size / 2.0,
         badge.centre_y() - icon_size / 2.0,
     );
+    let place = Place { x: ix, y: iy, scale };
     if let Some(path) = logo {
-        let transform = format!("translate({} {}) scale({})", num(ix), num(iy), num(scale));
-        logo_path(svg, &format!("logo-icon {hue}"), &transform, path, brand);
+        logo_path(out, &format!("logo-icon {hue}"), place, path, brand);
         return;
     }
-    let transform = if (scale - 1.0).abs() < f64::EPSILON {
-        format!("translate({} {})", num(ix), num(iy))
-    } else {
-        format!("translate({} {}) scale({})", num(ix), num(iy), num(scale))
-    };
-    svg.line(&format!(
-        r#"<g class="icon {hue}" transform="{transform}" stroke-width="{}">{}</g>"#,
-        num(STROKE_ICON / scale),
-        icon(node.kind)
-    ));
+    out.push(Item::Icon {
+        class: format!("icon {hue}"),
+        place,
+        stroke_width: STROKE_ICON / scale,
+        shapes: icon(node.kind),
+    });
 }

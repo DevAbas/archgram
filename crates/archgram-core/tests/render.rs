@@ -130,3 +130,59 @@ fn a_logo_goes_in_the_corner_or_on_a_chip() {
         errors[0].message
     );
 }
+
+/// Every class a still shape names has a rule in the style table, so a
+/// rasterizer drawing the scene finds each one's paint.
+#[test]
+fn every_still_shape_has_a_style_rule() {
+    use archgram_core::render::scene::{Item, StyleLine};
+    fn classes(items: &[Item], out: &mut Vec<String>) {
+        for it in items {
+            match it {
+                Item::Group { items, .. } => classes(items, out),
+                Item::Rect { class, .. }
+                | Item::Circle { class, .. }
+                | Item::Path { class, .. }
+                | Item::Text { class, .. }
+                | Item::Icon { class, .. } => out.push(class.clone()),
+                Item::Canvas { .. } | Item::Arrowhead { .. } | Item::Motion(_) => {}
+            }
+        }
+    }
+    for name in [
+        "linkshort",
+        "rag",
+        "kinds",
+        "kinds-vertical",
+        "cv-screener-architecture",
+    ] {
+        let spec = archgram_core::parse_spec(&example(name)).unwrap();
+        let sizes = archgram_core::measure::card_sizes(&spec);
+        let placement = archgram_core::layout::place(&spec, &sizes).unwrap();
+        let scene = archgram_core::render::scene(
+            &spec,
+            &placement,
+            Options::default(),
+            &archgram_core::logos::NoLogos,
+        );
+        let selectors: Vec<String> = scene
+            .style
+            .iter()
+            .filter_map(|l| match l {
+                StyleLine::Rule(r) => Some(r.selector.clone()),
+                StyleLine::Raw(_) => None,
+            })
+            .collect();
+        let mut used = Vec::new();
+        classes(&scene.items, &mut used);
+        for class in used {
+            let parts: Vec<&str> = class.split(' ').collect();
+            let whole = format!(".{}", parts.join("."));
+            let first = format!(".{}", parts[0]);
+            assert!(
+                selectors.contains(&whole) || selectors.contains(&first),
+                "{name}: no rule for `{class}`"
+            );
+        }
+    }
+}
