@@ -99,7 +99,9 @@ fn build_options(rest: &[&str]) -> Result<Build, String> {
             }
             "--system-font" => options.embed_font = false,
             "--split-themes" => split = true,
-            "--theme-file" => theme_file = Some((*it.next().ok_or("--theme-file needs a file")?).to_owned()),
+            "--theme-file" => {
+                theme_file = Some((*it.next().ok_or("--theme-file needs a file")?).to_owned());
+            }
             other => return Err(format!("unrecognised option {other}")),
         }
     }

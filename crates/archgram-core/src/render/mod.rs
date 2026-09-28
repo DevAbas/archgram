@@ -159,6 +159,19 @@ pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn c
         let hue = |n: usize| card::category_class(spec.nodes[n].kind.category());
         items.push(signal::signals(spec.signal, t, &drawn, hue));
     }
+    items.extend(placed_legend(placement, at));
+    Scene {
+        width: w,
+        height: h,
+        title: spec.title.clone(),
+        description: description(spec),
+        style,
+        items,
+    }
+}
+
+/// The legend and the flows in words, moved onto the canvas by `at`.
+fn placed_legend(placement: &Placement, at: impl Fn(Rect) -> Rect) -> Option<Item> {
     let entries: Vec<crate::layout::legend::Entry> = placement
         .legend
         .iter()
@@ -176,15 +189,7 @@ pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn c
             ..l.clone()
         })
         .collect();
-    items.extend(legend::legend(&entries, &flow_lines));
-    Scene {
-        width: w,
-        height: h,
-        title: spec.title.clone(),
-        description: description(spec),
-        style,
-        items,
-    }
+    legend::legend(&entries, &flow_lines)
 }
 
 /// Every edge as drawn, moved onto the canvas.
@@ -678,6 +683,16 @@ fn motion_style(
             num(SIGNAL_LIT)
         ));
     }
+    brand_rules(svg, brands, (light, dark, mode));
+    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit, .brand { display: none; } }");
+}
+
+/// Each brand colour's rule, for the theme or themes the drawing carries.
+fn brand_rules(
+    svg: &mut Sheet,
+    brands: &BTreeMap<String, Rgb>,
+    (light, dark, mode): (&Colors, &Colors, Mode),
+) {
     let fills = |c: &Colors| -> Vec<String> {
         brands
             .iter()
@@ -701,7 +716,6 @@ fn motion_style(
         Mode::Light => fills(light).iter().for_each(|r| svg.line(r)),
         Mode::Dark => fills(dark).iter().for_each(|r| svg.line(r)),
     }
-    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit, .brand { display: none; } }");
 }
 
 /// A signal's dot, and the bright core some styles light it with.

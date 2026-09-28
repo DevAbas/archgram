@@ -187,7 +187,9 @@ fn merged(mut lit: Vec<Lit>, gap: u32) -> Vec<Lit> {
     let mut out: Vec<Lit> = Vec::with_capacity(lit.len());
     for l in lit {
         match out.last_mut() {
-            Some(last) if last.node == l.node && l.start <= last.end + gap => last.end = last.end.max(l.end),
+            Some(last) if last.node == l.node && l.start <= last.end + gap => {
+                last.end = last.end.max(l.end);
+            }
             _ => out.push(l),
         }
     }
