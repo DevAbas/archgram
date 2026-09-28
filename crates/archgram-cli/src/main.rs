@@ -308,10 +308,18 @@ fn themed(out: &Path, theme: &str) -> PathBuf {
 }
 
 /// Reads a theme's mapping file and the tokens it names, each file by its
-/// path beside the mapping; prints the problems if there are any.
+/// path beside the mapping and only under the mapping's folder; prints the
+/// problems if there are any.
 fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
     read(path)?;
-    let from_disk = |p: &str| std::fs::read_to_string(p).ok();
+    let folder = std::fs::canonicalize(path)
+        .ok()
+        .and_then(|real| real.parent().map(Path::to_path_buf))
+        .ok_or_else(|| {
+            eprintln!("archgram: cannot find the folder of {path}");
+            ExitCode::from(2)
+        })?;
+    let from_disk = |p: &str| read_under(&folder, p);
     archgram_core::theme::import(path, &from_disk).map_err(|errors| {
         for e in &errors {
             eprintln!("{}", printable(&e.to_string()));
@@ -323,6 +331,25 @@ fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
         );
         ExitCode::from(1)
     })
+}
+
+/// The text of the file at `path` when its real path is under `folder`, as
+/// Turborepo keeps a workspace's files within its repository: neither `..`
+/// nor an absolute path nor a symlink leads a theme out of its project, and
+/// only a regular file is read, never a device.
+fn read_under(folder: &Path, path: &str) -> Result<String, String> {
+    let cannot = |_| "the file cannot be read".to_owned();
+    let real = std::fs::canonicalize(path).map_err(cannot)?;
+    if !real.starts_with(folder) {
+        return Err(format!(
+            "the file is outside {}, the mapping file's folder, and archgram reads only the files under it",
+            folder.display()
+        ));
+    }
+    if !real.is_file() {
+        return Err("not a file".into());
+    }
+    std::fs::read_to_string(&real).map_err(cannot)
 }
 
 fn theme_check(path: &str) -> ExitCode {

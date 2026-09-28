@@ -14,12 +14,13 @@ fn root() -> String {
 }
 
 /// Files in memory, by path; the rest from the repository.
-fn reader(files: BTreeMap<String, String>) -> impl Fn(&str) -> Option<String> {
+fn reader(files: BTreeMap<String, String>) -> impl Fn(&str) -> Result<String, String> {
     move |path: &str| {
         files
             .get(path)
             .cloned()
             .or_else(|| std::fs::read_to_string(format!("{}/{path}", root())).ok())
+            .ok_or_else(|| "the file cannot be read".to_owned())
     }
 }
 

@@ -212,7 +212,7 @@ project's resolver and which token fills each of archgram's colour roles.
 | Field | Required | Meaning |
 |---|---|---|
 | `version` | yes | The mapping format's version. Only `1` exists |
-| `resolver` | yes | The project's resolver document (Design Tokens 2025.10), relative to this file |
+| `resolver` | yes | The project's resolver document (Design Tokens 2025.10), relative to this file, in its folder or below |
 | `roles` | no | Each archgram role's token, by its dotted id, with or without braces |
 | `themes.light`, `themes.dark` | yes | `inputs`: the resolver's input for each modifier, to pick that theme; `roles`: roles this theme maps differently |
 
@@ -233,8 +233,9 @@ on. Channels outside sRGB are clipped. A role's colour is opaque.
 An import is refused, with every problem listed and each located by file
 and JSON pointer, when the mapping or the resolver breaks its format; a
 role is not archgram's; an input names no modifier or no context; a
-modifier without a default gets no input; a file cannot be read, or is a
-remote reference; a token does not exist (the nearest are suggested), is
+modifier without a default gets no input; a file cannot be read, is a
+remote reference, or is outside the mapping file's folder (by its real
+path, so neither `..` nor a symlink leads out); a token does not exist (the nearest are suggested), is
 not a colour, or aliases in a loop; a group uses `$extends`; a colour
 cannot be read; or a pair of roles falls below the contrast DESIGN.md
 requires, in either theme.

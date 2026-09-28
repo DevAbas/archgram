@@ -10,7 +10,7 @@
 //! aliases and JSON Pointer `$ref`s inside values, `$type` inherited from
 //! groups. Remote references and group `$extends` are refused with a
 //! message. The core reads no file: the caller hands over each file's text
-//! by its path, relative to the mapping file.
+//! by its path, relative to the mapping file, or says why it will not.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -105,7 +105,8 @@ pub struct Imported {
 }
 
 /// Reads the mapping file at `path` and the tokens it names, each file's
-/// text from `read` by its path, and returns both themes' colours.
+/// text from `read` by its path (or why it cannot be read), and returns
+/// both themes' colours.
 ///
 /// # Errors
 ///
@@ -117,8 +118,11 @@ pub struct Imported {
 ///
 /// Only if archgram's own tokens lost the mono palette, which
 /// `tests/tokens.rs` guards.
-pub fn import(path: &str, read: &dyn Fn(&str) -> Option<String>) -> Result<Imported, Vec<ImportError>> {
-    let text = read(path).ok_or_else(|| vec![error(path, "", "the file cannot be read")])?;
+pub fn import(
+    path: &str,
+    read: &dyn Fn(&str) -> Result<String, String>,
+) -> Result<Imported, Vec<ImportError>> {
+    let text = read(path).map_err(|m| vec![error(path, "", m)])?;
     let mapping: Mapping = serde_json::from_str(&text).map_err(|e| {
         vec![error(
             path,
@@ -253,7 +257,7 @@ fn one_theme(
 
 /// The files read so far, parsed, by path.
 struct Documents<'a> {
-    read: &'a dyn Fn(&str) -> Option<String>,
+    read: &'a dyn Fn(&str) -> Result<String, String>,
     cache: BTreeMap<String, Value>,
 }
 
@@ -262,7 +266,7 @@ impl Documents<'_> {
         if let Some(v) = self.cache.get(path) {
             return Ok(v.clone());
         }
-        let text = (self.read)(path).ok_or("the file cannot be read")?;
+        let text = (self.read)(path)?;
         let v: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
         self.cache.insert(path.to_owned(), v.clone());
         Ok(v)

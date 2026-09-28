@@ -42,6 +42,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 - The drawing is written to a new file and renamed into place, so a
   symlink at the output is replaced, never written through.
+- A theme reads only regular files under its mapping file's folder, by
+  their real paths.
 - A problem prints a spec's control characters as escapes, so a spec
   cannot drive the terminal or a CI log.
 

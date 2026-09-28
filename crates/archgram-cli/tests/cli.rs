@@ -96,12 +96,30 @@ fn a_yaml_spec_is_read_and_its_problems_located() {
     assert_eq!(run.status.code(), Some(2));
 }
 
-/// A mapping of archgram's own tokens, every role to its own token, in `dir`.
+/// A copy of the folder `from` at `to`, files and folders.
+fn copy_folder(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).unwrap();
+    for entry in std::fs::read_dir(from).unwrap() {
+        let path = entry.unwrap().path();
+        let target = to.join(path.file_name().unwrap());
+        if path.is_dir() {
+            copy_folder(&path, &target);
+        } else {
+            std::fs::copy(&path, &target).unwrap();
+        }
+    }
+}
+
+/// A mapping of archgram's own tokens, every role to its own token, in
+/// `dir`, with a copy of the tokens beside it.
 fn own_theme(dir: &Path, extra_role: &str) -> PathBuf {
-    let resolver = format!(
-        "{}/../../design-system/tokens/design.resolver.json",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let tokens = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../design-system/tokens");
+    copy_folder(&tokens, &dir.join("tokens"));
+    own_mapping(dir, "tokens/design.resolver.json", extra_role)
+}
+
+/// The mapping of archgram's own tokens in `dir`, naming `resolver`.
+fn own_mapping(dir: &Path, resolver: &str, extra_role: &str) -> PathBuf {
     let roles = [
         "badge",
         "canvas",
@@ -216,4 +234,34 @@ fn a_symlink_at_the_output_is_replaced_not_followed() {
         .map(|e| e.unwrap().file_name())
         .collect();
     assert_eq!(left.len(), 2, "no temporary file left: {left:?}");
+}
+
+/// A theme reads only the files under its mapping's folder: `..`, an
+/// absolute path and a symlink cannot lead it out.
+#[test]
+fn a_theme_reads_only_under_its_folder() {
+    let dir = scratch("theme-folder");
+    own_theme(&dir, "");
+    let inside = dir.join("project");
+    std::fs::create_dir_all(&inside).unwrap();
+    let outside = std::fs::canonicalize(dir.join("tokens/design.resolver.json")).unwrap();
+    let mut resolvers = vec![
+        "../tokens/design.resolver.json".to_owned(),
+        outside.to_str().unwrap().to_owned(),
+    ];
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(dir.join("tokens"), inside.join("linked")).unwrap();
+        resolvers.push("linked/design.resolver.json".to_owned());
+    }
+    for resolver in resolvers {
+        let theme = own_mapping(&inside, &resolver, "");
+        let run = archgram(&["theme", "check", theme.to_str().unwrap()]);
+        assert_eq!(run.status.code(), Some(1), "{resolver}");
+        let stderr = String::from_utf8_lossy(&run.stderr);
+        assert!(
+            stderr.contains("the mapping file's folder"),
+            "{resolver}: {stderr}"
+        );
+    }
 }
