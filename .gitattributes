@@ -1,0 +1,9 @@
+# Every text file in the repository ends its lines with LF, on every
+# platform: the golden SVGs are compared byte for byte, and a checkout that
+# turned LF into CRLF on Windows would fail them.
+* text=auto eol=lf
+
+# Binary files, never converted.
+*.ttf binary
+*.png binary
+*.webp binary
