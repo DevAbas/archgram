@@ -29,6 +29,7 @@ follow [Semantic Versioning](https://semver.org/).
 
 - The embedded fonts carry only the tables a renderer needs: about 49 KB
   each instead of 126 KB, with every character unchanged.
+- A crash says it is a bug in archgram and where to report it.
 
 ### Fixed
 

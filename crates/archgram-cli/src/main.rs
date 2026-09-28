@@ -38,6 +38,15 @@ Themes: auto (light, dark under the reader's dark mode; the default), light, dar
   role (docs/SPEC.md, Theme file).";
 
 fn main() -> ExitCode {
+    // A panic is archgram's bug, never the spec's: say so, and where to
+    // report it, instead of a bare Rust panic.
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!(
+            "archgram {}: an internal error, a bug in archgram: {info}\n\
+             Please report it, with the spec, at https://github.com/DevAbas/archgram/issues",
+            env!("CARGO_PKG_VERSION")
+        );
+    }));
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
