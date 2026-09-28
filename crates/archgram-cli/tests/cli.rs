@@ -195,3 +195,25 @@ fn problems_print_control_characters_as_escapes() {
     assert!(!stderr.contains('\u{1b}'), "{stderr}");
     assert!(stderr.contains(r"unknown palette `x\u{1b}[2J`"), "{stderr}");
 }
+
+/// The drawing replaces a symlink at its path and never writes through it,
+/// so a spec's repository cannot aim it at another file.
+#[cfg(unix)]
+#[test]
+fn a_symlink_at_the_output_is_replaced_not_followed() {
+    let dir = scratch("symlink");
+    let elsewhere = dir.join("elsewhere.txt");
+    std::fs::write(&elsewhere, "keep me").unwrap();
+    let out = dir.join("diagram.svg");
+    std::os::unix::fs::symlink(&elsewhere, &out).unwrap();
+    let run = archgram(&["build", &example("linkshort.json"), "-o", out.to_str().unwrap()]);
+    assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+    assert_eq!(read(&elsewhere), "keep me");
+    assert!(!std::fs::symlink_metadata(&out).unwrap().is_symlink());
+    assert!(read(&out).starts_with("<svg"));
+    let left: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name())
+        .collect();
+    assert_eq!(left.len(), 2, "no temporary file left: {left:?}");
+}

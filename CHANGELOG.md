@@ -40,6 +40,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- The drawing is written to a new file and renamed into place, so a
+  symlink at the output is replaced, never written through.
 - A problem prints a spec's control characters as escapes, so a spec
   cannot drive the terminal or a CI log.
 

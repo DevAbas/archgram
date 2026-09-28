@@ -270,13 +270,36 @@ fn build(
         }
     };
     for (file, svg) in files {
-        if let Err(e) = std::fs::write(&file, svg) {
+        if let Err(e) = write_replacing(&file, &svg) {
             eprintln!("archgram: cannot write {}: {e}", file.display());
             return ExitCode::from(2);
         }
         println!("wrote {}", file.display());
     }
     ExitCode::SUCCESS
+}
+
+/// Writes `contents` to `path` as a new file beside it, renamed over the
+/// old one, as Turborepo restores its cache: a symlink at `path` is
+/// replaced, never followed, so a spec cannot aim the drawing at another
+/// file, and a reader never sees half a drawing.
+fn write_replacing(path: &Path, contents: &str) -> std::io::Result<()> {
+    use std::io::Write;
+    let name = path
+        .file_name()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "not a file name"))?;
+    let temporary = path.with_file_name(format!(".{}.{}.tmp", name.to_string_lossy(), std::process::id()));
+    // `create_new` refuses any file already there, a symlink too.
+    let written = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .and_then(|mut file| file.write_all(contents.as_bytes()));
+    let renamed = written.and_then(|()| std::fs::rename(&temporary, path));
+    if renamed.is_err() {
+        let _ = std::fs::remove_file(&temporary);
+    }
+    renamed
 }
 
 /// `diagram.svg` as `diagram.light.svg`, for one theme's file.
