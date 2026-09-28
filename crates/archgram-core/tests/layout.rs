@@ -533,10 +533,69 @@ fn hints_are_kept_or_refused() {
     let p = place(&s, &card_sizes(&s)).unwrap();
     assert_eq!(p.layers[2], p.layers[3]);
 
-    let s = spec(r#"{ "first": ["b"], "sameLayer": [["a", "b"]] }"#);
-    let e = place(&s, &card_sizes(&s)).unwrap_err();
-    let where_: Vec<String> = e.iter().map(|x| x.location.to_string()).collect();
-    assert_eq!(where_, ["/hints/sameLayer/0", "/hints/first/0"]);
+    // A hint the edges contradict is refused before layout
+    // (tests/spec.rs, hints_do_not_contradict_the_edges).
+    let refused = format!(
+        r#"{{ "archgram": 1, "title": "t", "description": "d", {base}, "hints": {{ "sameLayer": [["a", "c"]] }} }}"#
+    );
+    assert!(parse_spec(&refused).is_err());
+}
+
+/// Random `sameLayer` groups on random specs: validation refuses a group or
+/// the layout keeps it, and never fails where validation passed.
+#[test]
+fn random_same_layer_hints_are_refused_or_kept() {
+    let (mut kept, mut refused) = (0, 0);
+    for seed in 1..=300u64 {
+        let nodes = 3 + usize::try_from(seed % 20).unwrap();
+        let mut rng = Rng(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
+        let groups: Vec<Vec<usize>> = (0..=rng.below(3))
+            .map(|_| {
+                let mut g: Vec<usize> = (0..2 + rng.below(2)).map(|_| rng.below(nodes)).collect();
+                g.sort_unstable();
+                g.dedup();
+                g
+            })
+            .filter(|g| g.len() >= 2)
+            .collect();
+        let hint = groups
+            .iter()
+            .map(|g| {
+                let ids: Vec<String> = g.iter().map(|i| format!(r#""n{i}""#)).collect();
+                format!("[{}]", ids.join(", "))
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        let json = random_spec(seed, nodes).replacen(
+            r#""archgram": 1,"#,
+            &format!(r#""archgram": 1, "hints": {{ "sameLayer": [{hint}] }},"#),
+            1,
+        );
+        match parse_spec(&json) {
+            Ok(spec) => {
+                let p = place(&spec, &card_sizes(&spec)).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
+                for g in &groups {
+                    assert!(
+                        g.iter().all(|&i| p.layers[i] == p.layers[g[0]]),
+                        "seed {seed}: group {g:?} split across layers"
+                    );
+                }
+                kept += 1;
+            }
+            Err(errors) => {
+                refused += 1;
+                for e in &errors {
+                    let at = e.location.to_string();
+                    assert!(
+                        at.starts_with("/hints/sameLayer/"),
+                        "seed {seed}: {at}: {}",
+                        e.message
+                    );
+                }
+            }
+        }
+    }
+    assert!(kept >= 50 && refused >= 50, "{kept} kept, {refused} refused");
 }
 
 /// The budget in ARCHITECTURE.md (Performance budget): layout and SVG for 100

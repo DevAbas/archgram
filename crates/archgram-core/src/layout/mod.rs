@@ -134,6 +134,17 @@ fn acyclic_edges(spec: &Spec) -> (Vec<(usize, usize)>, Vec<bool>) {
     (dag, reversed)
 }
 
+/// Layout hints that contradict the edges, located in the spec; validation
+/// reports them once every edge and hint names a node.
+///
+/// # Panics
+///
+/// When an edge or hint names a node that does not exist.
+pub(crate) fn contradicted_hints(spec: &Spec) -> Vec<SpecError> {
+    let (dag, _) = acyclic_edges(spec);
+    hint_errors(spec, &dag)
+}
+
 /// Layout hints that contradict the edges, located in the spec.
 fn hint_errors(spec: &Spec, dag: &[(usize, usize)]) -> Vec<SpecError> {
     let index = |id: &str| {
@@ -143,8 +154,14 @@ fn hint_errors(spec: &Spec, dag: &[(usize, usize)]) -> Vec<SpecError> {
             .expect("validated id")
     };
     let mut errors = Vec::new();
+    // The groups merged so far, as layering merges them. A group joins only
+    // when no path of edges leads from one of its nodes to another, so the
+    // merged graph keeps no cycle and every edge still points to a later
+    // layer.
+    let mut group: Vec<usize> = (0..spec.nodes.len()).collect();
     for (j, members) in spec.hints.same_layer.iter().enumerate() {
         let ids: Vec<usize> = members.iter().map(|m| index(m)).collect();
+        let before = errors.len();
         for (k, &(a, b)) in dag.iter().enumerate() {
             if ids.contains(&a) && ids.contains(&b) {
                 let e = &spec.edges[k];
@@ -157,6 +174,18 @@ fn hint_errors(spec: &Spec, dag: &[(usize, usize)]) -> Vec<SpecError> {
                 ));
             }
         }
+        if errors.len() > before {
+            continue;
+        }
+        if let Some((u, v)) = ordered_pair(&group, dag, &ids) {
+            let (u, v) = (&spec.nodes[u].id, &spec.nodes[v].id);
+            errors.push(SpecError::at(
+                format!("/hints/sameLayer/{j}"),
+                format!("`{u}` and `{v}` cannot share a layer: the edges lead from `{u}` to `{v}`"),
+            ));
+            continue;
+        }
+        merge(&mut group, &ids);
     }
     let incoming = |v: usize| dag.iter().any(|&(_, b)| b == v);
     let outgoing = |v: usize| dag.iter().any(|&(a, _)| a == v);
@@ -177,6 +206,40 @@ fn hint_errors(spec: &Spec, dag: &[(usize, usize)]) -> Vec<SpecError> {
         }
     }
     errors
+}
+
+/// Puts `ids` in one group, named by its lowest-numbered member.
+fn merge(group: &mut [usize], ids: &[usize]) {
+    let head = ids.iter().map(|&i| group[i]).min().unwrap_or(0);
+    for &i in ids {
+        let old = group[i];
+        for g in group.iter_mut() {
+            if *g == old {
+                *g = head;
+            }
+        }
+    }
+}
+
+/// Two of `ids`, in different groups, the first reaching the second along
+/// the edges between groups; the first such pair in the list's order.
+fn ordered_pair(group: &[usize], dag: &[(usize, usize)], ids: &[usize]) -> Option<(usize, usize)> {
+    for &u in ids {
+        let mut reached = vec![false; group.len()];
+        let mut stack = vec![group[u]];
+        while let Some(g) = stack.pop() {
+            for &(a, b) in dag {
+                if group[a] == g && group[b] != g && !reached[group[b]] {
+                    reached[group[b]] = true;
+                    stack.push(group[b]);
+                }
+            }
+        }
+        if let Some(&v) = ids.iter().find(|&&v| group[v] != group[u] && reached[group[v]]) {
+            return Some((u, v));
+        }
+    }
+    None
 }
 
 /// Lays out one connected unit (all of the spec when it is one), steps 1 to 6.
@@ -205,15 +268,7 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let mut group = (0..n).collect::<Vec<_>>();
     for members in &spec.hints.same_layer {
         let ids: Vec<usize> = members.iter().map(|m| index(m)).collect();
-        let head = ids.iter().map(|&i| group[i]).min().unwrap_or(0);
-        for &i in &ids {
-            let old = group[i];
-            for g in &mut group {
-                if *g == old {
-                    *g = head;
-                }
-            }
-        }
+        merge(&mut group, &ids);
     }
     let mut weights: std::collections::BTreeMap<(usize, usize), u32> = std::collections::BTreeMap::new();
     for &(a, b) in &dag {

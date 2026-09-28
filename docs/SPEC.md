@@ -172,6 +172,10 @@ its JSON pointer (or its line and column in YAML), when:
 - frames nest in a cycle, or a frame is empty;
 - the nodes of an `order` hint do not share a frame (a frame keeps its
   nodes together, so a hint cannot sort them among others);
+- a hint contradicts the edges: a `sameLayer` group whose nodes an edge
+  joins, or a path of edges leads from one to another (through other
+  groups too), a `first` node an edge leads into, or a `last` node an
+  edge leads out of;
 - a flow step is not reached by an edge from the step before it, a node
   of a branching step has no edge to the step after it, a step lists no
   nodes, or a step lists a node twice;

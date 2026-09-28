@@ -30,6 +30,12 @@ follow [Semantic Versioning](https://semver.org/).
 - The embedded fonts carry only the tables a renderer needs: about 49 KB
   each instead of 126 KB, with every character unchanged.
 
+### Fixed
+
+- `check` refuses a layout hint the edges contradict, as `build` does. A
+  `sameLayer` group whose nodes a path of edges joins is refused, where
+  the layout used to crash.
+
 ## [0.2.0] - 2026-09-27
 
 ### Added

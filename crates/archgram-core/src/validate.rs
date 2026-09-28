@@ -26,7 +26,23 @@ pub fn validate(spec: &Spec) -> Vec<SpecError> {
     v.edges(&ids);
     v.flows(&ids);
     v.hints(&ids);
+    // The hints are held against the edges' order only when every edge and
+    // hint names a node and no edge loops: the check follows the edges.
+    if follows_edges(spec, &ids) {
+        v.errors.extend(crate::layout::contradicted_hints(spec));
+    }
     v.errors
+}
+
+/// Whether every edge joins two nodes and every hint names a node.
+fn follows_edges(spec: &Spec, ids: &BTreeMap<&str, Named>) -> bool {
+    let is_node = |id: &String| ids.get(id.as_str()) == Some(&Named::Node);
+    let h = &spec.hints;
+    spec.edges
+        .iter()
+        .all(|e| e.from != e.to && is_node(&e.from) && is_node(&e.to))
+        && h.first.iter().chain(&h.last).all(is_node)
+        && h.same_layer.iter().chain(&h.order).flatten().all(is_node)
 }
 
 /// What an id names.

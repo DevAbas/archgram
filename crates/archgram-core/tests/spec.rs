@@ -202,6 +202,39 @@ fn hints_name_nodes_and_do_not_contradict_each_other() {
     assert_eq!(pointers(&e), ["/hints/last/1", "/hints", "/hints/sameLayer/0"]);
 }
 
+/// `check` refuses what `build` would: a hint the edges' order contradicts,
+/// by an edge, along a path, or through another group.
+#[test]
+fn hints_do_not_contradict_the_edges() {
+    let nodes = r#"{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "service", "label": "B" },
+        { "id": "c", "kind": "service", "label": "C" }, { "id": "d", "kind": "service", "label": "D" }"#;
+    let chain = r#", "edges": [{ "from": "a", "to": "b" }, { "from": "b", "to": "c" }]"#;
+    let refused = |edges: &str, hints: &str| {
+        let e = errors(&spec_with(nodes, &format!(r#"{edges}, "hints": {hints}"#)));
+        let messages: Vec<String> = e.iter().map(|x| x.message.clone()).collect();
+        (pointers(&e), messages)
+    };
+
+    let (at, said) = refused(chain, r#"{ "first": ["b"], "sameLayer": [["a", "b"]] }"#);
+    assert_eq!(at, ["/hints/sameLayer/0", "/hints/first/0"]);
+    assert_eq!(said[0], "`a` and `b` cannot share a layer: an edge joins them");
+
+    let (at, said) = refused(chain, r#"{ "sameLayer": [["a", "c"]] }"#);
+    assert_eq!(at, ["/hints/sameLayer/0"]);
+    assert_eq!(
+        said[0],
+        "`a` and `c` cannot share a layer: the edges lead from `a` to `c`"
+    );
+
+    let crossed = r#", "edges": [{ "from": "a", "to": "b" }, { "from": "c", "to": "d" }]"#;
+    let (at, said) = refused(crossed, r#"{ "sameLayer": [["a", "d"], ["b", "c"]] }"#);
+    assert_eq!(at, ["/hints/sameLayer/1"]);
+    assert_eq!(
+        said[0],
+        "`c` and `b` cannot share a layer: the edges lead from `c` to `b`"
+    );
+}
+
 #[test]
 fn every_problem_is_reported_in_one_run() {
     let nodes = r#"{ "id": "api", "kind": "service", "label": "" }, { "id": "api", "kind": "database", "label": "DB", "tech": "Postgres" }"#;
