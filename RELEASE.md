@@ -8,19 +8,28 @@ then published to npm with provenance through trusted publishing.
 
 ## Every release
 
-1. Set the version in `Cargo.toml` (`[workspace.package]`); the npm
-   packages take theirs from it.
-2. In `CHANGELOG.md`, turn `Unreleased` into the version and today's date,
-   and add its compare link at the bottom.
-3. Commit (`chore: version X.Y.Z`), then tag and push:
+`main` takes changes only through a pull request whose CI passed, so the
+version goes in by a pull request and the tag follows the merge.
+
+1. On a branch `release/X.Y.Z`: set the version in `Cargo.toml`
+   (`[workspace.package]`; the npm packages take theirs from it), and in
+   `CHANGELOG.md` turn `Unreleased` into the version and today's date, and
+   point its compare link at the new tag. Commit (`chore: version X.Y.Z`).
+2. Push the branch, open a pull request, and merge it with **Rebase and
+   merge** once CI passes.
+3. Tag the merged commit on `main` and push the tag:
 
    ```sh
+   git switch main
+   git pull --ff-only
    git tag -a vX.Y.Z -m "archgram X.Y.Z"
-   git push origin main vX.Y.Z
+   git push origin vX.Y.Z
    ```
 
-4. Watch the Release workflow. If it fails, nothing is published; fix,
-   delete the tag, and tag again.
+4. Watch the Release workflow. Its publish job waits for your approval (the
+   `npm` environment); approve it once the build and package jobs pass. If
+   a job fails, nothing is published: fix it through a pull request, delete
+   the tag (the tag ruleset lets a repository admin), and tag again.
 5. Create the GitHub release from the tag, with the version's section of
    the changelog.
 
@@ -51,7 +60,8 @@ the workflow built. Nothing is built on your machine.
 6. On each package's **Settings**, under **Publishing access**, choose
    **Require two-factor authentication and disallow tokens**.
 7. On GitHub, in the repository's **Settings**: under **Environments**,
-   create `npm` (and, if you like, require your approval before it runs);
+   create `npm`, with you as its required reviewer and only `v*` tags
+   allowed to deploy to it;
    under **Secrets and variables**, then **Actions**, then **Variables**,
    add `NPM_TRUSTED_PUBLISHING` with the value `true`.
 
