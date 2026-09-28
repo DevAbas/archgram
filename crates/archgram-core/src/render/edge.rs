@@ -152,7 +152,11 @@ fn cubic_length(p0: Point, c1: Point, c2: Point, p3: Point) -> f64 {
         let dy = a * (c1.y - p0.y) + b * (c2.y - c1.y) + c * (p3.y - c2.y);
         (dx * dx + dy * dy).sqrt()
     };
-    NODES.iter().map(|&(x, w)| w * speed(0.5 * x + 0.5)).sum::<f64>() * 0.5
+    NODES
+        .iter()
+        .map(|&(x, w)| w * speed(0.5 * x + 0.5))
+        .sum::<f64>()
+        * 0.5
 }
 
 /// The edge along `path`, which starts and ends on the sides of its cards:
@@ -190,11 +194,17 @@ pub fn drawn(path: &[Point]) -> Drawn {
         if i + 2 < count {
             let next = p[i + 2];
             let step = length(corner, to);
-            if step < 2.0 * ROUNDED_CONNECTOR && turn(from, corner, to) * turn(corner, to, next) < 0.0 {
+            if step < 2.0 * ROUNDED_CONNECTOR
+                && turn(from, corner, to) * turn(corner, to, next) < 0.0
+            {
                 let before = length(from, corner);
                 let after = length(to, next);
                 let room_before = if i == 1 { before } else { before / 2.0 };
-                let room_after = if i + 2 == count - 1 { after } else { after / 2.0 };
+                let room_after = if i + 2 == count - 1 {
+                    after
+                } else {
+                    after / 2.0
+                };
                 let run = ROUNDED_CONNECTOR.min(room_before).min(room_after);
                 if run > 0.0 {
                     let start = toward(corner, from, run);

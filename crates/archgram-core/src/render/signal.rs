@@ -11,9 +11,9 @@ use crate::render::scene::{GroupOf, Item};
 use crate::render::svg::num;
 use crate::spec::SignalStyle;
 use crate::tokens::{
-    MOTION_EASE, MOTION_HOP_GAP_MS, SIGNAL_BOLT, SIGNAL_BOLT_WIDTH, SIGNAL_COMET, SIGNAL_CORE, SIGNAL_DASH,
-    SIGNAL_DASH_PERIOD_MS, SIGNAL_DOT, SIGNAL_FLICKER_FAST_MS, SIGNAL_FLICKER_MS, SIGNAL_HALO, SIGNAL_RING,
-    SIGNAL_RIPPLE, SIGNAL_TRAIL,
+    MOTION_EASE, MOTION_HOP_GAP_MS, SIGNAL_BOLT, SIGNAL_BOLT_WIDTH, SIGNAL_COMET, SIGNAL_CORE,
+    SIGNAL_DASH, SIGNAL_DASH_PERIOD_MS, SIGNAL_DOT, SIGNAL_FLICKER_FAST_MS, SIGNAL_FLICKER_MS,
+    SIGNAL_HALO, SIGNAL_RING, SIGNAL_RIPPLE, SIGNAL_TRAIL,
 };
 
 /// The keyframes of one animation: times in whole milliseconds within the
@@ -44,7 +44,8 @@ impl KeyTrack {
             "key at {t} after {floor} in {}",
             self.period
         );
-        self.keys.push((t.clamp(floor, self.period), value.to_owned()));
+        self.keys
+            .push((t.clamp(floor, self.period), value.to_owned()));
         self
     }
 
@@ -62,7 +63,11 @@ impl KeyTrack {
             "a track runs the whole cycle"
         );
         let vals: Vec<&str> = self.keys.iter().map(|k| k.1.as_str()).collect();
-        let times: Vec<String> = self.keys.iter().map(|k| fraction(k.0, self.period)).collect();
+        let times: Vec<String> = self
+            .keys
+            .iter()
+            .map(|k| fraction(k.0, self.period))
+            .collect();
         format!(
             r#"dur="{}ms" repeatCount="indefinite" {values}="{}" keyTimes="{}""#,
             self.period,
@@ -132,7 +137,10 @@ fn seen(start: u32, end: u32, period: u32) -> String {
         .key(end - f, "1")
         .key(end, "0")
         .key(period, "0");
-    format!(r#"<animate attributeName="opacity" {}/>"#, t.attributes("values"))
+    format!(
+        r#"<animate attributeName="opacity" {}/>"#,
+        t.attributes("values")
+    )
 }
 
 /// The lit times of one card as an opacity animation: fully on from each
@@ -149,7 +157,10 @@ pub fn lit_animation(lit: &[Lit], period: u32) -> String {
             .key((l.end + f).min(period), "0");
     }
     t.key(period, "0");
-    format!(r#"<animate attributeName="opacity" {}/>"#, t.attributes("values"))
+    format!(
+        r#"<animate attributeName="opacity" {}/>"#,
+        t.attributes("values")
+    )
 }
 
 /// A flicker: the opacity wavering on its own short loop.
@@ -175,7 +186,15 @@ fn mover(id: &str, hop: &Hop, period: u32) -> String {
 }
 
 /// A stretch `px` long of the edge's line, its front at the moving mark.
-fn streak(d: &str, length: f64, px: f64, class: &str, style: &str, hop: &Hop, period: u32) -> String {
+fn streak(
+    d: &str,
+    length: f64,
+    px: f64,
+    class: &str,
+    style: &str,
+    hop: &Hop,
+    period: u32,
+) -> String {
     let t = 1000.0 * px / length.max(1.0);
     let (on, gone) = (num(t), num(t - 1000.0));
     format!(
@@ -322,7 +341,10 @@ fn mark(style: SignalStyle, hop: &Hop, period: u32, (id, d, length): (&str, &str
 /// Whether a style draws a glow, so the drawing needs the blur filter.
 #[must_use]
 pub fn glows(style: SignalStyle) -> bool {
-    matches!(style, SignalStyle::Wire | SignalStyle::Spark | SignalStyle::Arc)
+    matches!(
+        style,
+        SignalStyle::Wire | SignalStyle::Spark | SignalStyle::Arc
+    )
 }
 
 /// The id a flow's edge carries, for a signal to follow.

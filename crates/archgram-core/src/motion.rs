@@ -16,7 +16,8 @@ use std::collections::BTreeMap;
 
 use crate::spec::Spec;
 use crate::tokens::{
-    MOTION_FADE_MS, MOTION_HOP_GAP_MS, MOTION_HOP_MAX_MS, MOTION_HOP_MIN_MS, MOTION_REST_MS, MOTION_SPEED,
+    MOTION_FADE_MS, MOTION_HOP_GAP_MS, MOTION_HOP_MAX_MS, MOTION_HOP_MIN_MS, MOTION_REST_MS,
+    MOTION_SPEED,
 };
 
 /// One signal's move along one edge.
@@ -112,7 +113,11 @@ pub fn timeline(spec: &Spec, lengths: &[f64]) -> Option<Timeline> {
                 });
             }
             for &a in from {
-                let sent = moves.iter().filter(|m| m.0 == a).map(|m| arrive[&m.1]).max();
+                let sent = moves
+                    .iter()
+                    .filter(|m| m.0 == a)
+                    .map(|m| arrive[&m.1])
+                    .max();
                 lit.push(Lit {
                     node: a,
                     start: reached[&a],

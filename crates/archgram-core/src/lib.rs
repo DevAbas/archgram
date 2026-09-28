@@ -43,7 +43,11 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
         }]
     })?;
     let errors = validate(&spec);
-    if errors.is_empty() { Ok(spec) } else { Err(errors) }
+    if errors.is_empty() {
+        Ok(spec)
+    } else {
+        Err(errors)
+    }
 }
 
 /// Reads, checks and draws a JSON spec: the whole pipeline.

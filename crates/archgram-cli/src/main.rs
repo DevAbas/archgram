@@ -184,7 +184,11 @@ fn parse(text: &str, format: Format) -> Result<archgram_core::Spec, Vec<SpecErro
         Format::Json => {
             let spec = archgram_core::parse_spec(text)?;
             let errors = archgram_core::check_logos(&spec, &icons);
-            if errors.is_empty() { Ok(spec) } else { Err(errors) }
+            if errors.is_empty() {
+                Ok(spec)
+            } else {
+                Err(errors)
+            }
         }
         Format::Yaml => {
             let (spec, positions) = archgram_yaml::parse(text)?;
@@ -192,7 +196,11 @@ fn parse(text: &str, format: Format) -> Result<archgram_core::Spec, Vec<SpecErro
                 .into_iter()
                 .map(|e| positions.locate(e))
                 .collect();
-            if errors.is_empty() { Ok(spec) } else { Err(errors) }
+            if errors.is_empty() {
+                Ok(spec)
+            } else {
+                Err(errors)
+            }
         }
     }
 }
@@ -297,7 +305,11 @@ fn write_replacing(path: &Path, contents: &str) -> std::io::Result<()> {
     let name = path
         .file_name()
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "not a file name"))?;
-    let temporary = path.with_file_name(format!(".{}.{}.tmp", name.to_string_lossy(), std::process::id()));
+    let temporary = path.with_file_name(format!(
+        ".{}.{}.tmp",
+        name.to_string_lossy(),
+        std::process::id()
+    ));
     // `create_new` refuses any file already there, a symlink too.
     let written = std::fs::OpenOptions::new()
         .write(true)

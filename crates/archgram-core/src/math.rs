@@ -137,7 +137,12 @@ mod tests {
     fn exp_and_ln_match_the_platform_to_the_last_digits() {
         for i in -400..=400 {
             let x = f64::from(i) / 37.0;
-            assert!(close(exp(x), x.exp()), "exp {x}: {} against {}", exp(x), x.exp());
+            assert!(
+                close(exp(x), x.exp()),
+                "exp {x}: {} against {}",
+                exp(x),
+                x.exp()
+            );
         }
         for i in 1..=2000 {
             let x = f64::from(i) / 997.0;
@@ -153,7 +158,10 @@ mod tests {
             let c = f64::from(i) / 255.0;
             for y in [2.4, 1.0 / 2.4, 3.0, 1.0 / 3.0] {
                 let (ours, theirs) = (pow(c, y), c.powf(y));
-                assert!((ours - theirs).abs() < 1e-14, "{c}^{y}: {ours} against {theirs}");
+                assert!(
+                    (ours - theirs).abs() < 1e-14,
+                    "{c}^{y}: {ours} against {theirs}"
+                );
             }
         }
     }

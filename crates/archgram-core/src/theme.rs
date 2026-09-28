@@ -149,7 +149,10 @@ pub fn import(
     let known: Vec<&str> = Role::ALL.iter().map(|r| r.name()).collect();
     let lists = [
         ("/roles".to_owned(), &mapping.roles),
-        ("/themes/light/roles".to_owned(), &mapping.themes.light.roles),
+        (
+            "/themes/light/roles".to_owned(),
+            &mapping.themes.light.roles,
+        ),
         ("/themes/dark/roles".to_owned(), &mapping.themes.dark.roles),
     ];
     for (at, list) in lists {
@@ -173,13 +176,23 @@ pub fn import(
         cache: BTreeMap::new(),
     };
     let mut result = Vec::new();
-    for (name, inputs) in [("light", &mapping.themes.light), ("dark", &mapping.themes.dark)] {
+    for (name, inputs) in [
+        ("light", &mapping.themes.light),
+        ("dark", &mapping.themes.dark),
+    ] {
         let mut roles = mapping.roles.clone();
         roles.extend(inputs.roles.clone());
         let base = theme("mono", name)
             .expect("mono has a light and a dark theme")
             .colors;
-        match one_theme(path, &resolver_path, (name, inputs), &roles, &mut docs, base) {
+        match one_theme(
+            path,
+            &resolver_path,
+            (name, inputs),
+            &roles,
+            &mut docs,
+            base,
+        ) {
             Ok(found) => result.push(found),
             Err(e) => errors.extend(e),
         }
@@ -217,8 +230,8 @@ fn one_theme(
         &format!("/themes/{name}/inputs"),
         path,
     )?;
-    let tokens =
-        Tokens::flatten(&tree).map_err(|(pointer, message)| vec![error(resolver_path, pointer, message)])?;
+    let tokens = Tokens::flatten(&tree)
+        .map_err(|(pointer, message)| vec![error(resolver_path, pointer, message)])?;
     let mut colors = base;
     let mut sources = Vec::new();
     let mut errors = Vec::new();
@@ -236,16 +249,19 @@ fn one_theme(
         }
     }
     for role in Role::ALL {
-        let id = roles
-            .get(role.name())
-            .map(|id| id.trim().trim_start_matches('{').trim_end_matches('}').to_owned());
+        let id = roles.get(role.name()).map(|id| {
+            id.trim()
+                .trim_start_matches('{')
+                .trim_end_matches('}')
+                .to_owned()
+        });
         sources.push((role, id, colors.get(role)));
     }
     if errors.is_empty() {
         errors.extend(
-            check(&colors)
-                .iter()
-                .map(|s: &Shortfall| error(path, format!("/themes/{name}"), format!("{name}: {s}"))),
+            check(&colors).iter().map(|s: &Shortfall| {
+                error(path, format!("/themes/{name}"), format!("{name}: {s}"))
+            }),
         );
     }
     if errors.is_empty() {
@@ -298,7 +314,12 @@ fn resolve_tree(
     let order = doc
         .get("resolutionOrder")
         .and_then(Value::as_array)
-        .ok_or_else(|| r.at("/resolutionOrder", "the resolver needs a `resolutionOrder` list"))?;
+        .ok_or_else(|| {
+            r.at(
+                "/resolutionOrder",
+                "the resolver needs a `resolutionOrder` list",
+            )
+        })?;
     r.check_inputs(order)?;
     let mut tree = Value::Object(serde_json::Map::new());
     let mut names = BTreeSet::new();
@@ -366,7 +387,11 @@ impl Resolving<'_> {
                 errors.extend(self.in_mapping(at, "an input is a context's name".into()));
             }
         }
-        if errors.is_empty() { Ok(()) } else { Err(errors) }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 
     /// One entry of the resolution order: whether it is a set or a
@@ -420,7 +445,12 @@ impl Resolving<'_> {
 
     /// The sources an entry brings: a set's, or the chosen context's of a
     /// modifier (its input, else its default), with where they are.
-    fn sources(&self, kind: &str, body: &Value, pointer: &str) -> Result<(Value, String), Vec<ImportError>> {
+    fn sources(
+        &self,
+        kind: &str,
+        body: &Value,
+        pointer: &str,
+    ) -> Result<(Value, String), Vec<ImportError>> {
         if kind != "modifier" {
             let sources = body
                 .get("sources")
@@ -444,7 +474,11 @@ impl Resolving<'_> {
             .inputs
             .get(name)
             .cloned()
-            .or_else(|| body.get("default").and_then(Value::as_str).map(str::to_owned))
+            .or_else(|| {
+                body.get("default")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned)
+            })
             .ok_or_else(|| {
                 self.in_mapping(
                     self.inputs_pointer.to_owned(),
@@ -497,13 +531,16 @@ fn merge_sources(
         let (file, fragment) = r.split_once('#').unwrap_or((r, ""));
         let mut value = if file.is_empty() {
             if fragment.starts_with("/modifiers/") {
-                return Err(at(&here, format!("`{r}`: a set cannot refer to a modifier")));
+                return Err(at(
+                    &here,
+                    format!("`{r}`: a set cannot refer to a modifier"),
+                ));
             }
             if seen.iter().any(|s| s == r) {
                 return Err(at(&here, format!("`{r}` refers back to itself")));
             }
-            let target =
-                pointer_get(doc, fragment).ok_or_else(|| at(&here, format!("`{r}` points at nothing")))?;
+            let target = pointer_get(doc, fragment)
+                .ok_or_else(|| at(&here, format!("`{r}` points at nothing")))?;
             let inner = target
                 .get("sources")
                 .cloned()
@@ -536,7 +573,9 @@ fn merge_sources(
 /// replaced whole.
 fn merge(into: &mut Value, from: &Value) {
     match (into, from) {
-        (Value::Object(a), Value::Object(b)) if !a.contains_key("$value") && !b.contains_key("$value") => {
+        (Value::Object(a), Value::Object(b))
+            if !a.contains_key("$value") && !b.contains_key("$value") =>
+        {
             for (k, v) in b {
                 match a.get_mut(k) {
                     Some(existing) => merge(existing, v),
@@ -572,7 +611,9 @@ impl Tokens {
             ty: Option<&str>,
             out: &mut BTreeMap<String, (Option<String>, Value)>,
         ) -> Result<(), (String, String)> {
-            let Some(o) = node.as_object() else { return Ok(()) };
+            let Some(o) = node.as_object() else {
+                return Ok(());
+            };
             if o.contains_key("$extends") {
                 return Err((
                     format!("/{}", path.join("/")),
@@ -640,7 +681,10 @@ impl Tokens {
     /// `v` with every alias and pointer replaced by what it points at.
     fn resolve(&self, v: &Value, tree: &Value, chain: &mut Vec<String>) -> Result<Value, String> {
         if chain.len() > MAX_ALIASES {
-            return Err(format!("aliases chain past {MAX_ALIASES}: {}", chain.join(" → ")));
+            return Err(format!(
+                "aliases chain past {MAX_ALIASES}: {}",
+                chain.join(" → ")
+            ));
         }
         match v {
             Value::String(s) => match alias(s) {
@@ -663,13 +707,16 @@ impl Tokens {
             Value::Object(o) if o.contains_key("$ref") => {
                 let r = o["$ref"].as_str().ok_or("`$ref` is a string")?;
                 let Some(pointer) = r.strip_prefix('#') else {
-                    return Err(format!("`{r}`: a value's `$ref` points into the tokens (`#/…`)"));
+                    return Err(format!(
+                        "`{r}`: a value's `$ref` points into the tokens (`#/…`)"
+                    ));
                 };
                 if chain.iter().any(|c| c == r) {
                     chain.push(r.to_owned());
                     return Err(format!("references loop: {}", chain.join(" → ")));
                 }
-                let target = pointer_get(tree, pointer).ok_or_else(|| format!("`{r}` points at nothing"))?;
+                let target =
+                    pointer_get(tree, pointer).ok_or_else(|| format!("`{r}` points at nothing"))?;
                 chain.push(r.to_owned());
                 let out = self.resolve(target, tree, chain);
                 chain.pop();
@@ -719,7 +766,8 @@ fn listed<'a>(names: impl Iterator<Item = &'a str>) -> String {
 /// paths as the files name each other, whatever reads them.
 #[must_use]
 pub fn join(base: &str, relative: &str) -> String {
-    let absolute = relative.starts_with('/') || (base.starts_with('/') && !relative.starts_with('/'));
+    let absolute =
+        relative.starts_with('/') || (base.starts_with('/') && !relative.starts_with('/'));
     let mut parts: Vec<&str> = Vec::new();
     if !relative.starts_with('/') {
         parts.extend(base.split('/').filter(|p| !p.is_empty() && *p != "."));
@@ -735,5 +783,9 @@ pub fn join(base: &str, relative: &str) -> String {
         }
     }
     let joined = parts.join("/");
-    if absolute { format!("/{joined}") } else { joined }
+    if absolute {
+        format!("/{joined}")
+    } else {
+        joined
+    }
 }

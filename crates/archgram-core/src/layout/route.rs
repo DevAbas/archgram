@@ -50,7 +50,12 @@ impl Riser {
             .unwrap_or(from);
         let low = ends.iter().copied().fold(from, f64::min);
         let high = ends.iter().copied().fold(from, f64::max);
-        Self { from, to, low, high }
+        Self {
+            from,
+            to,
+            low,
+            high,
+        }
     }
 
     fn low(&self) -> f64 {
@@ -207,7 +212,10 @@ mod tests {
     #[test]
     fn ports_sit_in_the_middle_or_spread_around_it() {
         assert_eq!(ports(&[0.0], 28.0, 56.0, 12.0, 10.0), vec![28.0]);
-        assert_eq!(ports(&[0.0; 3], 28.0, 56.0, 12.0, 10.0), vec![16.0, 28.0, 40.0]);
+        assert_eq!(
+            ports(&[0.0; 3], 28.0, 56.0, 12.0, 10.0),
+            vec![16.0, 28.0, 40.0]
+        );
         // Too many for the step: squeezed inside the margins.
         let p = ports(&[0.0; 6], 28.0, 56.0, 12.0, 10.0);
         assert!(p[0] >= 10.0 - 1e-9 && p[5] <= 46.0 + 1e-9, "{p:?}");

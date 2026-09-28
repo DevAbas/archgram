@@ -60,7 +60,8 @@ fn components(n: usize, edges: &[Edge]) -> Vec<Vec<usize>> {
             parent[ra.max(rb)] = ra.min(rb);
         }
     }
-    let mut groups: std::collections::BTreeMap<usize, Vec<usize>> = std::collections::BTreeMap::new();
+    let mut groups: std::collections::BTreeMap<usize, Vec<usize>> =
+        std::collections::BTreeMap::new();
     for v in 0..n {
         let r = find(&mut parent, v);
         groups.entry(r).or_default().push(v);
@@ -108,12 +109,16 @@ fn solve(vertices: &[usize], edges: &[Edge], rank: &mut [i64]) {
 
 /// Sources at 0, every other vertex one past its latest predecessor.
 fn longest_path(vertices: &[usize], edges: &[Edge], rank: &mut [i64]) {
-    let mut indeg: std::collections::BTreeMap<usize, usize> = vertices.iter().map(|&v| (v, 0)).collect();
+    let mut indeg: std::collections::BTreeMap<usize, usize> =
+        vertices.iter().map(|&v| (v, 0)).collect();
     for &(_, b, _) in edges {
         *indeg.get_mut(&b).expect("edge inside the component") += 1;
     }
-    let mut ready: std::collections::BTreeSet<usize> =
-        indeg.iter().filter(|(_, d)| **d == 0).map(|(v, _)| *v).collect();
+    let mut ready: std::collections::BTreeSet<usize> = indeg
+        .iter()
+        .filter(|(_, d)| **d == 0)
+        .map(|(v, _)| *v)
+        .collect();
     for &v in vertices {
         rank[v] = 0;
     }
@@ -131,7 +136,8 @@ fn longest_path(vertices: &[usize], edges: &[Edge], rank: &mut [i64]) {
 
 /// A spanning tree of tight edges, shifting ranks where needed (edge indices, sorted).
 fn feasible_tree(vertices: &[usize], edges: &[Edge], rank: &mut [i64]) -> Vec<usize> {
-    let mut in_tree: std::collections::BTreeSet<usize> = std::collections::BTreeSet::from([vertices[0]]);
+    let mut in_tree: std::collections::BTreeSet<usize> =
+        std::collections::BTreeSet::from([vertices[0]]);
     let mut tree = Vec::new();
     loop {
         // Grow along tight edges as far as they reach.

@@ -104,7 +104,9 @@ fn random_frames(seed: u64, mut nodes: Vec<String>) -> (Vec<String>, Vec<String>
         };
         depth[f] = parent.map_or(0, |p| depth[p] + 1);
         let parent = parent.map_or(String::new(), |p| format!(r#", "parent": "f{p}""#));
-        frames.push(format!(r#"{{ "id": "f{f}", "label": "Frame {f}"{parent} }}"#));
+        frames.push(format!(
+            r#"{{ "id": "f{f}", "label": "Frame {f}"{parent} }}"#
+        ));
     }
     for (i, node) in nodes.iter_mut().enumerate() {
         let frame = if i < count {
@@ -146,7 +148,10 @@ fn check_frames(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::
     for (f, frame) in spec.frames.iter().enumerate() {
         let r = p.frames[f].unwrap_or_else(|| panic!("seed {seed}: frame {} has no box", frame.id));
         for (v, node) in spec.nodes.iter().enumerate() {
-            let inside = node.frame.as_deref().is_some_and(|g| within(f, frame_index(g)));
+            let inside = node
+                .frame
+                .as_deref()
+                .is_some_and(|g| within(f, frame_index(g)));
             if inside {
                 assert!(
                     holds(&r, &p.nodes[v]),
@@ -175,7 +180,10 @@ fn check_frames(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::
         }
         let label = p.frame_labels[f].unwrap();
         assert!(
-            label.x >= r.x && label.y >= r.y && label.right() <= r.right() && label.bottom() <= r.bottom(),
+            label.x >= r.x
+                && label.y >= r.y
+                && label.right() <= r.right()
+                && label.bottom() <= r.bottom(),
             "seed {seed}: the name of frame {f} is outside it"
         );
         for (v, n) in p.nodes.iter().enumerate() {
@@ -190,7 +198,9 @@ fn check_frames(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::
 /// The legend sits below every card, frame and edge, inside the drawing,
 /// and its entries do not meet.
 fn check_legend(seed: u64, p: &archgram_core::layout::Placement) {
-    let Some(first) = p.legend.first() else { return };
+    let Some(first) = p.legend.first() else {
+        return;
+    };
     let top = first.swatch_box.y.min(first.text_box.y);
     let above = p
         .nodes
@@ -199,7 +209,10 @@ fn check_legend(seed: u64, p: &archgram_core::layout::Placement) {
         .map(archgram_core::geometry::Rect::bottom)
         .chain(p.edges.iter().flatten().map(|q| q.y))
         .fold(0.0, f64::max);
-    assert!(top >= above, "seed {seed}: the legend is not below the diagram");
+    assert!(
+        top >= above,
+        "seed {seed}: the legend is not below the diagram"
+    );
     for (i, a) in p.legend.iter().enumerate() {
         for b in p.legend.iter().skip(i + 1) {
             assert!(
@@ -242,7 +255,10 @@ fn on_segment(
     p: archgram_core::geometry::Point,
 ) -> bool {
     let e = 0.5;
-    p.x >= a.x.min(b.x) - e && p.x <= a.x.max(b.x) + e && p.y >= a.y.min(b.y) - e && p.y <= a.y.max(b.y) + e
+    p.x >= a.x.min(b.x) - e
+        && p.x <= a.x.max(b.x) + e
+        && p.y >= a.y.min(b.y) - e
+        && p.y <= a.y.max(b.y) + e
 }
 
 #[test]
@@ -267,7 +283,10 @@ fn check_random(seeds: u64, direction: &str) {
         let sizes = card_sizes(&spec);
         let p = place(&spec, &sizes).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
         for (i, a) in p.nodes.iter().enumerate() {
-            assert!(a.x >= -1e-6 && a.y >= -1e-6, "seed {seed}: node {i} at {a:?}");
+            assert!(
+                a.x >= -1e-6 && a.y >= -1e-6,
+                "seed {seed}: node {i} at {a:?}"
+            );
             for (j, b) in p.nodes.iter().enumerate().skip(i + 1) {
                 assert!(
                     !a.overlaps(b),
@@ -277,7 +296,9 @@ fn check_random(seeds: u64, direction: &str) {
         }
         for (i, a) in p.nodes.iter().enumerate() {
             for (j, b) in p.nodes.iter().enumerate().skip(i + 1) {
-                let along = |r: &archgram_core::geometry::Rect| if direction == "right" { r.w } else { r.h };
+                let along = |r: &archgram_core::geometry::Rect| {
+                    if direction == "right" { r.w } else { r.h }
+                };
                 assert!(
                     p.units[i] != p.units[j]
                         || p.layers[i] != p.layers[j]
@@ -329,7 +350,11 @@ fn check_random(seeds: u64, direction: &str) {
         check_units(seed, &spec, &p);
         check_frames(seed, &spec, &p);
         check_legend(seed, &p);
-        assert_eq!(place(&spec, &sizes).unwrap(), p, "seed {seed}: not deterministic");
+        assert_eq!(
+            place(&spec, &sizes).unwrap(),
+            p,
+            "seed {seed}: not deterministic"
+        );
     }
 }
 
@@ -344,7 +369,9 @@ fn check_labels(seed: u64, spec: &archgram_core::spec::Spec, p: &archgram_core::
             y: r.y + r.h / 2.0,
         };
         assert!(
-            p.edges[k].windows(2).any(|w| on_segment(w[0], w[1], centre)),
+            p.edges[k]
+                .windows(2)
+                .any(|w| on_segment(w[0], w[1], centre)),
             "seed {seed}: the label of edge {k} is off its path"
         );
         for (i, n) in p.nodes.iter().enumerate() {
@@ -573,7 +600,8 @@ fn random_same_layer_hints_are_refused_or_kept() {
         );
         match parse_spec(&json) {
             Ok(spec) => {
-                let p = place(&spec, &card_sizes(&spec)).unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
+                let p = place(&spec, &card_sizes(&spec))
+                    .unwrap_or_else(|e| panic!("seed {seed}: {e:?}"));
                 for g in &groups {
                     assert!(
                         g.iter().all(|&i| p.layers[i] == p.layers[g[0]]),
@@ -595,7 +623,10 @@ fn random_same_layer_hints_are_refused_or_kept() {
             }
         }
     }
-    assert!(kept >= 50 && refused >= 50, "{kept} kept, {refused} refused");
+    assert!(
+        kept >= 50 && refused >= 50,
+        "{kept} kept, {refused} refused"
+    );
 }
 
 /// The budget in ARCHITECTURE.md (Performance budget): layout and SVG for 100

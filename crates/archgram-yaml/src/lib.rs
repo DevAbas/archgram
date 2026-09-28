@@ -99,7 +99,10 @@ pub fn parse(yaml: &str) -> Result<(Spec, Positions), Vec<SpecError>> {
     };
     match archgram_core::parse_spec(&json.lines.join("\n")) {
         Ok(spec) => Ok((spec, positions)),
-        Err(errors) => Err(errors.into_iter().map(|e| positions.locate(hint(e))).collect()),
+        Err(errors) => Err(errors
+            .into_iter()
+            .map(|e| positions.locate(hint(e)))
+            .collect()),
     }
 }
 
@@ -191,7 +194,10 @@ fn read_tree(yaml: &str) -> Result<Node, SpecError> {
             Event::DocumentStart(_) => {
                 documents += 1;
                 if documents > 1 {
-                    return Err(problem(here, "a spec is one YAML document; this starts a second"));
+                    return Err(problem(
+                        here,
+                        "a spec is one YAML document; this starts a second",
+                    ));
                 }
                 None
             }
@@ -261,7 +267,10 @@ fn read_tree(yaml: &str) -> Result<Node, SpecError> {
 /// and not a key.
 fn opening(stack: &[Open], tag: Option<&Tag>, here: At) -> Result<(), SpecError> {
     if stack.len() >= MAX_DEPTH {
-        return Err(problem(here, format!("nesting deeper than {MAX_DEPTH} levels")));
+        return Err(problem(
+            here,
+            format!("nesting deeper than {MAX_DEPTH} levels"),
+        ));
     }
     if let Some(t) = tag
         && !(t.is_yaml_core_schema() && matches!(t.suffix.as_str(), "map" | "seq"))
@@ -275,7 +284,10 @@ fn opening(stack: &[Open], tag: Option<&Tag>, here: At) -> Result<(), SpecError>
         ));
     }
     if let Some(Open::Map { key: None, .. }) = stack.last() {
-        return Err(problem(here, "a key must be plain text, not a mapping or a list"));
+        return Err(problem(
+            here,
+            "a key must be plain text, not a mapping or a list",
+        ));
     }
     Ok(())
 }
@@ -284,7 +296,10 @@ fn opening(stack: &[Open], tag: Option<&Tag>, here: At) -> Result<(), SpecError>
 fn close(open: Option<Open>, here: At) -> Result<(Node, usize), SpecError> {
     match open {
         Some(Open::Map {
-            at, anchor, entries, ..
+            at,
+            anchor,
+            entries,
+            ..
         }) => Ok((
             Node {
                 at,
@@ -331,7 +346,12 @@ fn place(stack: &mut [Open], root: &mut Option<Node>, node: Node) -> Result<(), 
 
 /// The JSON literal a scalar reads as: quoted scalars and `!!str` are text,
 /// plain ones follow the core schema.
-fn scalar(text: &str, style: ScalarStyle, tag: Option<&Tag>, here: At) -> Result<String, SpecError> {
+fn scalar(
+    text: &str,
+    style: ScalarStyle,
+    tag: Option<&Tag>,
+    here: At,
+) -> Result<String, SpecError> {
     let forced_text = match tag {
         None => false,
         Some(t) if t.is_yaml_core_schema() => match t.suffix.as_str() {

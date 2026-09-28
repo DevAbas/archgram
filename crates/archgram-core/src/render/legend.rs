@@ -33,7 +33,13 @@ pub fn legend(entries: &[Entry], flow_lines: &[FlowLine]) -> Option<Item> {
         };
         match e.swatch {
             Swatch::Category(c) => {
-                items.push(rect(&format!("swatch {}", category_class(c)), b.x, b.y, b.w, b.h));
+                items.push(rect(
+                    &format!("swatch {}", category_class(c)),
+                    b.x,
+                    b.y,
+                    b.w,
+                    b.h,
+                ));
             }
             Swatch::External => items.push(rect("card external", b.x, b.y, b.w, b.h)),
             Swatch::Multi => {

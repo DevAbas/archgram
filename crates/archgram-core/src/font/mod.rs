@@ -58,7 +58,9 @@ pub fn text_width(text: &str, style: &TextStyle) -> f64 {
     text.chars()
         .map(|c| {
             let advance = match charmap.map(c) {
-                Some(gid) if gid.to_u32() != 0 => f64::from(metrics.advance_width(gid).unwrap_or(0.0)),
+                Some(gid) if gid.to_u32() != 0 => {
+                    f64::from(metrics.advance_width(gid).unwrap_or(0.0))
+                }
                 // A character the font lacks is drawn by the reader's font, whose
                 // glyph we cannot measure: a full em is as wide as a Han or emoji
                 // glyph and wider than most others, so the card never ends up
@@ -137,7 +139,10 @@ mod tests {
     fn the_baseline_sits_inside_the_line() {
         for style in [TYPOGRAPHY_TITLE, TYPOGRAPHY_SUBTITLE] {
             let b = baseline_in_line(&style);
-            assert!(b > style.size * 0.6 && b < style.size * style.line_height, "{b}");
+            assert!(
+                b > style.size * 0.6 && b < style.size * style.line_height,
+                "{b}"
+            );
         }
     }
 }

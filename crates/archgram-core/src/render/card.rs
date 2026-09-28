@@ -8,10 +8,10 @@ use crate::render::scene::{Anchor, GroupOf, Item, Place};
 use crate::render::svg::{escape, num};
 use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
-    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING, CARD_LOGO_CORNER,
-    CARD_LOGO_INLINE, CARD_LOGO_INLINE_GAP, CARD_MULTI_OFFSET, CARD_PADDING, CARD_VERTICAL_BADGE,
-    CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, SIGNAL_LIT, STROKE_CARD, STROKE_ICON,
-    TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING,
+    CARD_LOGO_CORNER, CARD_LOGO_INLINE, CARD_LOGO_INLINE_GAP, CARD_MULTI_OFFSET, CARD_PADDING,
+    CARD_VERTICAL_BADGE, CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, SIGNAL_LIT, STROKE_CARD,
+    STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The CSS class that gives an icon its category's hue (DESIGN.md, Colors).
@@ -200,7 +200,14 @@ pub fn card(
                 w: CARD_VERTICAL_BADGE,
                 h: CARD_VERTICAL_BADGE,
             };
-            badge_with_icon(&mut out, (badge, CARD_VERTICAL_ICON), node, hue, in_badge, brand);
+            badge_with_icon(
+                &mut out,
+                (badge, CARD_VERTICAL_ICON),
+                node,
+                hue,
+                in_badge,
+                brand,
+            );
             lines.write(
                 &mut out,
                 r.centre_x(),
@@ -330,7 +337,11 @@ fn badge_with_icon(
         badge.centre_x() - icon_size / 2.0,
         badge.centre_y() - icon_size / 2.0,
     );
-    let place = Place { x: ix, y: iy, scale };
+    let place = Place {
+        x: ix,
+        y: iy,
+        scale,
+    };
     if let Some(path) = logo {
         logo_path(out, &format!("logo-icon {hue}"), place, path, brand);
         return;

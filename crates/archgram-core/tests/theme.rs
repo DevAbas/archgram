@@ -60,7 +60,10 @@ fn own_mapping() -> String {
 #[test]
 fn archgrams_own_tokens_give_back_its_own_colours() {
     let imported = run(&[("archgram.theme.json", &own_mapping())]).unwrap();
-    assert_eq!(imported.colors.light, theme("mono", "light").unwrap().colors);
+    assert_eq!(
+        imported.colors.light,
+        theme("mono", "light").unwrap().colors
+    );
     assert_eq!(imported.colors.dark, theme("mono", "dark").unwrap().colors);
     // Every role says which token filled it.
     assert!(
@@ -75,8 +78,11 @@ fn archgrams_own_tokens_give_back_its_own_colours() {
 fn a_drawing_in_the_imported_theme_is_the_same_bytes() {
     let imported = run(&[("archgram.theme.json", &own_mapping())]).unwrap();
     let spec = std::fs::read_to_string(format!("{}/examples/kinds.json", root())).unwrap();
-    let golden =
-        std::fs::read_to_string(format!("{}/crates/archgram-core/tests/golden/kinds.svg", root())).unwrap();
+    let golden = std::fs::read_to_string(format!(
+        "{}/crates/archgram-core/tests/golden/kinds.svg",
+        root()
+    ))
+    .unwrap();
     let svg = archgram_core::build(
         &spec,
         Options {
@@ -230,7 +236,8 @@ fn each_problem_is_reported_where_it_is() {
         "archgram.theme.json /roles/card: light: `ramp.broken`: `ramp.broken` aliases `ramp.5O`: no such token; did you mean `ramp.50`, `ramp.0`?"
     );
     // The same contrast DESIGN.md holds the built-in palettes to.
-    let plain = r#""light": { "inputs": { "mode": "day" } }, "dark": { "inputs": { "mode": "night" } }"#;
+    let plain =
+        r#""light": { "inputs": { "mode": "day" } }, "dark": { "inputs": { "mode": "night" } }"#;
     let e = project_errors(&mapping(r#""text": "ramp.50""#, plain));
     assert_eq!(
         e[0],

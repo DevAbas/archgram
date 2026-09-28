@@ -8,7 +8,10 @@ fn the_data_is_sorted_unique_and_whole() {
     let icons = Icons::load();
     assert!(icons.len() > 3000, "{} logos", icons.len());
     let slugs: Vec<&str> = archgram_core::logos::Logos::slugs(&icons);
-    assert!(slugs.windows(2).all(|w| w[0] < w[1]), "slugs sorted and unique");
+    assert!(
+        slugs.windows(2).all(|w| w[0] < w[1]),
+        "slugs sorted and unique"
+    );
     for slug in &slugs {
         let icon = icons.get(slug).unwrap();
         assert!(

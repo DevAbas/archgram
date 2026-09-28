@@ -74,7 +74,12 @@ impl Frames {
 /// Finds each vertex's frame and adds the border vertices, extending
 /// `vertex_layer` with their layers. `layer` holds the nodes' layers,
 /// `chains` each edge's vertices from its first layer to its last.
-pub fn build(spec: &Spec, layer: &[usize], chains: &[Vec<usize>], vertex_layer: &mut Vec<usize>) -> Frames {
+pub fn build(
+    spec: &Spec,
+    layer: &[usize],
+    chains: &[Vec<usize>],
+    vertex_layer: &mut Vec<usize>,
+) -> Frames {
     let count = spec.frames.len();
     let index = |id: &str| {
         spec.frames
@@ -104,7 +109,10 @@ pub fn build(spec: &Spec, layer: &[usize], chains: &[Vec<usize>], vertex_layer: 
         }
     }
     for chain in chains.iter().filter(|c| c.len() > 2) {
-        let (start, end) = (frames.frame_of[chain[0]], frames.frame_of[chain[chain.len() - 1]]);
+        let (start, end) = (
+            frames.frame_of[chain[0]],
+            frames.frame_of[chain[chain.len() - 1]],
+        );
         let (up, down) = (frames.ancestors(start), frames.ancestors(end));
         // The frames both ends share, innermost first; the walk climbs `up`
         // to the first of them, then descends `down` from it.
@@ -137,7 +145,8 @@ pub fn build(spec: &Spec, layer: &[usize], chains: &[Vec<usize>], vertex_layer: 
                 climbing = i + 1 < climb.len();
             }
             if !climbing {
-                while j + 1 < descend.len() && descend[j + 1].is_some_and(|f| frames.span[f].0 <= l) {
+                while j + 1 < descend.len() && descend[j + 1].is_some_and(|f| frames.span[f].0 <= l)
+                {
                     j += 1;
                 }
             }

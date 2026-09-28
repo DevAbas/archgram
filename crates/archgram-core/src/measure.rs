@@ -48,7 +48,10 @@ fn text_width_of(node: &Node, place: LogoPlace, logos: &dyn Logos) -> f64 {
     } else {
         0.0
     };
-    let note_width = line.text.map_or(0.0, |n| text_width(n, &TYPOGRAPHY_SUBTITLE)) + lead;
+    let note_width = line
+        .text
+        .map_or(0.0, |n| text_width(n, &TYPOGRAPHY_SUBTITLE))
+        + lead;
     title_width.max(note_width)
 }
 
@@ -94,7 +97,9 @@ fn front_card_size(node: &Node, style: CardStyle, logo: LogoPlace, logos: &dyn L
             h: CARD_HORIZONTAL_HEIGHT,
         },
         CardStyle::Vertical => Size {
-            w: CARD_VERTICAL_MIN_WIDTH.max(text + 2.0 * CARD_PADDING).ceil(),
+            w: CARD_VERTICAL_MIN_WIDTH
+                .max(text + 2.0 * CARD_PADDING)
+                .ceil(),
             h: CARD_VERTICAL_HEIGHT,
         },
     }
@@ -123,7 +128,10 @@ pub fn text_runs(spec: &Spec) -> Vec<(u16, std::borrow::Cow<'_, str>)> {
 /// [`text_runs`], with the logos the drawing carries, whose names an inline
 /// logo may show.
 #[must_use]
-pub fn text_runs_with<'a>(spec: &'a Spec, logos: &'a dyn Logos) -> Vec<(u16, std::borrow::Cow<'a, str>)> {
+pub fn text_runs_with<'a>(
+    spec: &'a Spec,
+    logos: &'a dyn Logos,
+) -> Vec<(u16, std::borrow::Cow<'a, str>)> {
     let mut runs = Vec::new();
     for node in &spec.nodes {
         runs.push((TYPOGRAPHY_TITLE.weight, node.label.as_str().into()));
@@ -137,7 +145,10 @@ pub fn text_runs_with<'a>(spec: &'a Spec, logos: &'a dyn Logos) -> Vec<(u16, std
         }
     }
     for frame in &spec.frames {
-        runs.push((TYPOGRAPHY_FRAME_LABEL.weight, frame.label.to_uppercase().into()));
+        runs.push((
+            TYPOGRAPHY_FRAME_LABEL.weight,
+            frame.label.to_uppercase().into(),
+        ));
     }
     for (_, text) in crate::layout::legend::entries(spec) {
         runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
@@ -146,7 +157,10 @@ pub fn text_runs_with<'a>(spec: &'a Spec, logos: &'a dyn Logos) -> Vec<(u16, std
         runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
     }
     if spec.still == crate::spec::Still::Numbers {
-        for numbers in crate::motion::step_numbers(spec).iter().filter(|n| !n.is_empty()) {
+        for numbers in crate::motion::step_numbers(spec)
+            .iter()
+            .filter(|n| !n.is_empty())
+        {
             runs.push((
                 crate::tokens::TYPOGRAPHY_LEGEND.weight,
                 crate::render::step_label(numbers).into(),
@@ -224,7 +238,9 @@ mod tests {
             &NoLogos,
         );
         assert!(size.w > CARD_HORIZONTAL_MIN_WIDTH);
-        assert!(size.w >= horizontal_text_inset() + text_width(label, &TYPOGRAPHY_TITLE) + CARD_PADDING);
+        assert!(
+            size.w >= horizontal_text_inset() + text_width(label, &TYPOGRAPHY_TITLE) + CARD_PADDING
+        );
     }
 
     #[test]
@@ -261,7 +277,13 @@ mod tests {
         .w;
         let mut with_logo = node(long, None);
         with_logo.tech = Some("postgresql".into());
-        let corner = card_size(&with_logo, CardStyle::Horizontal, LogoPlace::Corner, &NoLogos).w;
+        let corner = card_size(
+            &with_logo,
+            CardStyle::Horizontal,
+            LogoPlace::Corner,
+            &NoLogos,
+        )
+        .w;
         let chip = card_size(&with_logo, CardStyle::Horizontal, LogoPlace::Chip, &NoLogos).w;
         // Padding, logo, padding instead of two paddings: the logo's width more.
         assert!(
@@ -274,7 +296,8 @@ mod tests {
     #[test]
     fn an_inline_logo_leads_the_note_or_brings_the_name() {
         use std::collections::BTreeMap;
-        let logos: BTreeMap<String, String> = [("redis".to_owned(), "M0 0h24v24H0z".to_owned())].into();
+        let logos: BTreeMap<String, String> =
+            [("redis".to_owned(), "M0 0h24v24H0z".to_owned())].into();
         let mut n = node("Jobs", None);
         n.tech = Some("redis".into());
         // No note, and a set without names: the logo alone leads the line.

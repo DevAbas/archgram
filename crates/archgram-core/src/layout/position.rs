@@ -112,14 +112,20 @@ pub fn coordinates(layers: &[Vec<usize>], edges: &[(usize, usize)], v: &Vertices
                 }
             }
             let before = if looking_up { &up } else { &down };
-            let chain = if looking_up { v.border_up } else { v.border_down };
+            let chain = if looking_up {
+                v.border_up
+            } else {
+                v.border_down
+            };
             let (root, _) = align(&ls, before, chain, &conflicts, n);
             let mut x = compact(&ls, &root, v, n, !from_left).unwrap_or_else(|| {
                 // A cycle among the blocks: the frames' rules and an alignment
                 // disagree. Keep the border chains and let every other vertex
                 // stand alone, which the layers' order always allows.
                 debug_assert!(false, "the alignment made a cycle among the blocks");
-                let alone: Vec<usize> = (0..n).map(|i| if v.is_border(i) { root[i] } else { i }).collect();
+                let alone: Vec<usize> = (0..n)
+                    .map(|i| if v.is_border(i) { root[i] } else { i })
+                    .collect();
                 compact(&ls, &alone, v, n, !from_left).expect("borders alone keep the order")
             });
             if !from_left {
@@ -327,7 +333,11 @@ fn compact(
         .iter()
         .map(|&b| (b, preds.get(&b).map_or(0, Vec::len)))
         .collect();
-    let mut ready: BTreeSet<usize> = indeg.iter().filter(|(_, d)| **d == 0).map(|(b, _)| *b).collect();
+    let mut ready: BTreeSet<usize> = indeg
+        .iter()
+        .filter(|(_, d)| **d == 0)
+        .map(|(b, _)| *b)
+        .collect();
     let mut topo = Vec::new();
     while let Some(b) = ready.pop_first() {
         topo.push(b);
@@ -345,20 +355,27 @@ fn compact(
 
     let mut x: BTreeMap<usize, f64> = BTreeMap::new();
     for &b in &topo {
-        let v0 = preds
-            .get(&b)
-            .map_or(0.0, |ps| ps.iter().map(|&(a, s)| x[&a] + s).fold(0.0, f64::max));
+        let v0 = preds.get(&b).map_or(0.0, |ps| {
+            ps.iter().map(|&(a, s)| x[&a] + s).fold(0.0, f64::max)
+        });
         x.insert(b, v0);
     }
     for &b in topo.iter().rev() {
         if let Some(ss) = succs.get(&b) {
-            let limit = ss.iter().map(|&(c, s)| x[&c] - s).fold(f64::INFINITY, f64::min);
+            let limit = ss
+                .iter()
+                .map(|&(c, s)| x[&c] - s)
+                .fold(f64::INFINITY, f64::min);
             if limit.is_finite() && limit > x[&b] {
                 x.insert(b, limit);
             }
         }
     }
-    Some((0..n).map(|i| x.get(&root[i]).copied().unwrap_or(0.0)).collect())
+    Some(
+        (0..n)
+            .map(|i| x.get(&root[i]).copied().unwrap_or(0.0))
+            .collect(),
+    )
 }
 
 #[cfg(test)]
@@ -391,7 +408,10 @@ mod tests {
         let layers = vec![vec![0], vec![1], vec![2]];
         let (half, kind) = cards(3);
         let x = coordinates(&layers, &[(0, 1), (1, 2)], &plain(&half, &half, &kind));
-        assert!((x[0] - x[1]).abs() < 1e-9 && (x[1] - x[2]).abs() < 1e-9, "{x:?}");
+        assert!(
+            (x[0] - x[1]).abs() < 1e-9 && (x[1] - x[2]).abs() < 1e-9,
+            "{x:?}"
+        );
     }
 
     #[test]

@@ -4,8 +4,8 @@
 
 use crate::render::scene::{Decl, Paint, Rule};
 use crate::tokens::{
-    DASH_EDGE, DASH_EXTERNAL, DASH_FRAME, Role, STROKE_CARD, STROKE_CONNECTOR, STROKE_FRAME, STROKE_ICON,
-    TYPOGRAPHY_FRAME_LABEL, TYPOGRAPHY_LEGEND, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    DASH_EDGE, DASH_EXTERNAL, DASH_FRAME, Role, STROKE_CARD, STROKE_CONNECTOR, STROKE_FRAME,
+    STROKE_ICON, TYPOGRAPHY_FRAME_LABEL, TYPOGRAPHY_LEGEND, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The four category hues, by class name, with their roles.
@@ -31,7 +31,10 @@ use Paint::{None as NoPaint, Role as R};
 pub fn shapes() -> Vec<Rule> {
     let mut out = vec![
         rule(".title", &[Font(TYPOGRAPHY_TITLE), Fill(R(Role::Text))]),
-        rule(".sub", &[Font(TYPOGRAPHY_SUBTITLE), Fill(R(Role::TextMuted))]),
+        rule(
+            ".sub",
+            &[Font(TYPOGRAPHY_SUBTITLE), Fill(R(Role::TextMuted))],
+        ),
         rule(".canvas", &[Fill(R(Role::Canvas))]),
         rule(
             ".card",
@@ -122,7 +125,10 @@ pub fn steps() -> Vec<Rule> {
                 StrokeWidth(STROKE_CARD),
             ],
         ),
-        rule(".step-text", &[Font(TYPOGRAPHY_LEGEND), Fill(R(Role::Text))]),
+        rule(
+            ".step-text",
+            &[Font(TYPOGRAPHY_LEGEND), Fill(R(Role::Text))],
+        ),
     ]
 }
 

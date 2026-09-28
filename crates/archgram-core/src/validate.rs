@@ -239,7 +239,11 @@ impl<'a> Validator<'a> {
         }
         // An empty frame: no node in it and no frame under it.
         for (i, f) in frames.iter().enumerate() {
-            let has_node = self.spec.nodes.iter().any(|n| n.frame.as_deref() == Some(&f.id));
+            let has_node = self
+                .spec
+                .nodes
+                .iter()
+                .any(|n| n.frame.as_deref() == Some(&f.id));
             let has_child = frames.iter().any(|c| c.parent.as_deref() == Some(&f.id));
             if !has_node && !has_child {
                 self.error(
@@ -288,7 +292,10 @@ impl<'a> Validator<'a> {
             .collect();
         for (i, f) in self.spec.flows.iter().enumerate() {
             if f.name.trim().is_empty() {
-                self.error(format!("/flows/{i}/name"), "the flow has an empty name".into());
+                self.error(
+                    format!("/flows/{i}/name"),
+                    "the flow has an empty name".into(),
+                );
             }
             if f.steps.len() < 2 {
                 self.error(
@@ -349,7 +356,11 @@ impl<'a> Validator<'a> {
             }
             // Every node of a step is reached from the step before it...
             let reported = self.errors.len();
-            for (k, b) in to.iter().enumerate().filter(|&(k, b)| is_node(b) && first(to, k)) {
+            for (k, b) in to
+                .iter()
+                .enumerate()
+                .filter(|&(k, b)| is_node(b) && first(to, k))
+            {
                 if from
                     .iter()
                     .filter(|a| is_node(a))
@@ -405,7 +416,10 @@ impl<'a> Validator<'a> {
             }
         }
         for id in h.first.iter().filter(|id| h.last.contains(id)) {
-            self.error("/hints".into(), format!("`{id}` is hinted both first and last"));
+            self.error(
+                "/hints".into(),
+                format!("`{id}` is hinted both first and last"),
+            );
         }
         for (field, groups) in [("sameLayer", &h.same_layer), ("order", &h.order)] {
             for (j, group) in groups.iter().enumerate() {
@@ -452,7 +466,11 @@ impl<'a> Validator<'a> {
             Some(&named) if named == wanted => None,
             Some(_) => Some(format!(
                 "`{id}` is a {}, not a {what}",
-                if wanted == Named::Node { "frame" } else { "node" }
+                if wanted == Named::Node {
+                    "frame"
+                } else {
+                    "node"
+                }
             )),
             None => {
                 let candidates = ids.iter().filter(|(_, n)| **n == wanted).map(|(k, _)| *k);
@@ -477,7 +495,10 @@ fn is_xml_char(c: char) -> bool {
 fn is_valid_id(id: &str) -> bool {
     !id.is_empty()
         && id.split('-').all(|part| {
-            !part.is_empty() && part.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+            !part.is_empty()
+                && part
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
         })
 }
 

@@ -74,7 +74,8 @@ fn tables(font: &[u8]) -> Result<BTreeMap<[u8; 4], &[u8]>, SubsetError> {
         out.insert(tag, r.slice(offset, offset + length)?);
     }
     for required in [
-        *b"head", *b"hhea", *b"maxp", *b"hmtx", *b"loca", *b"glyf", *b"cmap", *b"name", *b"post", *b"OS/2",
+        *b"head", *b"hhea", *b"maxp", *b"hmtx", *b"loca", *b"glyf", *b"cmap", *b"name", *b"post",
+        *b"OS/2",
     ] {
         if !out.contains_key(&required) {
             return err(format!(
@@ -201,7 +202,11 @@ pub fn subset(font: &[u8], chars: &BTreeSet<char>) -> Result<Vec<u8>, SubsetErro
     let mut new_glyf = Vec::new();
     let mut new_loca = Vec::with_capacity(4 * (order.len() + 1));
     for &old in &order {
-        new_loca.extend_from_slice(&u32::try_from(new_glyf.len()).unwrap_or(u32::MAX).to_be_bytes());
+        new_loca.extend_from_slice(
+            &u32::try_from(new_glyf.len())
+                .unwrap_or(u32::MAX)
+                .to_be_bytes(),
+        );
         let data = glyph(old)?;
         if data.len() >= 10 {
             let r = Reader(data);
@@ -225,7 +230,8 @@ pub fn subset(font: &[u8], chars: &BTreeSet<char>) -> Result<Vec<u8>, SubsetErro
                     let mut at = 10;
                     while at < end {
                         let flags = Reader(&copy).u16(at)?;
-                        copy[at..at + 2].copy_from_slice(&(flags & !WE_HAVE_INSTRUCTIONS).to_be_bytes());
+                        copy[at..at + 2]
+                            .copy_from_slice(&(flags & !WE_HAVE_INSTRUCTIONS).to_be_bytes());
                         at = next_record(&copy, at)?;
                     }
                 }
@@ -236,7 +242,11 @@ pub fn subset(font: &[u8], chars: &BTreeSet<char>) -> Result<Vec<u8>, SubsetErro
             new_glyf.push(0);
         }
     }
-    new_loca.extend_from_slice(&u32::try_from(new_glyf.len()).unwrap_or(u32::MAX).to_be_bytes());
+    new_loca.extend_from_slice(
+        &u32::try_from(new_glyf.len())
+            .unwrap_or(u32::MAX)
+            .to_be_bytes(),
+    );
 
     // hmtx: every glyph gets a full metric.
     let mut new_hmtx = Vec::with_capacity(4 * order.len());
@@ -257,7 +267,10 @@ pub fn subset(font: &[u8], chars: &BTreeSet<char>) -> Result<Vec<u8>, SubsetErro
         new_hmtx.extend_from_slice(&lsb.to_be_bytes());
     }
 
-    let new_mapped: Vec<(u32, u16)> = mapped.iter().map(|&(c, g)| (u32::from(c), new_id[&g])).collect();
+    let new_mapped: Vec<(u32, u16)> = mapped
+        .iter()
+        .map(|&(c, g)| (u32::from(c), new_id[&g]))
+        .collect();
 
     let mut out_tables: BTreeMap<[u8; 4], Vec<u8>> = BTreeMap::new();
     out_tables.insert(*b"OS/2", t[b"OS/2"].to_vec());
@@ -285,7 +298,13 @@ pub fn subset(font: &[u8], chars: &BTreeSet<char>) -> Result<Vec<u8>, SubsetErro
 /// The offset of the component record after the one at `at`.
 fn next_record(glyph: &[u8], at: usize) -> Result<usize, SubsetError> {
     let flags = Reader(glyph).u16(at)?;
-    let mut next = at + 4 + if flags & ARG_1_AND_2_ARE_WORDS != 0 { 4 } else { 2 };
+    let mut next = at
+        + 4
+        + if flags & ARG_1_AND_2_ARE_WORDS != 0 {
+            4
+        } else {
+            2
+        };
     next += if flags & WE_HAVE_A_SCALE != 0 {
         2
     } else if flags & WE_HAVE_AN_X_AND_Y_SCALE != 0 {
@@ -395,7 +414,10 @@ fn name(table: &[u8]) -> Result<Vec<u8>, SubsetError> {
         if KEPT_NAMES.contains(&name_id) {
             let (len, off) = (usize::from(r.u16(rec + 8)?), usize::from(r.u16(rec + 10)?));
             let text = r.slice(storage + off, storage + off + len)?;
-            kept.push(([r.u16(rec)?, r.u16(rec + 2)?, r.u16(rec + 4)?, name_id], text));
+            kept.push((
+                [r.u16(rec)?, r.u16(rec + 2)?, r.u16(rec + 4)?, name_id],
+                text,
+            ));
         }
     }
     let mut out = Vec::new();
@@ -493,7 +515,9 @@ mod tests {
             for c in text.chars() {
                 let (ga, gb) = (
                     a.charmap().map(c).unwrap(),
-                    b.charmap().map(c).unwrap_or_else(|| panic!("{c:?} unmapped")),
+                    b.charmap()
+                        .map(c)
+                        .unwrap_or_else(|| panic!("{c:?} unmapped")),
                 );
                 assert_ne!(gb, GlyphId::new(0), "{c:?}");
                 assert_eq!(ma.advance_width(ga), mb.advance_width(gb), "{c:?}");
@@ -503,7 +527,11 @@ mod tests {
 
     #[test]
     fn the_subset_is_small_and_whole() {
-        let sub = subset(REGULAR, &chars("Service Database Queue Cache Storage Users")).unwrap();
+        let sub = subset(
+            REGULAR,
+            &chars("Service Database Queue Cache Storage Users"),
+        )
+        .unwrap();
         assert!(sub.len() < 12_000, "{} bytes", sub.len());
         assert_eq!(checksum(&sub), 0xB1B0_AFBA, "the whole-font checksum");
         let t = tables(&sub).unwrap();

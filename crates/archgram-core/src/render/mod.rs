@@ -20,8 +20,8 @@ use crate::layout::Placement;
 use crate::motion::Timeline;
 use crate::spec::{SignalStyle, Spec};
 use crate::tokens::{
-    ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN, STROKE_CONNECTOR,
-    theme,
+    ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, Colors, FONT_SANS, ROUNDED_CANVAS, SPACING_MARGIN,
+    STROKE_CONNECTOR, theme,
 };
 use scene::{Anchor, GroupOf, Item, Scene, StyleLine};
 use svg::num;
@@ -81,7 +81,12 @@ pub fn render(
 ///
 /// As [`render`].
 #[must_use]
-pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn crate::logos::Logos) -> Scene {
+pub fn scene(
+    spec: &Spec,
+    placement: &Placement,
+    options: Options,
+    logos: &dyn crate::logos::Logos,
+) -> Scene {
     let w = placement.size.w + 2.0 * SPACING_MARGIN;
     let h = placement.size.h + 2.0 * SPACING_MARGIN;
     // Every edge as drawn, moved onto the canvas, and the flows' timing
@@ -127,7 +132,13 @@ pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn c
         .map(|t| t.hops.iter().map(|h| h.edge).collect())
         .unwrap_or_default();
     let mut edges = Vec::new();
-    for (k, ((e, d), label)) in spec.edges.iter().zip(&drawn).zip(&placement.labels).enumerate() {
+    for (k, ((e, d), label)) in spec
+        .edges
+        .iter()
+        .zip(&drawn)
+        .zip(&placement.labels)
+        .enumerate()
+    {
         let label = label.map(|r| Rect {
             x: r.x + EDGE_OFFSET,
             y: r.y + EDGE_OFFSET,
@@ -154,7 +165,13 @@ pub fn scene(spec: &Spec, placement: &Placement, options: Options, logos: &dyn c
         }));
         items.extend(step_numbers(spec, &drawn, &blocked));
     }
-    cards(&mut items, spec, placement, logos, (timeline.as_ref(), &brands));
+    cards(
+        &mut items,
+        spec,
+        placement,
+        logos,
+        (timeline.as_ref(), &brands),
+    );
     if let Some(t) = &timeline {
         let hue = |n: usize| card::category_class(spec.nodes[n].kind.category());
         items.push(signal::signals(spec.signal, t, &drawn, hue));
@@ -225,7 +242,8 @@ fn cards(
             ..*r
         };
         let lighting = timeline.and_then(|t| {
-            let lit: Vec<crate::motion::Lit> = t.lit.iter().filter(|l| l.node == i).copied().collect();
+            let lit: Vec<crate::motion::Lit> =
+                t.lit.iter().filter(|l| l.node == i).copied().collect();
             (!lit.is_empty()).then(|| signal::lit_animation(&lit, t.period))
         });
         let brand = lighting.as_deref().map(|animation| card::Brand {
@@ -377,7 +395,8 @@ fn theme_vars(svg: &mut Sheet, mode: Mode, (light, dark): (&Colors, &Colors), an
 
 /// Whether the drawing has a legend, so its classes are needed.
 fn placement_has_legend(spec: &Spec) -> bool {
-    !crate::layout::legend::entries(spec).is_empty() || !crate::layout::legend::flow_texts(spec).is_empty()
+    !crate::layout::legend::entries(spec).is_empty()
+        || !crate::layout::legend::flow_texts(spec).is_empty()
 }
 
 /// The theme's roles as custom properties; the signal's own only where
@@ -399,7 +418,8 @@ fn dash(d: &[f64]) -> String {
 /// the characters set in that weight. False when a subset cannot be made, in
 /// which case the text falls back to the system font.
 fn embed_fonts(svg: &mut Sheet, spec: &Spec, logos: &dyn crate::logos::Logos) -> bool {
-    let mut by_weight: std::collections::BTreeMap<u16, BTreeSet<char>> = std::collections::BTreeMap::new();
+    let mut by_weight: std::collections::BTreeMap<u16, BTreeSet<char>> =
+        std::collections::BTreeMap::new();
     for (weight, text) in crate::measure::text_runs_with(spec, logos) {
         by_weight.entry(weight).or_default().extend(text.chars());
     }
@@ -433,7 +453,11 @@ fn description(spec: &Spec) -> String {
 /// A line's step numbers as its badge shows them.
 #[must_use]
 pub fn step_label(numbers: &[u32]) -> String {
-    numbers.iter().map(u32::to_string).collect::<Vec<_>>().join(",")
+    numbers
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 /// Each step's number on the lines the flows take, for the still image
@@ -453,7 +477,8 @@ fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<
         let text = step_label(list);
         let h = SIGNAL_NUMBER;
         // As wide as the text and the room either side a single digit has.
-        let w = h.max((font::text_width(&text, &TYPOGRAPHY_LEGEND) + h - TYPOGRAPHY_LEGEND.size).ceil());
+        let w = h
+            .max((font::text_width(&text, &TYPOGRAPHY_LEGEND) + h - TYPOGRAPHY_LEGEND.size).ceil());
         let badge = |c: crate::geometry::Point| Rect {
             x: c.x - w / 2.0,
             y: c.y - h / 2.0,
@@ -512,8 +537,9 @@ fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<
 fn badge_spots(drawn: &edge::Drawn, width: f64) -> Vec<crate::geometry::Point> {
     use crate::tokens::{ARROWHEAD_GAP, ARROWHEAD_LENGTH};
     let straights = drawn.straights();
-    let span =
-        |a: crate::geometry::Point, b: crate::geometry::Point| (b.x - a.x).abs().max((b.y - a.y).abs());
+    let span = |a: crate::geometry::Point, b: crate::geometry::Point| {
+        (b.x - a.x).abs().max((b.y - a.y).abs())
+    };
     let mut spots = Vec::new();
     for (k, &(a, b)) in straights.iter().enumerate().rev() {
         let length = span(a, b);
@@ -614,8 +640,8 @@ fn motion_style(
     (light, dark, mode): (&Colors, &Colors, Mode),
 ) {
     use crate::tokens::{
-        SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, SIGNAL_LIT, SIGNAL_RING_OPACITY,
-        SIGNAL_TINT, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
+        SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, SIGNAL_LIT,
+        SIGNAL_RING_OPACITY, SIGNAL_TINT, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
     };
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".signal.{hue} {{ color: var(--icon-{hue}); }}"));
@@ -638,7 +664,10 @@ fn motion_style(
                 num(SIGNAL_TRAIL_OPACITY)
             ),
             glowing(SIGNAL_GLOW, SIGNAL_GLOW_OPACITY),
-            format!(".signal .bolt {{ stroke-width: {}; }}", num(SIGNAL_BOLT_WIDTH)),
+            format!(
+                ".signal .bolt {{ stroke-width: {}; }}",
+                num(SIGNAL_BOLT_WIDTH)
+            ),
         ],
         SignalStyle::Arc => vec![
             dots(),
@@ -647,7 +676,10 @@ fn motion_style(
                 ".signal .wire-glow {{ stroke-width: {}; filter: url(#glow); }}",
                 num(SIGNAL_GLOW)
             ),
-            format!(".signal .bolt {{ stroke-width: {}; }}", num(SIGNAL_BOLT_WIDTH)),
+            format!(
+                ".signal .bolt {{ stroke-width: {}; }}",
+                num(SIGNAL_BOLT_WIDTH)
+            ),
         ],
         SignalStyle::Comet => vec![dots()],
         SignalStyle::Dot => vec![
@@ -684,7 +716,9 @@ fn motion_style(
         ));
     }
     brand_rules(svg, brands, (light, dark, mode));
-    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit, .brand { display: none; } }");
+    svg.line(
+        "@media (prefers-reduced-motion: reduce) { .signals, .lit, .brand { display: none; } }",
+    );
 }
 
 /// Each brand colour's rule, for the theme or themes the drawing carries.
@@ -696,7 +730,13 @@ fn brand_rules(
     let fills = |c: &Colors| -> Vec<String> {
         brands
             .iter()
-            .map(|(slug, hex)| format!(".{} {{ fill: {}; }}", brand_class(slug), brand_fill(*hex, c.card)))
+            .map(|(slug, hex)| {
+                format!(
+                    ".{} {{ fill: {}; }}",
+                    brand_class(slug),
+                    brand_fill(*hex, c.card)
+                )
+            })
             .collect()
     };
     match mode {
@@ -709,7 +749,11 @@ fn brand_rules(
             if !changed.is_empty() {
                 svg.line(&format!(
                     "@media (prefers-color-scheme: dark) {{ {} }}",
-                    changed.iter().map(|r| r.as_str()).collect::<Vec<_>>().join(" ")
+                    changed
+                        .iter()
+                        .map(|r| r.as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ")
                 ));
             }
         }

@@ -198,9 +198,12 @@ impl Kind {
     #[must_use]
     pub fn category(self) -> Category {
         match self {
-            Kind::Service | Kind::Database | Kind::Queue | Kind::Cache | Kind::Storage | Kind::Users => {
-                Category::Core
-            }
+            Kind::Service
+            | Kind::Database
+            | Kind::Queue
+            | Kind::Cache
+            | Kind::Storage
+            | Kind::Users => Category::Core,
             Kind::Model | Kind::VectorStore | Kind::Tool | Kind::Agent => Category::Ai,
             Kind::File | Kind::Script | Kind::Generated | Kind::Check => Category::Build,
             Kind::Browser | Kind::Mobile | Kind::Desktop => Category::Client,

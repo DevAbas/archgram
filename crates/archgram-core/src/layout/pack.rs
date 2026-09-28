@@ -47,13 +47,22 @@ pub fn units(spec: &Spec) -> Vec<Vec<usize>> {
     }
     // Nodes of one top-level frame stay together.
     let top = |id: &str| {
-        let mut f = spec.frames.iter().find(|f| f.id == id).expect("validated frame");
+        let mut f = spec
+            .frames
+            .iter()
+            .find(|f| f.id == id)
+            .expect("validated frame");
         while let Some(p) = &f.parent {
-            f = spec.frames.iter().find(|g| &g.id == p).expect("validated frame");
+            f = spec
+                .frames
+                .iter()
+                .find(|g| &g.id == p)
+                .expect("validated frame");
         }
         f.id.clone()
     };
-    let mut first_in_frame: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    let mut first_in_frame: std::collections::BTreeMap<String, usize> =
+        std::collections::BTreeMap::new();
     for (v, node) in spec.nodes.iter().enumerate() {
         if let Some(f) = &node.frame {
             let t = top(f);
@@ -65,7 +74,8 @@ pub fn units(spec: &Spec) -> Vec<Vec<usize>> {
             }
         }
     }
-    let mut groups: std::collections::BTreeMap<usize, Vec<usize>> = std::collections::BTreeMap::new();
+    let mut groups: std::collections::BTreeMap<usize, Vec<usize>> =
+        std::collections::BTreeMap::new();
     for v in 0..n {
         let r = root(&mut parent, v);
         groups.entry(r).or_default().push(v);
@@ -98,11 +108,27 @@ fn sub_spec(spec: &Spec, unit: &[usize]) -> (Spec, Vec<usize>) {
         .collect();
     let edges: Vec<Edge> = edge_index.iter().map(|&k| spec.edges[k].clone()).collect();
     let keep = |groups: &[Vec<String>]| -> Vec<Vec<String>> {
-        groups.iter().filter(|g| g.iter().any(inside)).cloned().collect()
+        groups
+            .iter()
+            .filter(|g| g.iter().any(inside))
+            .cloned()
+            .collect()
     };
     let hints = Hints {
-        first: spec.hints.first.iter().filter(|id| inside(id)).cloned().collect(),
-        last: spec.hints.last.iter().filter(|id| inside(id)).cloned().collect(),
+        first: spec
+            .hints
+            .first
+            .iter()
+            .filter(|id| inside(id))
+            .cloned()
+            .collect(),
+        last: spec
+            .hints
+            .last
+            .iter()
+            .filter(|id| inside(id))
+            .cloned()
+            .collect(),
         same_layer: keep(&spec.hints.same_layer),
         order: keep(&spec.hints.order),
     };
@@ -175,7 +201,11 @@ fn columns_within(limit: f64, cell: f64) -> usize {
 fn plain_grid(spec: &Spec, unit: &[usize], sizes: &[Size], limit: f64) -> Placement {
     let unit_sizes: Vec<Size> = unit.iter().map(|&v| sizes[v]).collect();
     let cell = unit_sizes.iter().map(|s| s.w).fold(0.0, f64::max);
-    let (rects, size) = grid(&unit_sizes, &stacks(spec, unit), columns_within(limit, cell));
+    let (rects, size) = grid(
+        &unit_sizes,
+        &stacks(spec, unit),
+        columns_within(limit, cell),
+    );
     Placement {
         nodes: rects,
         edges: Vec::new(),
@@ -380,8 +410,8 @@ pub fn pack(
     // The width the rows below keep within: the primary unit's, or, when it
     // has no edges either, a square grid's of every node.
     #[allow(clippy::cast_precision_loss)] // node counts are small
-    let square =
-        (n as f64).sqrt().ceil() * (sizes.iter().map(|s| s.w).fold(0.0, f64::max) + SPACING_NODE_NODE);
+    let square = (n as f64).sqrt().ceil()
+        * (sizes.iter().map(|s| s.w).fold(0.0, f64::max) + SPACING_NODE_NODE);
     let primary_w = parts[primary].as_ref().map_or(square, |(p, _)| p.size.w);
     for (i, unit) in units.iter().enumerate() {
         if !has_edges[i] {

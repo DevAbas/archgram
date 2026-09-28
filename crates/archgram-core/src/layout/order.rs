@@ -64,7 +64,11 @@ pub fn order(
     let mut current = initial(layers, &down, &layer_of, n);
     for i in 0..current.len() {
         let pos = positions(&current[i], n);
-        let reference = if i > 0 { Some(current[i - 1].clone()) } else { None };
+        let reference = if i > 0 {
+            Some(current[i - 1].clone())
+        } else {
+            None
+        };
         current[i] = arrange(&current[i], &|v| pos[v], clusters, reference.as_deref(), n);
         apply_groups(&mut current[i], groups);
     }
@@ -88,7 +92,13 @@ pub fn order(
                     .unwrap_or(place as f64);
                 key[v] = k;
             }
-            current[i] = arrange(&current[i], &|v| key[v], clusters, Some(&current[reference]), n);
+            current[i] = arrange(
+                &current[i],
+                &|v| key[v],
+                clusters,
+                Some(&current[reference]),
+                n,
+            );
             apply_groups(&mut current[i], groups);
         }
         transpose(&mut current, &down, n, groups, clusters);
@@ -106,7 +116,12 @@ pub fn order(
 
 /// Depth-first from each vertex in index order, appending each vertex to its
 /// layer when first reached, so connected vertices start close together.
-fn initial(layers: &[Vec<usize>], down: &[Vec<usize>], layer_of: &[usize], n: usize) -> Vec<Vec<usize>> {
+fn initial(
+    layers: &[Vec<usize>],
+    down: &[Vec<usize>],
+    layer_of: &[usize],
+    n: usize,
+) -> Vec<Vec<usize>> {
     let mut out = vec![Vec::new(); layers.len()];
     let mut seen = vec![false; n];
     let mut all: Vec<usize> = layers.iter().flatten().copied().collect();
@@ -191,7 +206,10 @@ fn arrange(
         match clusters.border[v] {
             Some((f, true)) => {
                 first.insert(f, v);
-                items.entry(clusters.parent[f]).or_default().push(Item::Frame(f));
+                items
+                    .entry(clusters.parent[f])
+                    .or_default()
+                    .push(Item::Frame(f));
             }
             Some((f, false)) => {
                 last.insert(f, v);
@@ -214,7 +232,9 @@ fn arrange(
         Item::Vertex(v) => (key(v), place[v]),
         Item::Frame(frame) => {
             let b = first[&frame];
-            let k = sums.get(&frame).map_or_else(|| key(b), |&(s, count)| s / count);
+            let k = sums
+                .get(&frame)
+                .map_or_else(|| key(b), |&(s, count)| s / count);
             (k, place[b])
         }
     };
@@ -290,7 +310,11 @@ fn apply_groups(layer: &mut [usize], groups: &[Vec<usize>]) {
             .filter(|(_, v)| group.contains(v))
             .map(|(i, _)| i)
             .collect();
-        let members: Vec<usize> = group.iter().copied().filter(|v| layer.contains(v)).collect();
+        let members: Vec<usize> = group
+            .iter()
+            .copied()
+            .filter(|v| layer.contains(v))
+            .collect();
         for (slot, member) in slots.into_iter().zip(members) {
             layer[slot] = member;
         }
@@ -351,7 +375,10 @@ fn local_crossings(layers: &[Vec<usize>], i: usize, down: &[Vec<usize>], n: usiz
 
 /// All crossings in the layering.
 pub fn crossings(layers: &[Vec<usize>], down: &[Vec<usize>], n: usize) -> usize {
-    layers.windows(2).map(|w| bilayer(&w[0], &w[1], down, n)).sum()
+    layers
+        .windows(2)
+        .map(|w| bilayer(&w[0], &w[1], down, n))
+        .sum()
 }
 
 /// Crossings between two adjacent layers: pairs of edges whose ends are in

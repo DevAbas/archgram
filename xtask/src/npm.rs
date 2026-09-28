@@ -25,7 +25,12 @@ use serde_json::{Value, json};
 pub const PLATFORMS: [(&str, &str, &str, &str); 6] = [
     ("darwin-arm64", "darwin", "arm64", "aarch64-apple-darwin"),
     ("darwin-x64", "darwin", "x64", "x86_64-apple-darwin"),
-    ("linux-arm64", "linux", "arm64", "aarch64-unknown-linux-musl"),
+    (
+        "linux-arm64",
+        "linux",
+        "arm64",
+        "aarch64-unknown-linux-musl",
+    ),
     ("linux-x64", "linux", "x64", "x86_64-unknown-linux-musl"),
     ("win32-arm64", "win32", "arm64", "aarch64-pc-windows-msvc"),
     ("win32-x64", "win32", "x64", "x86_64-pc-windows-msvc"),
@@ -70,16 +75,27 @@ fn host() -> Option<&'static str> {
         "x86_64" => "x64",
         _ => return None,
     };
-    PLATFORMS.iter().find(|p| p.1 == os && p.2 == cpu).map(|p| p.0)
+    PLATFORMS
+        .iter()
+        .find(|p| p.1 == os && p.2 == cpu)
+        .map(|p| p.0)
 }
 
 fn exe(os: &str) -> &'static str {
-    if os == "win32" { "archgram.exe" } else { "archgram" }
+    if os == "win32" {
+        "archgram.exe"
+    } else {
+        "archgram"
+    }
 }
 
 /// Where a platform's built binary is, if it has been built.
 fn built(key: &str, os: &str, target: &str) -> Option<PathBuf> {
-    let own = root().join("target").join(target).join("release").join(exe(os));
+    let own = root()
+        .join("target")
+        .join(target)
+        .join("release")
+        .join(exe(os));
     if own.exists() {
         return Some(own);
     }
@@ -112,7 +128,9 @@ fn assemble(all: bool) -> Result<Vec<&'static str>, String> {
     for &(key, os, cpu, target) in &PLATFORMS {
         let Some(binary) = built(key, os, target) else {
             if all {
-                return Err(format!("no binary for {key}: build `--target {target}` first"));
+                return Err(format!(
+                    "no binary for {key}: build `--target {target}` first"
+                ));
             }
             println!("{key}: no binary in target/{target}/release, left out");
             continue;
@@ -156,8 +174,14 @@ fn assemble(all: bool) -> Result<Vec<&'static str>, String> {
     // platform package, of that version, as an optional dependency.
     let source = root().join("packages/archgram");
     let dir = out.join("archgram");
-    copy(&source.join("bin/archgram.js"), &dir.join("bin/archgram.js"))?;
-    copy(&source.join("lib/platform.js"), &dir.join("lib/platform.js"))?;
+    copy(
+        &source.join("bin/archgram.js"),
+        &dir.join("bin/archgram.js"),
+    )?;
+    copy(
+        &source.join("lib/platform.js"),
+        &dir.join("lib/platform.js"),
+    )?;
     copy(&source.join("README.md"), &dir.join("README.md"))?;
     copy(&root().join("LICENSE"), &dir.join("LICENSE"))?;
     let mut manifest: Value = serde_json::from_str(
@@ -204,7 +228,9 @@ fn smoke(written: &[&str]) -> Result<(), String> {
     println!("launcher tests: passed");
     let key = host().ok_or("this machine has no platform package")?;
     if !written.contains(&key) {
-        return Err(format!("no package for this machine ({key}); build it first"));
+        return Err(format!(
+            "no package for this machine ({key}); build it first"
+        ));
     }
     let scratch = root.join("target/npm-smoke");
     if scratch.exists() {
@@ -260,7 +286,11 @@ fn smoke(written: &[&str]) -> Result<(), String> {
         .join("node_modules/@archgram")
         .join(format!("cli-{key}"))
         .join("bin")
-        .join(exe(if key.starts_with("win32") { "win32" } else { "" }));
+        .join(exe(if key.starts_with("win32") {
+            "win32"
+        } else {
+            ""
+        }));
     run(
         &scratch,
         binary.to_str().unwrap_or_default(),
@@ -278,7 +308,10 @@ fn smoke(written: &[&str]) -> Result<(), String> {
     if a != b {
         return Err("`npx archgram` drew different bytes from the binary".into());
     }
-    println!("npx archgram build: the same {} bytes as the binary", a.len());
+    println!(
+        "npx archgram build: the same {} bytes as the binary",
+        a.len()
+    );
     Ok(())
 }
 

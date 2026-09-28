@@ -145,7 +145,10 @@ fn tags(svg: &str) -> Vec<(String, Vec<(String, String)>)> {
 }
 
 fn attr<'a>(attrs: &'a [(String, String)], key: &str) -> Option<&'a str> {
-    attrs.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+    attrs
+        .iter()
+        .find(|(k, _)| k == key)
+        .map(|(_, v)| v.as_str())
 }
 
 /// SMIL's rules on every animation, attributes written once per tag, and
@@ -158,7 +161,11 @@ fn check(seed: u64, svg: &str) {
         keys.sort_unstable();
         let before = keys.len();
         keys.dedup();
-        assert_eq!(keys.len(), before, "seed {seed}: <{name}> repeats an attribute");
+        assert_eq!(
+            keys.len(),
+            before,
+            "seed {seed}: <{name}> repeats an attribute"
+        );
         if name == "mpath" {
             let href = attr(attrs, "href").expect("mpath href");
             assert!(
@@ -171,7 +178,11 @@ fn check(seed: u64, svg: &str) {
         };
         let written: Vec<&str> = times.split(';').collect();
         assert_eq!(written[0], "0", "seed {seed}: keyTimes start at 0");
-        assert_eq!(*written.last().unwrap(), "1", "seed {seed}: keyTimes end at 1");
+        assert_eq!(
+            *written.last().unwrap(),
+            "1",
+            "seed {seed}: keyTimes end at 1"
+        );
         let times: Vec<f64> = written.iter().map(|t| t.parse().unwrap()).collect();
         assert!(
             times.windows(2).all(|w| w[0] <= w[1]),

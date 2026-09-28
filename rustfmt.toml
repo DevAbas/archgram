@@ -1,1 +1,3 @@
-max_width = 110
+# The Rust Style Guide's width, rustfmt's default, written out so the two
+# files that name it stay together. Keep in sync with .editorconfig.
+max_width = 100

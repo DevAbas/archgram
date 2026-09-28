@@ -19,17 +19,18 @@ pub fn reversed_edges(n: usize, edges: &[(usize, usize)]) -> Vec<bool> {
     let mut removed = vec![false; n];
     let (mut front, mut back) = (Vec::new(), Vec::new());
     let mut left = n;
-    let remove = |v: usize, removed: &mut Vec<bool>, indeg: &mut Vec<usize>, outdeg: &mut Vec<usize>| {
-        removed[v] = true;
-        for &(a, b) in edges {
-            if a == v && !removed[b] {
-                indeg[b] -= 1;
+    let remove =
+        |v: usize, removed: &mut Vec<bool>, indeg: &mut Vec<usize>, outdeg: &mut Vec<usize>| {
+            removed[v] = true;
+            for &(a, b) in edges {
+                if a == v && !removed[b] {
+                    indeg[b] -= 1;
+                }
+                if b == v && !removed[a] {
+                    outdeg[a] -= 1;
+                }
             }
-            if b == v && !removed[a] {
-                outdeg[a] -= 1;
-            }
-        }
-    };
+        };
     while left > 0 {
         let mut progressed = true;
         while progressed {
@@ -71,7 +72,10 @@ pub fn reversed_edges(n: usize, edges: &[(usize, usize)]) -> Vec<bool> {
     for (i, &v) in front.iter().enumerate() {
         position[v] = i;
     }
-    edges.iter().map(|&(a, b)| position[a] > position[b]).collect()
+    edges
+        .iter()
+        .map(|&(a, b)| position[a] > position[b])
+        .collect()
 }
 
 #[cfg(test)]

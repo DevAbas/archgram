@@ -37,7 +37,11 @@ fn split_themes_writes_one_file_per_theme() {
         out.to_str().unwrap(),
         "--split-themes",
     ]);
-    assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
     let (light, dark) = (
         read(&dir.join("linkshort.light.svg")),
         read(&dir.join("linkshort.dark.svg")),
@@ -153,7 +157,11 @@ fn a_theme_file_is_checked_and_drawn_with() {
     let dir = scratch("theme");
     let theme = own_theme(&dir, "");
     let run = archgram(&["theme", "check", theme.to_str().unwrap()]);
-    assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
     let shown = String::from_utf8_lossy(&run.stdout);
     assert!(
         shown.contains("card-edge    #d4d4d4  {color.card-edge}"),
@@ -172,7 +180,10 @@ fn a_theme_file_is_checked_and_drawn_with() {
     ]);
     let b = archgram(&["build", &spec, "-o", without.to_str().unwrap()]);
     assert!(a.status.success() && b.status.success());
-    assert!(read(&with) == read(&without), "the own tokens draw differently");
+    assert!(
+        read(&with) == read(&without),
+        "the own tokens draw differently"
+    );
 }
 
 #[test]
@@ -181,7 +192,10 @@ fn a_broken_theme_file_is_a_problem_not_a_drawing() {
     let theme = own_theme(&dir, r#", "paper": "color.card""#);
     let run = archgram(&["theme", "check", theme.to_str().unwrap()]);
     assert_eq!(run.status.code(), Some(1));
-    assert!(String::from_utf8_lossy(&run.stderr).contains("/roles/paper: `paper` is not an archgram role"));
+    assert!(
+        String::from_utf8_lossy(&run.stderr)
+            .contains("/roles/paper: `paper` is not an archgram role")
+    );
     let out = dir.join("never.svg");
     let run = archgram(&[
         "build",
@@ -224,8 +238,17 @@ fn a_symlink_at_the_output_is_replaced_not_followed() {
     std::fs::write(&elsewhere, "keep me").unwrap();
     let out = dir.join("diagram.svg");
     std::os::unix::fs::symlink(&elsewhere, &out).unwrap();
-    let run = archgram(&["build", &example("linkshort.json"), "-o", out.to_str().unwrap()]);
-    assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+    let run = archgram(&[
+        "build",
+        &example("linkshort.json"),
+        "-o",
+        out.to_str().unwrap(),
+    ]);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
     assert_eq!(read(&elsewhere), "keep me");
     assert!(!std::fs::symlink_metadata(&out).unwrap().is_symlink());
     assert!(read(&out).starts_with("<svg"));

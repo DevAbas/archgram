@@ -51,7 +51,12 @@ const ADVISORY_DB: &str = "https://github.com/rustsec/advisory-db";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+    match args
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .as_slice()
+    {
         ["deps"] => deps(),
         ["icons", tag] => icons(tag),
         ["fonts"] => fonts(),
@@ -73,7 +78,8 @@ fn fonts() -> ExitCode {
             .map_err(|e| format!("{}: {e}", source.display()))
             .and_then(|font| {
                 let chars = archgram_core::font::characters(&font)?;
-                let out = archgram_core::font::subset::subset(&font, &chars).map_err(|e| format!("{e:?}"))?;
+                let out = archgram_core::font::subset::subset(&font, &chars)
+                    .map_err(|e| format!("{e:?}"))?;
                 Ok((font.len(), chars.len(), out))
             });
         match written {
@@ -83,7 +89,10 @@ fn fonts() -> ExitCode {
                     eprintln!("xtask: {}: {e}", target.display());
                     return ExitCode::FAILURE;
                 }
-                println!("{name}: {chars} characters, {before} bytes to {}", out.len());
+                println!(
+                    "{name}: {chars} characters, {before} bytes to {}",
+                    out.len()
+                );
             }
             Err(e) => {
                 eprintln!("xtask: {e}");
@@ -114,7 +123,15 @@ fn write_icons(tag: &str) -> Result<String, String> {
     let dir = root.join("target").join(format!("simple-icons-{tag}"));
     if !dir.join(".git").exists() {
         let status = Command::new("git")
-            .args(["clone", "--depth", "1", "--quiet", "--branch", tag, SIMPLE_ICONS])
+            .args([
+                "clone",
+                "--depth",
+                "1",
+                "--quiet",
+                "--branch",
+                tag,
+                SIMPLE_ICONS,
+            ])
             .arg(&dir)
             .status()
             .map_err(|e| format!("cannot run git: {e}"))?;
@@ -131,7 +148,8 @@ fn write_icons(tag: &str) -> Result<String, String> {
     let read = |p: &str| std::fs::read_to_string(dir.join(p)).map_err(|e| format!("{p}: {e}"));
 
     let slug_of = slug_table(&read("slugs.md")?);
-    let data: Value = serde_json::from_str(&read("data/simple-icons.json")?).map_err(|e| e.to_string())?;
+    let data: Value =
+        serde_json::from_str(&read("data/simple-icons.json")?).map_err(|e| e.to_string())?;
     let entries = data.as_array().ok_or("simple-icons.json is not an array")?;
     // Slugs the data names outright; a title shared by two icons leaves the
     // other one to the icon without a slug of its own.
@@ -161,7 +179,9 @@ fn write_icons(tag: &str) -> Result<String, String> {
         if title.contains('\t') || path.contains('\t') {
             return Err(format!("`{slug}` holds a tab"));
         }
-        let hex = entry["hex"].as_str().ok_or(format!("`{title}` has no colour"))?;
+        let hex = entry["hex"]
+            .as_str()
+            .ok_or(format!("`{title}` has no colour"))?;
         rows.push(format!("{slug}\t{title}\t{hex}\t{path}"));
         provenance.push(format!(
             "{slug}\t{}\t{}\t{}",
@@ -180,8 +200,9 @@ fn write_icons(tag: &str) -> Result<String, String> {
     }
     let out = root.join("crates/archgram-icons/data");
     std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-    let write =
-        |name: &str, text: String| std::fs::write(out.join(name), text).map_err(|e| format!("{name}: {e}"));
+    let write = |name: &str, text: String| {
+        std::fs::write(out.join(name), text).map_err(|e| format!("{name}: {e}"))
+    };
     write("icons.tsv", rows.join("\n") + "\n")?;
     write("provenance.tsv", provenance.join("\n") + "\n")?;
     write(
@@ -199,7 +220,8 @@ fn write_icons(tag: &str) -> Result<String, String> {
 
 /// Title to slugs, from the table Simple Icons publishes with a release.
 fn slug_table(md: &str) -> std::collections::BTreeMap<String, Vec<String>> {
-    let mut slug_of: std::collections::BTreeMap<String, Vec<String>> = std::collections::BTreeMap::new();
+    let mut slug_of: std::collections::BTreeMap<String, Vec<String>> =
+        std::collections::BTreeMap::new();
     for line in md.lines() {
         let cells: Vec<&str> = line.split('|').map(str::trim).collect();
         let unquote = |c: &str| {
@@ -228,7 +250,11 @@ fn slug_for(
 ) -> Result<String, String> {
     let free: Vec<&String> = slug_of
         .get(title)
-        .map(|all| all.iter().filter(|s| !claimed.contains(s.as_str())).collect())
+        .map(|all| {
+            all.iter()
+                .filter(|s| !claimed.contains(s.as_str()))
+                .collect()
+        })
         .unwrap_or_default();
     match free.as_slice() {
         [one] => Ok((*one).clone()),
@@ -455,7 +481,10 @@ fn parse_term(t: &[String], pos: &mut usize) -> bool {
             *pos += 1;
             let mut licence = id.to_owned();
             if t.get(*pos).is_some_and(|x| x == "WITH") {
-                licence = format!("{licence} WITH {}", t.get(*pos + 1).map_or("", String::as_str));
+                licence = format!(
+                    "{licence} WITH {}",
+                    t.get(*pos + 1).map_or("", String::as_str)
+                );
                 *pos += 2;
             }
             ALLOWED_LICENCES.contains(&licence.as_str())
@@ -498,7 +527,11 @@ struct Advisory {
 impl Advisory {
     /// A version is affected unless a patched or unaffected range covers it.
     fn affects(&self, v: &Version) -> bool {
-        !self.patched.iter().chain(&self.unaffected).any(|r| r.matches(v))
+        !self
+            .patched
+            .iter()
+            .chain(&self.unaffected)
+            .any(|r| r.matches(v))
     }
 }
 
@@ -583,7 +616,12 @@ fn unquote(s: &str) -> String {
 
 /// The quoted strings in a TOML array.
 fn strings(array: &str) -> Vec<String> {
-    array.split('"').skip(1).step_by(2).map(str::to_owned).collect()
+    array
+        .split('"')
+        .skip(1)
+        .step_by(2)
+        .map(str::to_owned)
+        .collect()
 }
 
 /// A semantic version; pre-release and build metadata are kept apart and
@@ -626,8 +664,10 @@ impl Ord for Version {
                 (true, false) => Ordering::Greater,
                 (false, true) => Ordering::Less,
                 (false, false) => {
-                    let (a, b): (Vec<&str>, Vec<&str>) =
-                        (self.pre.split('.').collect(), other.pre.split('.').collect());
+                    let (a, b): (Vec<&str>, Vec<&str>) = (
+                        self.pre.split('.').collect(),
+                        other.pre.split('.').collect(),
+                    );
                     for (x, y) in a.iter().zip(&b) {
                         let order = match (x.parse::<u64>(), y.parse::<u64>()) {
                             (Ok(m), Ok(n)) => m.cmp(&n),

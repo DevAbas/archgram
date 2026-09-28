@@ -51,7 +51,10 @@ fn outline(font: &FontRef, c: char) -> Vec<String> {
 fn every_character_keeps_its_advance_outline_and_line() {
     for (name, embedded) in [("Geist-Regular", REGULAR), ("Geist-Medium", MEDIUM)] {
         let original = source(name);
-        let (was, is) = (FontRef::new(&original).unwrap(), FontRef::new(embedded).unwrap());
+        let (was, is) = (
+            FontRef::new(&original).unwrap(),
+            FontRef::new(embedded).unwrap(),
+        );
         let chars = characters(&original).unwrap();
         assert_eq!(
             characters(embedded).unwrap(),
@@ -82,6 +85,9 @@ fn the_fonts_are_what_xtask_fonts_writes() {
     for (name, embedded) in [("Geist-Regular", REGULAR), ("Geist-Medium", MEDIUM)] {
         let original = source(name);
         let written = subset(&original, &characters(&original).unwrap()).unwrap();
-        assert!(written == embedded, "{name} is stale; run `cargo xtask fonts`");
+        assert!(
+            written == embedded,
+            "{name} is stale; run `cargo xtask fonts`"
+        );
     }
 }

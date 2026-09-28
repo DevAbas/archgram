@@ -25,7 +25,10 @@ fn golden(name: &str, mode: Mode) {
         Mode::Light => ".light",
         Mode::Dark => ".dark",
     };
-    let path = format!("{}/tests/golden/{name}{suffix}.svg", env!("CARGO_MANIFEST_DIR"));
+    let path = format!(
+        "{}/tests/golden/{name}{suffix}.svg",
+        env!("CARGO_MANIFEST_DIR")
+    );
     if std::env::var_os("ARCHGRAM_BLESS").is_some() {
         std::fs::write(&path, &svg).unwrap();
         return;

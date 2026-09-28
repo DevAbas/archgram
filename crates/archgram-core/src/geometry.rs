@@ -33,7 +33,10 @@ impl Rect {
     /// Whether the two rectangles share any area (touching edges do not count).
     #[must_use]
     pub fn overlaps(&self, other: &Rect) -> bool {
-        self.x < other.right() && other.x < self.right() && self.y < other.bottom() && other.y < self.bottom()
+        self.x < other.right()
+            && other.x < self.right()
+            && self.y < other.bottom()
+            && other.y < self.bottom()
     }
 }
 

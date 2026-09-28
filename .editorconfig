@@ -13,6 +13,11 @@ indent_size = 4
 [*.{json,yml,yaml,js,md}]
 indent_size = 2
 
+# For editors that draw or wrap at a width; rustfmt enforces it. Keep in
+# sync with rustfmt.toml.
+[*.rs]
+max_line_length = 100
+
 # Licence texts stay as their authors wrote them, trailing spaces too.
 [{THIRD-PARTY-LICENSES,**/OFL.txt}]
 trim_trailing_whitespace = false

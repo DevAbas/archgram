@@ -3,7 +3,9 @@
 
 use std::fmt::Write as _;
 
-use crate::render::scene::{Anchor, Decl, GroupOf, Item, Paint, Place, Rule, Scene, Shape, StyleLine};
+use crate::render::scene::{
+    Anchor, Decl, GroupOf, Item, Paint, Place, Rule, Scene, Shape, StyleLine,
+};
 
 /// A number with at most two decimals and no trailing zeros: `12`, `12.5`, `12.25`.
 /// Two decimals is a hundredth of a pixel, below anything a screen shows, and a
@@ -89,7 +91,12 @@ fn short(v: f64) -> String {
 
 fn place(p: &Place, always_scale: bool) -> String {
     if always_scale || (p.scale - 1.0).abs() >= f64::EPSILON {
-        format!("translate({} {}) scale({})", num(p.x), num(p.y), num(p.scale))
+        format!(
+            "translate({} {}) scale({})",
+            num(p.x),
+            num(p.y),
+            num(p.scale)
+        )
     } else {
         format!("translate({} {})", num(p.x), num(p.y))
     }
@@ -255,7 +262,10 @@ pub fn write(scene: &Scene) -> String {
         w = num(scene.width),
         h = num(scene.height)
     ));
-    svg.line(&format!(r#"<title id="title">{}</title>"#, escape(&scene.title)));
+    svg.line(&format!(
+        r#"<title id="title">{}</title>"#,
+        escape(&scene.title)
+    ));
     svg.line(&format!(
         r#"<desc id="desc">{}</desc>"#,
         escape(&scene.description)

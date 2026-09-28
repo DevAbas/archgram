@@ -71,9 +71,24 @@ pub enum Anchor {
 /// A shape of an icon, in icon units on its 24-unit square.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Shape {
-    Rect { x: f64, y: f64, w: f64, h: f64, rx: f64 },
-    Ellipse { cx: f64, cy: f64, rx: f64, ry: f64 },
-    Circle { cx: f64, cy: f64, r: f64 },
+    Rect {
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        rx: f64,
+    },
+    Ellipse {
+        cx: f64,
+        cy: f64,
+        rx: f64,
+        ry: f64,
+    },
+    Circle {
+        cx: f64,
+        cy: f64,
+        r: f64,
+    },
     Path(&'static str),
 }
 
@@ -89,17 +104,10 @@ pub struct Place {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Item {
     /// The background, from the origin.
-    Canvas {
-        width: f64,
-        height: f64,
-        rx: f64,
-    },
+    Canvas { width: f64, height: f64, rx: f64 },
     /// The arrowhead every edge ends in: an open chevron `length` long and
     /// `width` across, its tip at the line's end.
-    Arrowhead {
-        length: f64,
-        width: f64,
-    },
+    Arrowhead { length: f64, width: f64 },
     Group {
         /// Its class, such as `edges`, or the node it draws.
         of: GroupOf,

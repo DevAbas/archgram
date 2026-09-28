@@ -352,7 +352,9 @@ pub fn from_dtcg(value: &serde_json::Value) -> Result<Rgb, String> {
         .iter()
         .map(|c| match c {
             Value::String(n) if n == "none" => Ok(0.0),
-            _ => c.as_f64().ok_or_else(|| format!("`{c}` is not a component")),
+            _ => c
+                .as_f64()
+                .ok_or_else(|| format!("`{c}` is not a component")),
         })
         .collect::<Result<_, _>>()?;
     let [x, y, z] = <[f64; 3]>::try_from(components.as_slice())
@@ -370,7 +372,9 @@ pub fn from_dtcg(value: &serde_json::Value) -> Result<Rgb, String> {
         "display-p3" => display_p3([x, y, z]),
         other => {
             return match o.get("hex").and_then(Value::as_str) {
-                Some(hex) => Rgb::parse(hex).ok_or_else(|| format!("`{hex}` is not a `#rrggbb` colour")),
+                Some(hex) => {
+                    Rgb::parse(hex).ok_or_else(|| format!("`{hex}` is not a `#rrggbb` colour"))
+                }
                 None => Err(format!(
                     "`{other}` is not read, and the colour has no `hex` to fall back on; archgram reads {}",
                     SPACES.join(", ")
@@ -474,7 +478,8 @@ fn display_p3(rgb: [f64; 3]) -> [f64; 3] {
             1.056_971_514_242_878_6,
         ],
     ];
-    let times = |m: &[[f64; 3]; 3], v: [f64; 3]| m.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2]);
+    let times =
+        |m: &[[f64; 3]; 3], v: [f64; 3]| m.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2]);
     times(&XYZ_TO_SRGB, times(&P3_TO_XYZ, rgb.map(decode))).map(encode)
 }
 
@@ -621,7 +626,11 @@ mod tests {
             (r##""#ABCDEF""##, "#abcdef"),
         ];
         for (json, want) in cases {
-            assert_eq!(read(json).map(|c| c.to_string()), Ok(want.to_owned()), "{json}");
+            assert_eq!(
+                read(json).map(|c| c.to_string()),
+                Ok(want.to_owned()),
+                "{json}"
+            );
         }
     }
 
@@ -646,7 +655,10 @@ mod tests {
 
     #[test]
     fn black_on_white_is_21_to_1() {
-        let (black, white) = (Rgb::parse("#000000").unwrap(), Rgb::parse("ffffff").unwrap());
+        let (black, white) = (
+            Rgb::parse("#000000").unwrap(),
+            Rgb::parse("ffffff").unwrap(),
+        );
         assert!((contrast(black, white) - 21.0).abs() < 1e-12);
         assert!((contrast(white, white) - 1.0).abs() < 1e-12);
         assert_eq!(Rgb::parse("#fff"), None);

@@ -84,7 +84,8 @@ fn an_unknown_kind_lists_the_known_ones() {
 
 #[test]
 fn top_level_rules() {
-    let json = r#"{ "archgram": 2, "title": " ", "description": "", "palette": "neon", "nodes": [] }"#;
+    let json =
+        r#"{ "archgram": 2, "title": " ", "description": "", "palette": "neon", "nodes": [] }"#;
     assert_eq!(
         pointers(&errors(json)),
         ["/archgram", "/title", "/description", "/palette", "/nodes"]
@@ -103,7 +104,12 @@ fn texts_hold_only_characters_xml_allows() {
     let e = errors(&json);
     assert_eq!(
         pointers(&e),
-        ["/title", "/nodes/0/label", "/edges/0/label", "/flows/0/name"]
+        [
+            "/title",
+            "/nodes/0/label",
+            "/edges/0/label",
+            "/flows/0/name"
+        ]
     );
     assert_eq!(
         e[1].message,
@@ -118,7 +124,10 @@ fn ids_are_well_formed_and_unique_across_nodes_and_frames() {
         nodes,
         r#", "frames": [{ "id": "db", "label": "Data" }]"#,
     ));
-    assert_eq!(pointers(&e), ["/nodes/0/id", "/frames/0/id", "/nodes/1/frame"]);
+    assert_eq!(
+        pointers(&e),
+        ["/nodes/0/id", "/frames/0/id", "/nodes/1/frame"]
+    );
     assert!(e[1].message.contains("used more than once"));
     assert_eq!(e[2].message, "`db` is a node, not a frame");
 }
@@ -131,7 +140,10 @@ fn a_reference_to_a_missing_id_suggests_a_near_one() {
         r#", "frames": [{ "id": "vpc", "label": "VPC" }]"#,
     ));
     assert_eq!(pointers(&e), ["/nodes/0/frame", "/frames/0"]);
-    assert_eq!(e[0].message, "no frame has the id `vpcx`; did you mean `vpc`?");
+    assert_eq!(
+        e[0].message,
+        "no frame has the id `vpcx`; did you mean `vpc`?"
+    );
 }
 
 #[test]
@@ -182,7 +194,11 @@ fn a_branch_is_reached_and_leads_on() {
     let e = errors(&spec_with(&nodes, &bad));
     assert_eq!(
         pointers(&e),
-        ["/flows/0/steps/1/1", "/flows/1/steps/1/0", "/flows/1/steps/2/1"]
+        [
+            "/flows/0/steps/1/1",
+            "/flows/1/steps/1/0",
+            "/flows/1/steps/2/1"
+        ]
     );
     assert_eq!(
         e[0].message,
@@ -205,8 +221,15 @@ fn signal_and_still_take_their_named_values() {
     let spec = parse_spec(&spec_with(TWO, "")).unwrap();
     assert_eq!(spec.signal, SignalStyle::Wire);
     assert_eq!(spec.still, Still::None);
-    let spec = parse_spec(&spec_with(TWO, r#", "signal": "comet", "still": "numbers""#)).unwrap();
-    assert_eq!((spec.signal, spec.still), (SignalStyle::Comet, Still::Numbers));
+    let spec = parse_spec(&spec_with(
+        TWO,
+        r#", "signal": "comet", "still": "numbers""#,
+    ))
+    .unwrap();
+    assert_eq!(
+        (spec.signal, spec.still),
+        (SignalStyle::Comet, Still::Numbers)
+    );
     let e = errors(&spec_with(TWO, r#", "signal": "neon""#));
     assert!(
         e[0].message.starts_with("unknown variant `neon`"),
@@ -219,7 +242,10 @@ fn signal_and_still_take_their_named_values() {
 fn hints_name_nodes_and_do_not_contradict_each_other() {
     let rest = r#", "hints": { "first": ["api"], "last": ["api", "dbb"], "sameLayer": [["db"]] }"#;
     let e = errors(&spec_with(TWO, rest));
-    assert_eq!(pointers(&e), ["/hints/last/1", "/hints", "/hints/sameLayer/0"]);
+    assert_eq!(
+        pointers(&e),
+        ["/hints/last/1", "/hints", "/hints/sameLayer/0"]
+    );
 }
 
 /// `check` refuses what `build` would: a hint the edges' order contradicts,
@@ -237,7 +263,10 @@ fn hints_do_not_contradict_the_edges() {
 
     let (at, said) = refused(chain, r#"{ "first": ["b"], "sameLayer": [["a", "b"]] }"#);
     assert_eq!(at, ["/hints/sameLayer/0", "/hints/first/0"]);
-    assert_eq!(said[0], "`a` and `b` cannot share a layer: an edge joins them");
+    assert_eq!(
+        said[0],
+        "`a` and `b` cannot share a layer: an edge joins them"
+    );
 
     let (at, said) = refused(chain, r#"{ "sameLayer": [["a", "c"]] }"#);
     assert_eq!(at, ["/hints/sameLayer/0"]);
@@ -264,7 +293,12 @@ fn every_problem_is_reported_in_one_run() {
     ));
     assert_eq!(
         pointers(&e),
-        ["/nodes/1/id", "/nodes/0/label", "/nodes/1/tech", "/edges/0/to"]
+        [
+            "/nodes/1/id",
+            "/nodes/0/label",
+            "/nodes/1/tech",
+            "/edges/0/to"
+        ]
     );
 }
 

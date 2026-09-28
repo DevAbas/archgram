@@ -140,9 +140,19 @@ pub fn place(spec: &Spec, size: Size) -> (Vec<Entry>, Vec<FlowLine>, Size) {
         });
         y += line + SPACING_LEGEND_ROW;
     }
-    let right = lines.iter().map(|l| l.text_box.right()).fold(size.w, f64::max);
+    let right = lines
+        .iter()
+        .map(|l| l.text_box.right())
+        .fold(size.w, f64::max);
     let bottom = y - SPACING_LEGEND_ROW;
-    (entries, lines, Size { w: right, h: bottom })
+    (
+        entries,
+        lines,
+        Size {
+            w: right,
+            h: bottom,
+        },
+    )
 }
 
 /// The entries alone, and whether there were any.
@@ -154,10 +164,15 @@ fn place_entries(spec: &Spec, size: Size) -> (Vec<Entry>, Size, bool) {
     let line = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
     let widths: Vec<f64> = list
         .iter()
-        .map(|&(s, text)| swatch_size(s).w + LEGEND_SWATCH_GAP + text_width(text, &TYPOGRAPHY_LEGEND))
+        .map(|&(s, text)| {
+            swatch_size(s).w + LEGEND_SWATCH_GAP + text_width(text, &TYPOGRAPHY_LEGEND)
+        })
         .collect();
     let limit = widths.iter().copied().fold(size.w, f64::max);
-    let row_height = list.iter().map(|&(s, _)| swatch_size(s).h).fold(line, f64::max);
+    let row_height = list
+        .iter()
+        .map(|&(s, _)| swatch_size(s).h)
+        .fold(line, f64::max);
     let (mut x, mut y) = (0.0, size.h + SPACING_LEGEND);
     let mut out = Vec::with_capacity(list.len());
     for (&(swatch, text), &w) in list.iter().zip(&widths) {
@@ -187,7 +202,17 @@ fn place_entries(spec: &Spec, size: Size) -> (Vec<Entry>, Size, bool) {
         });
         x += w + SPACING_LEGEND_ENTRY;
     }
-    let right = out.iter().map(|e| e.text_box.right()).fold(size.w, f64::max);
+    let right = out
+        .iter()
+        .map(|e| e.text_box.right())
+        .fold(size.w, f64::max);
     let bottom = y + row_height;
-    (out, Size { w: right, h: bottom }, true)
+    (
+        out,
+        Size {
+            w: right,
+            h: bottom,
+        },
+        true,
+    )
 }

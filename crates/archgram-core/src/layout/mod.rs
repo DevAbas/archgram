@@ -40,8 +40,9 @@ use crate::error::SpecError;
 use crate::geometry::{Point, Rect, Size};
 use crate::spec::{Direction, Spec, Variant};
 use crate::tokens::{
-    ARROWHEAD_GAP, ARROWHEAD_LENGTH, CARD_MULTI_OFFSET, ROUNDED_CARD, ROUNDED_CONNECTOR, SPACING_EDGE_EDGE,
-    SPACING_FRAME_LABEL, SPACING_FRAME_PADDING, SPACING_LAYER_LAYER, SPACING_NODE_NODE,
+    ARROWHEAD_GAP, ARROWHEAD_LENGTH, CARD_MULTI_OFFSET, ROUNDED_CARD, ROUNDED_CONNECTOR,
+    SPACING_EDGE_EDGE, SPACING_FRAME_LABEL, SPACING_FRAME_PADDING, SPACING_LAYER_LAYER,
+    SPACING_NODE_NODE,
 };
 
 /// Where everything goes.
@@ -235,7 +236,10 @@ fn ordered_pair(group: &[usize], dag: &[(usize, usize)], ids: &[usize]) -> Optio
                 }
             }
         }
-        if let Some(&v) = ids.iter().find(|&&v| group[v] != group[u] && reached[group[v]]) {
+        if let Some(&v) = ids
+            .iter()
+            .find(|&&v| group[v] != group[u] && reached[group[v]])
+        {
             return Some((u, v));
         }
     }
@@ -270,7 +274,8 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         let ids: Vec<usize> = members.iter().map(|m| index(m)).collect();
         merge(&mut group, &ids);
     }
-    let mut weights: std::collections::BTreeMap<(usize, usize), u32> = std::collections::BTreeMap::new();
+    let mut weights: std::collections::BTreeMap<(usize, usize), u32> =
+        std::collections::BTreeMap::new();
     for &(a, b) in &dag {
         if group[a] != group[b] {
             *weights.entry((group[a], group[b])).or_insert(0) += 1;
@@ -327,7 +332,10 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     let label_vertex: Vec<Option<usize>> = chains
         .iter()
         .zip(&label_extent)
-        .map(|(chain, ext)| ext.filter(|_| chain.len() > 2).map(|_| chain[chain.len() / 2]))
+        .map(|(chain, ext)| {
+            ext.filter(|_| chain.len() > 2)
+                .map(|_| chain[chain.len() / 2])
+        })
         .collect();
     let mut main_sizes: Vec<f64> = (0..total)
         .map(|v| if v < n { main_size[v] } else { 0.0 })
@@ -358,8 +366,12 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             }
         })
         .collect();
-    let cross_lo: Vec<f64> = (0..total).map(|v| cross_sizes[v] / 2.0 + stack[v]).collect();
-    let cross_hi: Vec<f64> = (0..total).map(|v| cross_sizes[v] / 2.0 - stack[v]).collect();
+    let cross_lo: Vec<f64> = (0..total)
+        .map(|v| cross_sizes[v] / 2.0 + stack[v])
+        .collect();
+    let cross_hi: Vec<f64> = (0..total)
+        .map(|v| cross_sizes[v] / 2.0 - stack[v])
+        .collect();
     let mut layers: Vec<Vec<usize>> =
         vec![Vec::new(); vertex_layer.iter().copied().max().map_or(0, |m| m + 1)];
     for (v, &l) in vertex_layer.iter().enumerate() {
@@ -397,7 +409,11 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     // A frame's name sits at its top: across the layers when the flow runs
     // right, so the padding before its contents makes room for it; along
     // them when the flow runs down (the gaps make room, below).
-    let name_width: Vec<f64> = spec.frames.iter().map(|f| frames::name_width(&f.label)).collect();
+    let name_width: Vec<f64> = spec
+        .frames
+        .iter()
+        .map(|f| frames::name_width(&f.label))
+        .collect();
     let name_room = SPACING_FRAME_LABEL;
     let pad_lo: Vec<f64> = spec
         .frames
@@ -507,7 +523,13 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     for v in 0..total {
         for (outgoing, ports_of) in [(true, &mut out_port), (false, &mut in_port)] {
             let mine: Vec<usize> = (0..hops.len())
-                .filter(|&h| if outgoing { hops[h].1 == v } else { hops[h].2 == v })
+                .filter(|&h| {
+                    if outgoing {
+                        hops[h].1 == v
+                    } else {
+                        hops[h].2 == v
+                    }
+                })
                 .collect();
             if v >= n {
                 for h in mine {
@@ -542,8 +564,14 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
                 .map(|h| (other(h), vec![h]))
                 .collect();
             if !bundle.is_empty() {
-                let lo = bundle.iter().map(|&h| other(h)).fold(f64::INFINITY, f64::min);
-                let hi = bundle.iter().map(|&h| other(h)).fold(f64::NEG_INFINITY, f64::max);
+                let lo = bundle
+                    .iter()
+                    .map(|&h| other(h))
+                    .fold(f64::INFINITY, f64::min);
+                let hi = bundle
+                    .iter()
+                    .map(|&h| other(h))
+                    .fold(f64::NEG_INFINITY, f64::max);
                 entries.push((f64::midpoint(lo, hi), bundle.clone()));
                 if bundle.len() > 1 {
                     for &h in &bundle {
@@ -785,7 +813,10 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
             pts.push((t, out_port[h]));
             pts.push((t, in_port[h]));
         }
-        pts.push((enter_main(b), if level(h) { out_port[h] } else { in_port[h] }));
+        pts.push((
+            enter_main(b),
+            if level(h) { out_port[h] } else { in_port[h] },
+        ));
         for (m, c) in pts {
             push_point(&mut paths[e], point(m, c));
         }
