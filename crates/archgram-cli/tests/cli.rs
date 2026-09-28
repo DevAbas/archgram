@@ -267,16 +267,18 @@ fn a_theme_reads_only_under_its_folder() {
     own_theme(&dir, "");
     let inside = dir.join("project");
     std::fs::create_dir_all(&inside).unwrap();
+    // The absolute path goes into JSON, so a Windows path's `\` is escaped.
     let outside = std::fs::canonicalize(dir.join("tokens/design.resolver.json")).unwrap();
-    let mut resolvers = vec![
-        "../tokens/design.resolver.json".to_owned(),
-        outside.to_str().unwrap().to_owned(),
-    ];
+    let absolute = outside.to_str().unwrap().replace('\\', "\\\\");
+    let resolvers = ["../tokens/design.resolver.json".to_owned(), absolute];
+    // A symlink needs rights on Windows that a runner may lack; the other
+    // two leave the folder there as well.
     #[cfg(unix)]
-    {
+    let resolvers = {
         std::os::unix::fs::symlink(dir.join("tokens"), inside.join("linked")).unwrap();
-        resolvers.push("linked/design.resolver.json".to_owned());
-    }
+        let [up, absolute] = resolvers;
+        vec![up, absolute, "linked/design.resolver.json".to_owned()]
+    };
     for resolver in resolvers {
         let theme = own_mapping(&inside, &resolver, "");
         let run = archgram(&["theme", "check", theme.to_str().unwrap()]);

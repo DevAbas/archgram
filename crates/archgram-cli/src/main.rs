@@ -333,15 +333,23 @@ fn themed(out: &Path, theme: &str) -> PathBuf {
 /// problems if there are any.
 fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
     read(path)?;
-    let folder = std::fs::canonicalize(path)
-        .ok()
-        .and_then(|real| real.parent().map(Path::to_path_buf))
-        .ok_or_else(|| {
-            eprintln!("archgram: cannot find the folder of {path}");
-            ExitCode::from(2)
-        })?;
-    let from_disk = |p: &str| read_under(&folder, p);
-    archgram_core::theme::import(path, &from_disk).map_err(|errors| {
+    // The core joins paths with `/` alone, so it is handed the mapping's
+    // name and each file's path from there. Each file is found from the
+    // folder as written, where Windows reads `/` and `..` too, and held to
+    // the folder's real path, which on Windows is a `\\?\` path that
+    // reads neither.
+    let real = std::fs::canonicalize(path).map_err(|e| {
+        eprintln!("archgram: cannot read {path}: {e}");
+        ExitCode::from(2)
+    })?;
+    let written = Path::new(path).parent().unwrap_or(Path::new(""));
+    let (Some(folder), Some(name)) = (real.parent(), real.file_name().and_then(|n| n.to_str()))
+    else {
+        eprintln!("archgram: {path} is not a file in a folder");
+        return Err(ExitCode::from(2));
+    };
+    let from_disk = |p: &str| read_under(folder, &written.join(p));
+    archgram_core::theme::import(name, &from_disk).map_err(|errors| {
         for e in &errors {
             eprintln!("{}", printable(&e.to_string()));
         }
@@ -358,14 +366,16 @@ fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
 /// Turborepo keeps a workspace's files within its repository: neither `..`
 /// nor an absolute path nor a symlink leads a theme out of its project, and
 /// only a regular file is read, never a device.
-fn read_under(folder: &Path, path: &str) -> Result<String, String> {
+fn read_under(folder: &Path, path: &Path) -> Result<String, String> {
     let cannot = |_| "the file cannot be read".to_owned();
     let real = std::fs::canonicalize(path).map_err(cannot)?;
     if !real.starts_with(folder) {
-        return Err(format!(
-            "the file is outside {}, the mapping file's folder, and archgram reads only the files under it",
-            folder.display()
-        ));
+        // Not the folder's real path: on Windows it is a `\\?\` path, which
+        // std::fs::canonicalize warns other programs may not read.
+        return Err(
+            "the file is outside the mapping file's folder, and archgram reads only the files under it"
+                .into(),
+        );
     }
     if !real.is_file() {
         return Err("not a file".into());
