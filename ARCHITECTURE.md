@@ -35,8 +35,8 @@ The repository is one Cargo workspace.
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` (later) | The scene to PNG, one theme at a time, with archgram's own rasterizer | `archgram-core` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
-| `archgram-wasm` | The npm package for Node and the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
-| `xtask` | Repository tasks run with `cargo xtask`, such as the dependency check; never shipped | `serde_json` |
+| `archgram-wasm` (later) | The WASM package, for the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
+| `xtask` | Repository tasks run with `cargo xtask`: the dependency check, the logos, the embedded fonts; never shipped | `archgram-core`, `serde_json` |
 
 `archgram-core` does no I/O. Anything that touches the file system or the
 terminal lives in `archgram-cli`. The core carries no logos either: it
@@ -327,7 +327,7 @@ These hold for every output and are checked by tests on every change.
 | `serde`, `serde_json` | Reading the spec | MIT or Apache-2.0 |
 | `skrifa` | Font metrics; the font parser Chrome uses | MIT or Apache-2.0 |
 | `saphyr-parser` | YAML events with positions, in the optional module; with it `arraydeque` and `thiserror` | MIT or Apache-2.0 |
-| `wasm-bindgen` | The WASM package | MIT or Apache-2.0 |
+| `wasm-bindgen` | The WASM package, later | MIT or Apache-2.0 |
 
 - `Cargo.lock` is committed and versions are pinned; builds run with
   `--locked`, so no dependency updates itself.
@@ -369,15 +369,28 @@ spec generator are small helpers inside the workspace.
 |---|---|
 | Layout and SVG, 100 nodes, native | under 50 ms |
 | CLI start to written file, small spec | under 100 ms |
-| `archgram-core` WASM, optimised | under 500 KB |
+| `archgram-core` WASM, optimised (later) | under 350 KB gzipped |
 | PNG, 1600 x 1000, native (later) | under 100 ms |
 
 ## Distribution
 
 - Native binaries for macOS, Linux and Windows, built in CI and attached
   to each release.
-- One npm package built with `wasm-bindgen-cli` and `wasm-opt`, for Node
-  and the browser; the PNG module, later, a separate, optional package.
+- On npm, the binaries as Turborepo and Biome ship theirs: one package per
+  platform, `@archgram/cli-<os>-<cpu>` for macOS, Linux and Windows on x64
+  and arm64, each declaring its `os` and `cpu` so npm installs only the
+  one that fits; and `archgram`, whose `bin` is a launcher that finds that
+  package and runs its binary, and which lists them all as
+  `optionalDependencies`. No install script runs and nothing is downloaded
+  at install time, so it works where pnpm, Bun or policy block scripts.
+  The Linux binaries are linked statically against musl, so one file runs
+  on every distribution, Alpine included. The launcher has no
+  dependencies; `ARCHGRAM_BINARY` points it at another binary.
+  `cargo xtask npm` assembles the packages from the built binaries.
+  Publishing uses npm's trusted publishing (OIDC), which attaches
+  provenance and needs no stored token.
+- Later: a WASM package for the browser, and the PNG module as a
+  separate, optional package.
 - Crates on crates.io once the API is stable.
 - One SVG carries both themes by default. `archgram build --split-themes`
   lays the diagram out once and writes `<name>.light.svg` and

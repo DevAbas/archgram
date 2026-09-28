@@ -1,0 +1,28 @@
+{
+  "name": "archgram",
+  "version": "0.0.0",
+  "description": "Architecture diagram generator for READMEs and docs, written in Rust",
+  "author": "Abas Turabli (https://abasturabli.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevAbas/archgram.git",
+    "directory": "packages/archgram"
+  },
+  "homepage": "https://github.com/DevAbas/archgram#readme",
+  "bugs": {
+    "url": "https://github.com/DevAbas/archgram/issues"
+  },
+  "bin": {
+    "archgram": "bin/archgram.js"
+  },
+  "main": "./bin/archgram.js",
+  "files": [
+    "bin/archgram.js",
+    "lib/platform.js"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "optionalDependencies": {}
+}

@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.8        |
+| Version | 0.9        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -76,8 +76,8 @@ same file every time.
 |---|---|
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
-| 0.3 | Flows and their animation, timed automatically; the WASM package on npm; importing a project's DTCG design tokens as a theme |
-| Later | The PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; open-source release under MIT; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
+| 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform |
+| Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; open-source release under MIT; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
 
 ## 6. Functional requirements
 
@@ -127,9 +127,11 @@ same file every time.
   step's number on its lines. A screen reader hears each flow in words.
 
 ### 6.5 Outputs and interfaces
-- A command-line tool, one native binary per platform.
-- A library, usable from Rust and, through WASM, from Node and the
-  browser.
+- A command-line tool, one native binary per platform, installed by hand
+  or from npm (`npm install archgram`), so a Node project's scripts run
+  it with no Rust toolchain.
+- A library, usable from Rust and, later through WASM, from the browser
+  (§5).
 - PNG, one file per theme, through the optional module (later, §5).
 
 ## 7. Node vocabulary
@@ -165,7 +167,7 @@ guidelines for them.
   byte-identical output across runs and across macOS, Linux and Windows.
 - Every text pair passes WCAG 2.1 AA in both themes.
 - Layout and SVG for a 100-node spec take under 50 ms in the native CLI.
-- The core WASM module stays under 500 KB.
+- The core WASM module, when there is one, stays under 350 KB gzipped.
 - With archgram, an agent produces an approved diagram in less than half
   the time it took without it (baseline: 9.3 minutes on average).
 
@@ -195,3 +197,4 @@ guidelines for them.
 | 0.6     | 2026-09-27 | Flows branch; seven signal styles, the line filling by default; a lit card takes its hue until its signals arrive; the still image lists or numbers the flows on request (§6.4). |
 | 0.7     | 2026-09-27 | A project's DTCG tokens as the theme, through a mapping file, held to the same contrast (§6.3). |
 | 0.8     | 2026-09-28 | The PNG module moves after 0.3 (§5, §6.5). |
+| 0.9     | 2026-09-28 | 0.3 ships the command on npm for Node, a native binary per platform; the WASM package, for the browser, moves after 0.3 (§5, §6.5, §8). |

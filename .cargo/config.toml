@@ -1,3 +1,14 @@
 [alias]
 # Repository tasks (ARCHITECTURE.md, Code map): `cargo xtask deps`.
 xtask = "run --quiet --package xtask --"
+
+# LLVM's linker, shipped with the Rust toolchain, on every platform the
+# release builds: the same linker everywhere, and faster than the systems'.
+[target.'cfg(target_os = "macos")']
+linker = "rust-lld"
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld"
+
+[target.aarch64-pc-windows-msvc]
+linker = "rust-lld"

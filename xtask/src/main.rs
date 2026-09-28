@@ -21,6 +21,10 @@
 //! maps, through the core's own subsetter, which keeps only the tables a
 //! renderer needs. Kerning, ligatures, glyph names and hinting go; no
 //! glyph's outline or advance changes.
+//!
+//! `npm` writes the npm packages from the built binaries (`npm.rs`).
+
+mod npm;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -51,9 +55,10 @@ fn main() -> ExitCode {
         ["deps"] => deps(),
         ["icons", tag] => icons(tag),
         ["fonts"] => fonts(),
+        ["npm", flags @ ..] => npm::npm(flags),
         _ => {
             eprintln!(
-                "usage: cargo xtask deps | cargo xtask icons <simple-icons tag> | cargo xtask fonts"
+                "usage: cargo xtask deps | cargo xtask icons <simple-icons tag> | cargo xtask fonts | cargo xtask npm [--all] [--smoke]"
             );
             ExitCode::from(2)
         }
