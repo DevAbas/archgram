@@ -176,3 +176,22 @@ fn a_broken_theme_file_is_a_problem_not_a_drawing() {
     assert_eq!(run.status.code(), Some(1));
     assert!(!out.exists());
 }
+
+/// A spec's own text printed back in a problem cannot drive the terminal:
+/// its control characters are written as escapes.
+#[test]
+fn problems_print_control_characters_as_escapes() {
+    let dir = scratch("escapes");
+    let spec = dir.join("spec.json");
+    std::fs::write(
+        &spec,
+        r#"{ "archgram": 1, "title": "t", "description": "d", "palette": "x\u001b[2J",
+            "nodes": [{ "id": "a", "kind": "service", "label": "A" }] }"#,
+    )
+    .unwrap();
+    let run = archgram(&["check", spec.to_str().unwrap()]);
+    assert_eq!(run.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&run.stderr);
+    assert!(!stderr.contains('\u{1b}'), "{stderr}");
+    assert!(stderr.contains(r"unknown palette `x\u{1b}[2J`"), "{stderr}");
+}

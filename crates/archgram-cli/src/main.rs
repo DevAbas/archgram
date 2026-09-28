@@ -125,7 +125,7 @@ fn read(path: &str) -> Result<String, ExitCode> {
 
 fn report(path: &str, errors: &[SpecError]) -> ExitCode {
     for e in errors {
-        eprintln!("{path}:{e}");
+        eprintln!("{path}:{}", printable(&e.to_string()));
     }
     eprintln!(
         "{} problem{} in {path}",
@@ -133,6 +133,21 @@ fn report(path: &str, errors: &[SpecError]) -> ExitCode {
         if errors.len() == 1 { "" } else { "s" }
     );
     ExitCode::from(1)
+}
+
+/// `text` with each control character but the line feed written as its
+/// escape (`\u{1b}`), so a spec or theme printed back cannot drive the
+/// terminal or a CI log.
+fn printable(text: &str) -> String {
+    text.chars()
+        .map(|c| {
+            if c.is_control() && c != '\n' {
+                c.escape_debug().to_string()
+            } else {
+                c.to_string()
+            }
+        })
+        .collect()
 }
 
 /// The formats a spec may be written in, by its file's extension.
@@ -276,7 +291,7 @@ fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
     let from_disk = |p: &str| std::fs::read_to_string(p).ok();
     archgram_core::theme::import(path, &from_disk).map_err(|errors| {
         for e in &errors {
-            eprintln!("{e}");
+            eprintln!("{}", printable(&e.to_string()));
         }
         eprintln!(
             "{} problem{} in the theme {path}",
@@ -298,7 +313,7 @@ fn theme_check(path: &str) -> ExitCode {
             let from = source
                 .as_deref()
                 .map_or_else(|| "(mono)".to_owned(), |id| format!("{{{id}}}"));
-            println!("  {:<12} {colour}  {from}", role.name());
+            println!("  {:<12} {colour}  {}", role.name(), printable(&from));
         }
     }
     println!("{path}: every pair keeps its contrast in both themes");

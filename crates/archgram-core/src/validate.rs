@@ -20,6 +20,7 @@ pub fn validate(spec: &Spec) -> Vec<SpecError> {
         errors: Vec::new(),
     };
     v.top_level();
+    v.texts();
     let ids = v.ids();
     v.nodes(&ids);
     v.frames(&ids);
@@ -94,6 +95,45 @@ impl<'a> Validator<'a> {
         }
         if s.nodes.is_empty() {
             self.error("/nodes".into(), "a diagram needs at least one node".into());
+        }
+    }
+
+    /// Every text the drawing carries holds only characters XML allows
+    /// (XML 1.0, section 2.2, Characters): an SVG with any other one is
+    /// not XML, and a browser shows nothing.
+    fn texts(&mut self) {
+        let s = self.spec;
+        let mut texts: Vec<(String, &str)> = vec![
+            ("/title".into(), &s.title),
+            ("/description".into(), &s.description),
+        ];
+        for (i, n) in s.nodes.iter().enumerate() {
+            texts.push((format!("/nodes/{i}/label"), &n.label));
+            if let Some(note) = &n.note {
+                texts.push((format!("/nodes/{i}/note"), note));
+            }
+        }
+        for (i, f) in s.frames.iter().enumerate() {
+            texts.push((format!("/frames/{i}/label"), &f.label));
+        }
+        for (i, e) in s.edges.iter().enumerate() {
+            if let Some(label) = &e.label {
+                texts.push((format!("/edges/{i}/label"), label));
+            }
+        }
+        for (i, f) in s.flows.iter().enumerate() {
+            texts.push((format!("/flows/{i}/name"), &f.name));
+        }
+        for (pointer, text) in texts {
+            if let Some(c) = text.chars().find(|&c| !is_xml_char(c)) {
+                self.error(
+                    pointer,
+                    format!(
+                        "the text holds U+{:04X}, which XML does not allow; an SVG with it does not open",
+                        u32::from(c)
+                    ),
+                );
+            }
         }
     }
 
@@ -423,6 +463,14 @@ impl<'a> Validator<'a> {
             }
         }
     }
+}
+
+/// A character XML 1.0 allows in a document (section 2.2, the `Char`
+/// production): tab, line feed, carriage return, and every other character
+/// from U+0020 on except U+FFFE and U+FFFF. A Rust `char` is never a
+/// surrogate, the one other range the production leaves out.
+fn is_xml_char(c: char) -> bool {
+    matches!(c, '\t' | '\n' | '\r') || (c >= ' ' && c != '\u{FFFE}' && c != '\u{FFFF}')
 }
 
 /// Lowercase letters and digits in groups joined by single hyphens.

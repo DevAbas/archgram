@@ -35,6 +35,13 @@ follow [Semantic Versioning](https://semver.org/).
 - `check` refuses a layout hint the edges contradict, as `build` does. A
   `sameLayer` group whose nodes a path of edges joins is refused, where
   the layout used to crash.
+- A text holding a character XML does not allow is refused: the SVG would
+  not open.
+
+### Security
+
+- A problem prints a spec's control characters as escapes, so a spec
+  cannot drive the terminal or a CI log.
 
 ## [0.2.0] - 2026-09-27
 

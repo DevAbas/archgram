@@ -167,6 +167,9 @@ its JSON pointer (or its line and column in YAML), when:
 
 - a required field is missing, a field is unknown, or a value is not one
   of those allowed;
+- a text (the title, the description, a label, a note or a flow's name)
+  holds a character XML does not allow, such as a control character
+  other than tab, line feed and carriage return: the SVG would not open;
 - an id is duplicated, or an edge, flow, frame or hint names an id that
   does not exist;
 - frames nest in a cycle, or a frame is empty;

@@ -91,6 +91,26 @@ fn top_level_rules() {
     );
 }
 
+/// A text holds only what XML allows, so the SVG opens; a line break or a
+/// tab is allowed.
+#[test]
+fn texts_hold_only_characters_xml_allows() {
+    let nodes = r#"{ "id": "api", "kind": "service", "label": "A\u0007PI", "note": "one\ntwo\tthree" },
+        { "id": "db", "kind": "database", "label": "DB" }"#;
+    let rest = r#", "edges": [{ "from": "api", "to": "db", "label": "reads\u001b[31m" }],
+        "flows": [{ "name": "￾", "steps": ["api", "db"] }]"#;
+    let json = spec_with(nodes, rest).replace(r#""title": "t""#, r#""title": "t\u0000""#);
+    let e = errors(&json);
+    assert_eq!(
+        pointers(&e),
+        ["/title", "/nodes/0/label", "/edges/0/label", "/flows/0/name"]
+    );
+    assert_eq!(
+        e[1].message,
+        "the text holds U+0007, which XML does not allow; an SVG with it does not open"
+    );
+}
+
 #[test]
 fn ids_are_well_formed_and_unique_across_nodes_and_frames() {
     let nodes = r#"{ "id": "API", "kind": "service", "label": "API" }, { "id": "db", "kind": "database", "label": "DB", "frame": "db" }"#;
