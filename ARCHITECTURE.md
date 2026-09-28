@@ -16,7 +16,7 @@ spec (JSON, or YAML through archgram-yaml)
   -> layout                  layers, order, coordinates, frames
   -> route                   orthogonal edge paths around the boxes
   -> render                  SVG: shapes, theme, legend, optional animation
-  -> rasterise (optional)    PNG per theme, through archgram-png
+  -> rasterise (later)       PNG per theme, through archgram-png
 ```
 
 Every stage takes the previous stage's output and returns a new value. No
@@ -33,7 +33,7 @@ The repository is one Cargo workspace.
 | `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes and their import from DTCG tokens, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
-| `archgram-png` | SVG to PNG, one theme at a time | `archgram-core`, `resvg`, `tiny-skia` |
+| `archgram-png` (later) | The scene to PNG, one theme at a time, with archgram's own rasterizer | `archgram-core` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
 | `archgram-wasm` | The npm package for Node and the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
 | `xtask` | Repository tasks run with `cargo xtask`, such as the dependency check; never shipped | `serde_json` |
@@ -295,9 +295,11 @@ and labels.
 
 ### Rasterise
 
-`archgram-png` renders a single-theme SVG with `resvg`. `resvg` reads
-neither `@media` rules nor SMIL, so archgram writes a separate SVG per
-theme for it and keeps the still frame in the base attribute values.
+Later (PRD, §5). `archgram-png` will draw the scene (Render) into pixels
+with archgram's own rasterizer, one theme at a time, reading the same
+style table as the SVG; what moves is not drawn, so the PNG is the still
+image. No third-party renderer: `resvg` and `tiny-skia` were weighed and
+left out to keep the supply chain small.
 
 ## Invariants
 
@@ -325,7 +327,6 @@ These hold for every output and are checked by tests on every change.
 | `serde`, `serde_json` | Reading the spec | MIT or Apache-2.0 |
 | `skrifa` | Font metrics; the font parser Chrome uses | MIT or Apache-2.0 |
 | `saphyr-parser` | YAML events with positions, in the optional module; with it `arraydeque` and `thiserror` | MIT or Apache-2.0 |
-| `resvg`, `tiny-skia` | PNG, in the optional module | Apache-2.0 or MIT; BSD-3-Clause |
 | `wasm-bindgen` | The WASM package | MIT or Apache-2.0 |
 
 - `Cargo.lock` is committed and versions are pinned; builds run with
@@ -369,14 +370,14 @@ spec generator are small helpers inside the workspace.
 | Layout and SVG, 100 nodes, native | under 50 ms |
 | CLI start to written file, small spec | under 100 ms |
 | `archgram-core` WASM, optimised | under 500 KB |
-| PNG, 1600 x 1000, native | under 100 ms |
+| PNG, 1600 x 1000, native (later) | under 100 ms |
 
 ## Distribution
 
 - Native binaries for macOS, Linux and Windows, built in CI and attached
   to each release.
 - One npm package built with `wasm-bindgen-cli` and `wasm-opt`, for Node
-  and the browser; the PNG module is a separate, optional package.
+  and the browser; the PNG module, later, a separate, optional package.
 - Crates on crates.io once the API is stable.
 - One SVG carries both themes by default. `archgram build --split-themes`
   lays the diagram out once and writes `<name>.light.svg` and

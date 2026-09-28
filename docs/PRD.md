@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.7        |
+| Version | 0.8        |
 | Date    | 2026-09-27 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -76,8 +76,8 @@ same file every time.
 |---|---|
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
-| 0.3 | Flows and their animation, timed automatically; the PNG module; the WASM package on npm; importing a project's DTCG design tokens as a theme |
-| Later | Open-source release under MIT; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
+| 0.3 | Flows and their animation, timed automatically; the WASM package on npm; importing a project's DTCG design tokens as a theme |
+| Later | The PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; open-source release under MIT; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
 
 ## 6. Functional requirements
 
@@ -130,7 +130,7 @@ same file every time.
 - A command-line tool, one native binary per platform.
 - A library, usable from Rust and, through WASM, from Node and the
   browser.
-- PNG, one file per theme, through the optional module.
+- PNG, one file per theme, through the optional module (later, §5).
 
 ## 7. Node vocabulary
 
@@ -194,3 +194,4 @@ guidelines for them.
 | 0.5     | 2026-09-27 | Four places for a logo: corner, inline, chip, icon (§7); the brand's colour while a signal is at the card (§6.4). |
 | 0.6     | 2026-09-27 | Flows branch; seven signal styles, the line filling by default; a lit card takes its hue until its signals arrive; the still image lists or numbers the flows on request (§6.4). |
 | 0.7     | 2026-09-27 | A project's DTCG tokens as the theme, through a mapping file, held to the same contrast (§6.3). |
+| 0.8     | 2026-09-28 | The PNG module moves after 0.3 (§5, §6.5). |
