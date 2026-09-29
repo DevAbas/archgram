@@ -131,6 +131,44 @@ draw the architecture, or type `/archgram`.
 The skill's archive carries a signed record of the build that made it:
 `gh attestation verify archgram-skill-0.5.0.tar.gz -R DevAbas/archgram`.
 
+## FAQ
+
+### Does the animation play in a GitHub README?
+
+Yes. The flows are animated with SMIL inside the SVG, which needs no
+script, so the drawing moves in an `<img>`: on GitHub, on npm and in any
+page.
+
+### Does it follow dark mode?
+
+One SVG carries both themes and follows the reader's system setting. To
+follow GitHub's own theme instead, draw with `--split-themes` and put the
+two files in a `<picture>` with `prefers-color-scheme`.
+
+### Does it need a server, a browser or the network?
+
+No. archgram is one native binary, and the SVG is self-contained: no
+script, no external file, no web font, so it shows the same wherever it is
+opened.
+
+### Can a coding agent draw my architecture from the code?
+
+Yes, with the `archgram` skill (above): it reads the code, draws a part
+only where a file backs it and an edge only where a line of code makes it,
+and lists both.
+
+### Can it use my design system's colours?
+
+Yes: `--theme-file` maps archgram's colour roles to your design tokens
+(W3C Design Tokens), and refuses colours that fall short of contrast
+([docs/SPEC.md, Theme
+file](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md)).
+
+### Will the same spec give the same file tomorrow?
+
+Yes, byte for byte, on every machine, so a diagram changes in git only
+when the system does.
+
 ## Documentation
 
 - [docs/SPEC.md](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md): the spec, every field and rule, with examples.

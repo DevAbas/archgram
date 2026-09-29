@@ -1,0 +1,21 @@
+# archgram
+
+> archgram draws software architecture diagrams from a JSON or YAML spec: it lays out the nodes, routes the edges around the boxes and writes one self-contained SVG, in light and dark, with the flows the spec names animated. It runs as a native command (`npx archgram`), and its `archgram` skill lets a coding agent draw a project's architecture from its code.
+
+- Install: `npm install --save-dev archgram`; draw: `npx archgram build <spec>`; check: `npx archgram check <spec>`; print the spec format: `npx archgram spec`.
+- The output needs no script, server or web font, and the same spec gives the same bytes on every machine.
+- License: MIT.
+
+## Docs
+
+- [README](https://github.com/DevAbas/archgram/blob/main/README.md): what archgram does, install, commands, the skill, FAQ
+- [Spec format](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md): every field, node kind, flow and rule, with examples
+- [Visual rules](https://github.com/DevAbas/archgram/blob/main/DESIGN.md): how a diagram looks and why
+- [Architecture](https://github.com/DevAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside
+- [Examples](https://github.com/DevAbas/archgram/tree/main/examples): complete specs
+
+## Optional
+
+- [The archgram skill](https://github.com/DevAbas/archgram/tree/main/skills/archgram): the agent skill that draws a project's architecture from its code
+- [Changelog](https://github.com/DevAbas/archgram/blob/main/CHANGELOG.md)
+- [npm package](https://www.npmjs.com/package/archgram)
