@@ -36,6 +36,29 @@ cargo xtask deps
 node --test packages/archgram/lib/platform.test.js
 ```
 
+## How changes land
+
+- **One short-lived branch per change,** named for its kind: `fix/…`,
+  `feat/…`, `docs/…`, `ci/…`. A change that has merged is done: the next
+  one starts a new branch from `main`.
+- **A new feature starts in the PRD.** What it does and why goes into
+  [docs/PRD.md](docs/PRD.md) first, then the spec, the design and the code.
+- **Every change reaches `main` through a pull request** whose checks
+  pass (`CI passed`), merged with **Squash and merge**: the pull request
+  becomes one commit.
+- **The pull request's title is that commit's subject:** `type: subject`,
+  the subject in the imperative, lowercase ("if applied, this commit will
+  …"), such as `fix: keep an edge label off its arrowhead`. The types are
+  `feat`, `fix`, `docs`, `ci`, `build`, `chore`, `refactor`, `style`,
+  `test`, `perf` and `design`; a check on each pull request holds the title
+  to this.
+- **Its description is the commit's body:** what changed and why, what it
+  does not do, and how it was checked. The pull request template asks for
+  these.
+- **Two pull requests that touch the same file** land one after the other:
+  once the first merges, the second is rebased on `main`, checked again and
+  pushed with `--force-with-lease`.
+
 ## What to keep in mind
 
 - **The same spec draws the same bytes, everywhere.** The golden SVGs in
@@ -51,10 +74,6 @@ node --test packages/archgram/lib/platform.test.js
 - **No new dependency without an issue first.** Every dependency is a
   supply-chain decision; `cargo xtask deps` and `deny.toml` check the ones
   there are.
-- **Commit messages** are `type: subject`, the subject in the imperative
-  ("if applied, this commit will …"), such as `fix: keep an edge label off
-  its arrowhead`. A pull request is squashed into one commit on `main`, so
-  its title is that commit's message.
 
 ## Reporting a vulnerability
 
