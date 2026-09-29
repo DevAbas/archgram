@@ -4,7 +4,7 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-29
 
 ### Added
 
@@ -32,7 +32,8 @@ follow [Semantic Versioning](https://semver.org/).
   edge with the line of code that makes it, draws no wider than 1,300 px,
   and never starts a browser. It recognises the system's style of
   architecture, merges parts with the same relations into one node, and
-  keeps a drawing to about ten nodes and twelve edges.
+  keeps a drawing to about ten nodes and twelve edges, and checks each
+  line it cites by opening it.
 
 ## [0.4.0] - 2026-09-29
 
@@ -135,7 +136,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
-[Unreleased]: https://github.com/DevAbas/archgram/compare/v0.4.0...HEAD
+[0.5.0]: https://github.com/DevAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/DevAbas/archgram/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DevAbas/archgram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DevAbas/archgram/compare/v0.1.0...v0.2.0

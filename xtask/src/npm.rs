@@ -182,6 +182,15 @@ fn assemble(all: bool) -> Result<Vec<&'static str>, String> {
         &source.join("lib/platform.js"),
         &dir.join("lib/platform.js"),
     )?;
+    // npm shows the launcher's README, a copy of the repository's, kept
+    // by hand as Turborepo keeps its own; a copy that has fallen behind
+    // stops the build.
+    let readme = |path: &Path| std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()));
+    if readme(&source.join("README.md"))? != readme(&root().join("README.md"))? {
+        return Err(
+            "packages/archgram/README.md differs from README.md: copy README.md over it".into(),
+        );
+    }
     copy(&source.join("README.md"), &dir.join("README.md"))?;
     copy(&root().join("LICENSE"), &dir.join("LICENSE"))?;
     let mut manifest: Value = serde_json::from_str(
