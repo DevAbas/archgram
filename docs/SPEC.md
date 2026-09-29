@@ -19,7 +19,7 @@ twice, a second document, and a tag outside YAML's core schema are errors
 too, and a plain word that reads as a number or a boolean (`title: 2026`)
 must be quoted to stay text.
 
-A spec named `<name>.archgram.yaml` (or `<name>.archgram.json`) draws
+A spec named `<name>.archgram.yaml` (or `.archgram.yml`, `.archgram.json`) draws
 `<name>.svg` beside it, so each spec sits next to its drawing and the
 drawing keeps a plain name; any other spec draws its own name with `.svg`.
 `-o` names another file, and creates its folder when it does not exist.

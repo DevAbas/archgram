@@ -31,7 +31,8 @@ install time.
 
 ## Use
 
-Write a spec in JSON or YAML:
+Write a spec in JSON or YAML, for example
+`docs/diagrams/linkshort.archgram.yaml`:
 
 ```yaml
 archgram: 1
@@ -51,9 +52,9 @@ flows:
 Then draw it:
 
 ```sh
-npx archgram build diagram.yaml             # diagram.svg, light and dark in one file
-npx archgram build diagram.yaml --split-themes
-npx archgram check diagram.yaml             # every problem, at its line and column
+npx archgram build docs/diagrams/linkshort.archgram.yaml   # linkshort.svg beside it, light and dark in one file
+npx archgram build docs/diagrams/linkshort.archgram.yaml --split-themes
+npx archgram check docs/diagrams/linkshort.archgram.yaml   # every problem, at its line and column
 ```
 
 To draw in your own design system's colours, point archgram at your
