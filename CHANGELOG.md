@@ -4,6 +4,30 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A flow may stop at its last step (`stop`): a ✕ marks the line into the
+  refusing node, the refusal travels back along the flow to where it
+  began, and the refusing card stays red until a later flow passes it,
+  so a retry reads as one.
+- A lit card's border is drawn from the arrow that reaches it, both ways
+  round, in green, on the card's own edge; `border` picks how: `spark`
+  (a dot riding each end, the default), `drain`, `ring` or `afterglow`.
+  `wait: pending` shows a refused card waiting as marching dashes.
+- Two colour roles, `signal-pass` and `signal-refusal`, held to 3:1
+  against the card.
+- An arrowhead takes the colour of the signal that reaches it.
+
+### Changed
+
+- A lit card takes no fill and keeps its border's width; its icon and
+  text keep their colours.
+- Only a signal glows, and more softly in dark; `glow: false` turns it
+  off. Nothing else glows.
+- The last card of a flow stays lit until its border has closed.
+
 ## [0.4.0] - 2026-09-29
 
 ### Added
@@ -105,6 +129,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
+[Unreleased]: https://github.com/DevAbas/archgram/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/DevAbas/archgram/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DevAbas/archgram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DevAbas/archgram/compare/v0.1.0...v0.2.0
