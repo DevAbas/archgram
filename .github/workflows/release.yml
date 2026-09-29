@@ -3,7 +3,9 @@
 # byte for byte across platforms, and the npm packages assembled, tested and
 # packed. A tag `v*` starts it; running it by hand builds and packs without
 # publishing. It publishes only from a tag, and only once trusted publishing
-# is set up on npm (the repository variable NPM_TRUSTED_PUBLISHING).
+# is set up on npm (the repository variable NPM_TRUSTED_PUBLISHING); the
+# packages are staged, and go public when a maintainer approves each one on
+# npm with two-factor authentication.
 name: Release
 
 on:
@@ -24,7 +26,7 @@ jobs:
           - { key: darwin-arm64, os: macos-latest, target: aarch64-apple-darwin, exe: "" }
           - { key: darwin-x64, os: macos-15-intel, target: x86_64-apple-darwin, exe: "" }
           - { key: linux-arm64, os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, exe: "" }
-          - { key: linux-x64, os: ubuntu-latest, target: x86_64-unknown-linux-musl, exe: "" }
+          - { key: linux-x64, os: ubuntu-24.04, target: x86_64-unknown-linux-musl, exe: "" }
           - { key: win32-arm64, os: windows-11-arm, target: aarch64-pc-windows-msvc, exe: ".exe" }
           - { key: win32-x64, os: windows-latest, target: x86_64-pc-windows-msvc, exe: ".exe" }
     runs-on: ${{ matrix.os }}
@@ -57,7 +59,7 @@ jobs:
   package:
     name: npm packages
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -110,7 +112,7 @@ jobs:
     name: Publish to npm
     needs: package
     if: startsWith(github.ref, 'refs/tags/v') && vars.NPM_TRUSTED_PUBLISHING == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: npm
     permissions:
       contents: read
@@ -124,17 +126,20 @@ jobs:
         with:
           name: npm-packages
           path: dist
-      # Trusted publishing needs npm 11.5.1 or later.
-      - name: Check npm
+      # Staged publishing needs npm 11.15.0 or later (docs.npmjs.com,
+      # Staged publishing); one exact version, as Turborepo installs its own.
+      - name: Install npm
         run: |
+          npm install -g npm@11.15.0
           npm --version
-          node -e "const [a,b,c]=process.argv[1].split('.').map(Number); if (a<11||(a===11&&(b<5||(b===5&&c<1)))) { console.error('npm 11.5.1 or later is needed'); process.exit(1) }" "$(npm --version)"
-      # The platform packages first, so the launcher never points at a
-      # version that is not there yet. Provenance comes with trusted
-      # publishing.
-      - name: Publish
+      # Each package is staged, not published: it goes public when a
+      # maintainer approves it on npm with two-factor authentication, the
+      # trusted publisher being stage-only. The platform packages are staged
+      # first and approved first, so the launcher never points at a version
+      # that is not there yet. Provenance comes with trusted publishing.
+      - name: Stage
         run: |
           for package in dist/archgram-cli-*.tgz; do
-            npm publish "$package" --access public
+            npm stage publish "$package" --access public
           done
-          npm publish dist/archgram-[0-9]*.tgz
+          npm stage publish dist/archgram-[0-9]*.tgz
