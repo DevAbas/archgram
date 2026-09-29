@@ -1,7 +1,7 @@
 //! Technology logos for archgram (ARCHITECTURE.md, Code map), from a pinned
 //! release of Simple Icons: `data/icons.tsv`, one logo per line (slug,
 //! title, brand colour, the path on a 24 by 24 grid), sorted by slug and written by
-//! `cargo xtask icons <tag>`. `data/RELEASE` names the release and commit;
+//! `cargo xtask icons <tag> <commit>`. `data/RELEASE` names the release and commit;
 //! `data/provenance.tsv` each logo's source and brand guidelines. Logos
 //! that carry a licence of their own other than CC0 are left out.
 //!

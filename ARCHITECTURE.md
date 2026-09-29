@@ -31,7 +31,7 @@ The repository is one Cargo workspace.
 | Crate | Holds | Depends on |
 |---|---|---|
 | `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes and their import from DTCG tokens, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
-| `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag>`, through the core's `Logos` trait | `archgram-core` |
+| `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag> <commit>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` (later) | The scene to PNG, one theme at a time, with archgram's own rasterizer | `archgram-core` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
@@ -354,8 +354,9 @@ These hold for every output and are checked by tests on every change.
   the check.
 - Cargo's own `cargo tree` shows where each indirect dependency comes from.
 - Logo data is pinned like a dependency: `archgram-icons/data/RELEASE`
-  names the Simple Icons tag and commit, `cargo xtask icons <tag>`
-  rewrites the data from that tag alone, and an update is a reviewed
+  names the Simple Icons tag and commit, `cargo xtask icons <tag> <commit>`
+  rewrites the data from that tag alone and refuses it unless the tag is
+  still at that commit, and an update is a reviewed
   change. The data is CC0-1.0, on the allowed list for that crate; a logo
   carrying a licence of its own other than CC0 is left out, and
   `provenance.tsv` keeps each logo's source and brand guidelines.
