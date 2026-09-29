@@ -27,6 +27,10 @@ follow [Semantic Versioning](https://semver.org/).
 - Only a signal glows, and more softly in dark; `glow: false` turns it
   off. Nothing else glows.
 - The last card of a flow stays lit until its border has closed.
+- The `archgram` skill walks from a project's entry points at one level
+  of detail, names each part after the file that decides, backs every
+  edge with the line of code that makes it, draws no wider than 1,300 px,
+  and never starts a browser.
 
 ## [0.4.0] - 2026-09-29
 
