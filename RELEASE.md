@@ -4,7 +4,9 @@ A release is a tag. Pushing `vX.Y.Z` runs the Release workflow
 (`.github/workflows/release.yml`): archgram is built for every platform on a
 runner of that platform, each binary draws every example and the drawings
 must match byte for byte, the npm packages are assembled and tested, and
-then published to npm with provenance through trusted publishing.
+then staged on npm with provenance through trusted publishing. A staged
+package goes public when you approve it on npm with two-factor
+authentication.
 
 ## Every release
 
@@ -30,7 +32,11 @@ version goes in by a pull request and the tag follows the merge.
    `npm` environment); approve it once the build and package jobs pass. If
    a job fails, nothing is published: fix it through a pull request, delete
    the tag (the tag ruleset lets a repository admin), and tag again.
-5. Create the GitHub release from the tag, with the version's section of
+5. On npmjs.com, in the **Staged Packages** tab, approve the seven staged
+   packages: the six `@archgram/cli-*` first, `archgram` last, so the
+   launcher never points at a version that is not public yet. Each approval
+   asks for two-factor authentication.
+6. Create the GitHub release from the tag, with the version's section of
    the changelog.
 
 ## The first release, once
@@ -56,7 +62,8 @@ the workflow built. Nothing is built on your machine.
 5. On npmjs.com, for each of the seven packages, open **Settings**, then
    **Trusted Publisher**, choose **GitHub Actions** and enter: organization
    or user `DevAbas`, repository `archgram`, workflow `release.yml`,
-   environment `npm`.
+   environment `npm`. Leave **Allow npm publish** unticked: the publisher
+   may only stage, as npm recommends (docs.npmjs.com, Trusted publishing).
 6. On each package's **Settings**, under **Publishing access**, choose
    **Require two-factor authentication and disallow tokens**.
 7. On GitHub, in the repository's **Settings**: under **Environments**,
@@ -65,4 +72,5 @@ the workflow built. Nothing is built on your machine.
    under **Secrets and variables**, then **Actions**, then **Variables**,
    add `NPM_TRUSTED_PUBLISHING` with the value `true`.
 
-From then on every tag publishes by itself, with no token stored anywhere.
+From then on every tag stages its packages by itself, with no token stored
+anywhere, and each goes public on your approval.
