@@ -388,7 +388,9 @@ spec generator are small helpers inside the workspace.
   dependencies; `ARCHGRAM_BINARY` points it at another binary.
   `cargo xtask npm` assembles the packages from the built binaries.
   Publishing uses npm's trusted publishing (OIDC), which attaches
-  provenance and needs no stored token.
+  provenance and needs no stored token, and it only stages: each package
+  goes public when a maintainer approves it with two-factor
+  authentication (RELEASE.md).
 - Later: a WASM package for the browser, and the PNG module as a
   separate, optional package.
 - Crates on crates.io once the API is stable.
