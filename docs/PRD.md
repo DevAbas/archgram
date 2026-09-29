@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.15       |
+| Version | 0.16       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -188,9 +188,12 @@ same file every time.
   flow or which direction), or Claude chooses it when asked for an
   architecture diagram. It never runs by itself.
 - A part is drawn only when a file in the project backs it, and the skill
-  notes that file. Where the code and the documentation disagree, or the
-  architecture is unclear, it asks the user; it asks for no other
-  approval.
+  notes that file; an edge only where a line of code makes it, and the
+  skill notes that line. It finds the parts by walking from the project's
+  entry points, keeps one level of detail per diagram, and names each part
+  after the file that decides, found by following the imports. Where the
+  code and the documentation disagree, or the architecture is unclear, it
+  asks the user; it asks for no other approval.
 - It writes `docs/diagrams/<name>.archgram.yaml`, creating the folder when
   missing, and draws `<name>.svg` beside it with `npx archgram`: the
   project's own archgram when it has one, the latest otherwise. The spec is
@@ -212,9 +215,13 @@ same file every time.
   tokens and a mapping beside the spec; else colours the user gives in
   the request; else archgram's own palette. archgram's contrast check
   holds either way; a colour that fails it is reported with the reason.
+- A drawing is at most 1,300 px wide, so its text stays readable in a
+  README on GitHub; a wider one is drawn top to bottom or split in two.
+- The skill judges a drawing from its spec and its size. It never starts a
+  browser or takes a screenshot.
 - When done, `archgram check` passes, the SVG is opened with the
   system's own viewer (`open`, `xdg-open`, `start`), and the skill lists
-  each part with the file behind it.
+  each part with the file behind it and each edge with its line.
 
 ## 7. Node vocabulary
 
@@ -287,3 +294,4 @@ None.
 | 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
 | 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
 | 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; only a signal glows, faintly, and more softly in dark, unless the spec turns it off; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |
+| 0.16    | 2026-09-29 | The skill backs every edge with the line of code that makes it, walks from the entry points at one level of detail, names each part after the file that decides, draws no wider than 1,300 px, and never starts a browser (§6.6). |
