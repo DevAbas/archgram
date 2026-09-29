@@ -77,8 +77,8 @@ same file every time.
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
-| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing |
-| Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
+| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; the archgram plugin for Claude Code with its `archgram:draw` skill, the archgram repository being its marketplace |
+| Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
 
@@ -142,6 +142,35 @@ same file every time.
 - A library, usable from Rust and, later through WASM, from the browser
   (§5).
 - PNG, one file per theme, through the optional module (later, §5).
+- A plugin for Claude Code, `archgram`, whose marketplace is the archgram
+  repository itself, at the same version as the command (§6.6).
+
+### 6.6 The `archgram:draw` skill
+- It draws a project's architecture for its README and docs, from the
+  code and the documentation, so the agent writes the spec and archgram
+  does the drawing. It replaces the `drawing-architecture-diagrams`
+  skill.
+- The user calls it (`/archgram:draw`, with instructions such as which
+  flow or which direction), or Claude chooses it when asked for an
+  architecture diagram. It never runs by itself.
+- A part is drawn only when a file in the project backs it, and the skill
+  notes that file. Where the code and the documentation disagree, or the
+  architecture is unclear, it asks the user; it asks for no other
+  approval.
+- It writes `docs/diagrams/<name>.archgram.yaml`, creating the folder when
+  missing, and draws `<name>.svg` beside it with `npx archgram@<version>`,
+  the plugin's own version. The spec is kept, so a later call changes it
+  and draws again, and says what changed.
+- It draws in the project's own colours, found in this order: the
+  project's DTCG tokens, through a mapping file; else the colours its
+  code styles with (CSS custom properties, a Tailwind theme, Sass
+  variables, a theme object), which the skill reads and writes as DTCG
+  tokens and a mapping beside the spec; else colours the user gives in
+  the request; else archgram's own palette. archgram's contrast check
+  holds either way; a colour that fails it is reported with the reason.
+- When done, `archgram check` passes, the SVG is opened with the
+  system's own viewer (`open`, `xdg-open`, `start`), and the skill lists
+  each part with the file behind it.
 
 ## 7. Node vocabulary
 
@@ -207,4 +236,4 @@ None.
 | 0.7     | 2026-09-27 | A project's DTCG tokens as the theme, through a mapping file, held to the same contrast (§6.3). |
 | 0.8     | 2026-09-28 | The PNG module moves after 0.3 (§5, §6.5). |
 | 0.9     | 2026-09-28 | 0.3 ships the command on npm for Node, a native binary per platform; the WASM package, for the browser, moves after 0.3 (§5, §6.5, §8). |
-| 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
+| 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5), and the archgram plugin for Claude Code with its `archgram:draw` skill, replacing `drawing-architecture-diagrams` (§5, §6.5, §6.6). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
