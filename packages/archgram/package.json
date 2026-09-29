@@ -1,7 +1,25 @@
 {
   "name": "archgram",
   "version": "0.0.0",
-  "description": "Architecture diagram generator for READMEs and docs, written in Rust",
+  "description": "Animated architecture diagrams for READMEs and docs, light and dark, from a JSON or YAML spec",
+  "keywords": [
+    "architecture",
+    "architecture-diagram",
+    "diagram",
+    "diagrams-as-code",
+    "svg",
+    "animated",
+    "readme",
+    "documentation",
+    "dark-mode",
+    "c4",
+    "system-design",
+    "yaml",
+    "cli",
+    "ai-agent",
+    "claude-code",
+    "agent-skill"
+  ],
   "author": "Abas Turabli (https://abasturabli.com)",
   "license": "MIT",
   "repository": {
