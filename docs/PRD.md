@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.14       |
+| Version | 0.15       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -78,6 +78,7 @@ same file every time.
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
 | 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the `archgram` skill for Claude Code, which draws a project's architecture from its code |
+| 0.5 | A flow may stop at a step, and the refusal goes back to where the flow began; a card's border is drawn from the arrow that reaches it, in a colour for passing and one for a refusal, in one of four styles; nothing glows unless asked |
 | Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
@@ -103,9 +104,11 @@ same file every time.
   reading its label.
 - The diagram is monochrome: every icon, a flow's signal and a lit card are
   in the text colour, black on light and white on dark, and the icon's
-  shape tells a node's kind. Colour belongs to the technology logos alone;
-  cards, frames and connectors stay neutral. A project's own tokens may
-  still give each category a hue of its own.
+  shape tells a node's kind. Colour belongs to the technology logos and to
+  what happens on a flow: one colour where a signal passes a card, another
+  where a step refuses it (§6.4); cards, frames and connectors stay neutral
+  otherwise. A project's own tokens may still give each category a hue of
+  its own.
 - One SVG carries both themes and follows `prefers-color-scheme`; on
   request archgram writes one file per theme.
 - On request, a project's own DTCG design tokens fill archgram's colour
@@ -120,10 +123,29 @@ same file every time.
   may branch: one step may reach several nodes at once.
 - A signal travelling a flow takes the colour of the node it leaves. The
   spec picks how it is drawn from a fixed set of styles; by default the
-  line fills with that colour.
-- A card is lit from the moment a signal reaches it until every signal it
-  sends has arrived: its border and a faint fill take its category's hue.
-  Then it returns to its usual look.
+  line fills with that colour. An arrowhead takes the colour of the signal
+  that reaches it.
+- Nothing glows: a signal is a flat line in its colour. The spec may turn
+  the glow on.
+- A card is lit from the moment a signal reaches its arrowhead until every
+  signal it sends has arrived. Its border takes the passing colour, drawn
+  from the point where the arrow meets the card, both ways round, closing
+  on the far side, no faster than the shortest hop. The first card of a
+  flow, which no arrow reaches, closes its border where its signal leaves,
+  as it leaves. The border keeps the card's own width; the icon and the
+  text keep their colours. Then the card returns to its usual look.
+- The spec picks how the border is drawn: by default a bright head rides
+  each growing end (spark); instead it may drain out through the arrow
+  that leaves the card (drain), sweep once around from the arrowhead
+  (ring), or fade back to the card's own edge while the card is lit
+  (afterglow).
+- A flow may stop at a step: the node there refuses the signal. A small ✕
+  sits on the edge just before the refusing card's arrowhead, and the
+  arrowhead and the card's border take the refusal colour. The refusal
+  then travels back along the flow to the node where it began, whose
+  border takes the refusal colour too. The refusing card keeps it until a
+  later flow passes it, which draws its border in the passing colour.
+  The spec may show that wait as a slow dashed border instead (pending).
 - An edge's label is lit while its signal travels the edge: it takes the
   signal's colour, or the theme's text colour where the signal's colour
   would fall short of text contrast.
@@ -132,7 +154,9 @@ same file every time.
 - Native SMIL only; every animation stops under
   `prefers-reduced-motion`, and the still image shows what the spec
   chooses: nothing more, the flows in words under the legend, or each
-  step's number on its lines. A screen reader hears each flow in words.
+  step's number on its lines. A refused step keeps its ✕ and the refusing
+  card its border in the refusal colour. A screen reader hears each flow
+  in words, a refused step included.
 
 ### 6.5 Outputs and interfaces
 - A command-line tool, one native binary per platform, installed by hand
@@ -238,7 +262,11 @@ guidelines for them.
 
 ## 10. Open questions
 
-None.
+- A lit card's faint fill: keep it in the category's hue, or drop it now
+  that the border carries what happened.
+- The passing colour stays under the 3:1 a graphic needs against the card
+  in both themes: an exception for a border that shows only while its card
+  is lit, or a darker tone.
 
 ## 11. Changelog
 
@@ -258,3 +286,4 @@ None.
 | 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
 | 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
 | 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
+| 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), the icon and text unchanged; an arrowhead takes its signal's colour; nothing glows unless the spec asks (§5, §6.3, §6.4). Two open questions: the lit card's fill and the passing colour's contrast (§10). The samples that chose this are in `docs/samples/stop/`. |
