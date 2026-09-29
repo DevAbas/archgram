@@ -1,6 +1,7 @@
 //! Drawing the diagram as SVG (ARCHITECTURE.md, Render).
 
 mod card;
+mod credit;
 mod edge;
 mod frame;
 mod icons;
@@ -163,6 +164,9 @@ pub fn scene(
         items.push(signal::signals(spec.signal, t, &drawn, &labels, hue));
     }
     items.extend(placed_legend(placement, at));
+    if let Some(c) = placement.credit {
+        items.push(credit::credit(at(c)));
+    }
     Scene {
         width: w,
         height: h,
@@ -407,6 +411,9 @@ fn style(
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
         sheet.rules(styles::steps());
+    }
+    if spec.credit {
+        sheet.rules(styles::credit());
     }
     if placement_has_legend(spec) {
         sheet.rules(styles::legend());

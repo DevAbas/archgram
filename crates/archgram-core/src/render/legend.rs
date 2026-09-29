@@ -3,7 +3,6 @@
 
 use crate::font::baseline_in_line;
 use crate::layout::legend::{Entry, FlowLine, Swatch, stack_step};
-use crate::render::card::category_class;
 use crate::render::scene::{Anchor, GroupOf, Item};
 use crate::tokens::TYPOGRAPHY_LEGEND;
 
@@ -32,15 +31,6 @@ pub fn legend(entries: &[Entry], flow_lines: &[FlowLine]) -> Option<Item> {
             rx: Some(h / 4.0),
         };
         match e.swatch {
-            Swatch::Category(c) => {
-                items.push(rect(
-                    &format!("swatch {}", category_class(c)),
-                    b.x,
-                    b.y,
-                    b.w,
-                    b.h,
-                ));
-            }
             Swatch::External => items.push(rect("card external", b.x, b.y, b.w, b.h)),
             Swatch::Multi => {
                 let d = stack_step();

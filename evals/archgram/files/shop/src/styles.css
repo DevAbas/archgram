@@ -1,0 +1,10 @@
+:root {
+  --background: #fafaf9; --surface: #ffffff; --muted-surface: #f5f5f4;
+  --border: #d6d3d1; --line: #78716c; --foreground: #1c1917; --muted: #57534e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a09; --surface: #1c1917; --muted-surface: #292524;
+    --border: #44403c; --line: #78716c; --foreground: #fafaf9; --muted: #a8a29e;
+  }
+}

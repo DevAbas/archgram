@@ -50,6 +50,8 @@ pub enum Decl {
     RoundCaps,
     /// Round line joins.
     RoundJoins,
+    /// How much of a group shows, as one: its parts fade together.
+    Opacity(f64),
     /// Size, weight and letter spacing.
     Font(TextStyle),
 }

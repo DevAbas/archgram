@@ -649,7 +649,6 @@ fn a_hundred_nodes_lay_out_within_the_budget() {
 #[test]
 fn the_legend_lists_what_the_diagram_uses() {
     use archgram_core::layout::legend::Swatch;
-    use archgram_core::spec::Category;
     let spec = |legend: &str, nodes: &str| {
         parse_spec(&format!(
             r#"{{ "archgram": 1, "title": "t", "description": "d", {legend} "nodes": [{nodes}] }}"#
@@ -660,15 +659,9 @@ fn the_legend_lists_what_the_diagram_uses() {
     let s = spec("", two);
     let p = place(&s, &card_sizes(&s)).unwrap();
     let kinds: Vec<Swatch> = p.legend.iter().map(|e| e.swatch).collect();
-    assert_eq!(
-        kinds,
-        [
-            Swatch::Category(Category::Core),
-            Swatch::Category(Category::Client),
-            Swatch::Multi
-        ]
-    );
-    // Asked away, or with nothing to tell apart, there is none.
+    // Only the variants: colour tells no category apart.
+    assert_eq!(kinds, [Swatch::Multi]);
+    // Asked away, or with no variant to tell apart, there is none.
     let s = spec(r#""legend": false,"#, two);
     assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
     let s = spec(
@@ -676,4 +669,52 @@ fn the_legend_lists_what_the_diagram_uses() {
         r#"{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "database", "label": "B" }"#,
     );
     assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
+}
+
+/// The credit sits under everything, against the right edge, inside the
+/// drawing, and overlaps nothing; `credit: false` leaves it out and the
+/// drawing shorter (DESIGN.md, Components: Credit).
+#[test]
+fn the_credit_sits_below_everything_at_the_right() {
+    for name in ["linkshort", "rag", "kinds", "cv-screener-architecture"] {
+        let path = format!("{}/../../examples/{name}.json", env!("CARGO_MANIFEST_DIR"));
+        let spec = parse_spec(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let p = place(&spec, &card_sizes(&spec)).unwrap();
+        let c = p.credit.expect("on by default");
+        assert!(
+            (c.x + c.w - p.size.w).abs() < 1e-9,
+            "{name}: against the right edge"
+        );
+        assert!(
+            (c.y + c.h - p.size.h).abs() < 1e-9,
+            "{name}: the last thing down"
+        );
+        let mut others: Vec<archgram_core::geometry::Rect> = p.nodes.clone();
+        others.extend(p.frames.iter().flatten());
+        others.extend(p.labels.iter().flatten());
+        others.extend(p.legend.iter().flat_map(|e| [e.swatch_box, e.text_box]));
+        others.extend(p.flow_lines.iter().map(|l| l.text_box));
+        for o in &others {
+            assert!(o.y + o.h <= c.y, "{name}: {o:?} reaches the credit {c:?}");
+        }
+        let without = parse_spec(
+            &serde_json::to_string(&{
+                let mut v: serde_json::Value = serde_json::from_str(
+                    &std::fs::read_to_string(format!(
+                        "{}/../../examples/{name}.json",
+                        env!("CARGO_MANIFEST_DIR")
+                    ))
+                    .unwrap(),
+                )
+                .unwrap();
+                v["credit"] = serde_json::Value::Bool(false);
+                v
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        let q = place(&without, &card_sizes(&without)).unwrap();
+        assert!(q.credit.is_none());
+        assert!(q.size.h < p.size.h, "{name}: the credit's line is gone");
+    }
 }

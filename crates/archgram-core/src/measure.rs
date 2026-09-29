@@ -156,6 +156,12 @@ pub fn text_runs_with<'a>(
     for text in crate::layout::legend::flow_texts(spec) {
         runs.push((crate::tokens::TYPOGRAPHY_LEGEND.weight, text.into()));
     }
+    if spec.credit {
+        runs.push((
+            crate::tokens::TYPOGRAPHY_LEGEND.weight,
+            crate::layout::legend::CREDIT.into(),
+        ));
+    }
     if spec.still == crate::spec::Still::Numbers {
         for numbers in crate::motion::step_numbers(spec)
             .iter()

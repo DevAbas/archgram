@@ -1,0 +1,12 @@
+archgram: 1
+title: articles
+description: A reader asks the API for an article, which reads it from Postgres.
+nodes:
+  - { id: reader, kind: browser, label: Reader }
+  - { id: api, kind: service, label: API, tech: express }
+  - { id: db, kind: database, label: articles, tech: postgresql }
+edges:
+  - { from: reader, to: api }
+  - { from: api, to: db }
+flows:
+  - { name: a read, steps: [reader, api, db] }

@@ -16,9 +16,11 @@ version goes in by a pull request and the tag follows the merge.
 1. On a branch `release/X.Y.Z`: set the version in `Cargo.toml`
    (`[workspace.package]`; the npm packages take theirs from it), and in
    `CHANGELOG.md` turn `Unreleased` into the version and today's date, and
-   point its compare link at the new tag. Commit (`chore: version X.Y.Z`).
-2. Push the branch, open a pull request, and merge it with **Rebase and
-   merge** once CI passes.
+   point its compare link at the new tag. In `README.md`, point the skill's
+   install command at the new version. Commit (`chore: set the version to
+   X.Y.Z`).
+2. Push the branch, open a pull request titled as its commit, and merge it
+   with **Squash and merge** once CI passes.
 3. Tag the merged commit on `main` and push the tag:
 
    ```sh
@@ -36,8 +38,10 @@ version goes in by a pull request and the tag follows the merge.
    packages: the six `@archgram/cli-*` first, `archgram` last, so the
    launcher never points at a version that is not public yet. Each approval
    asks for two-factor authentication.
-6. Create the GitHub release from the tag, with the version's section of
-   the changelog.
+6. The workflow drafts the GitHub release: an archive of the skill, its
+   checksum, a signed record of the build that made it, and the version's
+   section of the changelog as its notes. Read it, then publish it; published, an immutable release
+   keeps its tag and files as they are.
 
 ## The first release, once
 

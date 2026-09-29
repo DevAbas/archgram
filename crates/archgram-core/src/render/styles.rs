@@ -5,7 +5,7 @@
 use crate::render::scene::{Decl, Paint, Rule};
 use crate::tokens::{
     DASH_EDGE, DASH_EXTERNAL, DASH_FRAME, Role, STROKE_CARD, STROKE_CONNECTOR, STROKE_FRAME,
-    STROKE_ICON, TYPOGRAPHY_FRAME_LABEL, TYPOGRAPHY_LEGEND, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    TYPOGRAPHY_FRAME_LABEL, TYPOGRAPHY_LEGEND, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The four category hues, by class name, with their roles.
@@ -23,7 +23,7 @@ fn rule(selector: impl Into<String>, decls: &[Decl]) -> Rule {
     }
 }
 
-use Decl::{Dash, Fill, Font, RoundCaps, RoundJoins, Stroke, StrokeWidth};
+use Decl::{Dash, Fill, Font, Opacity, RoundCaps, RoundJoins, Stroke, StrokeWidth};
 use Paint::{None as NoPaint, Role as R};
 
 /// The rules every drawing has: cards, icons, logos, frames and edges.
@@ -132,17 +132,42 @@ pub fn steps() -> Vec<Rule> {
     ]
 }
 
+/// How much of the credit shows: it signs the drawing, and says nothing a
+/// reader needs.
+const CREDIT_OPACITY: f64 = 0.6;
+
+/// The credit, quieter than any text: the legend's type and the mark in
+/// the connector's colour, the mark's lines cut out of it in the canvas's
+/// (DESIGN.md, Components: Credit).
+#[must_use]
+pub fn credit() -> Vec<Rule> {
+    vec![
+        // Faded as one, so the mark's cut lines stay cut.
+        rule(".credit-line", &[Opacity(CREDIT_OPACITY)]),
+        rule(
+            ".credit",
+            &[Font(TYPOGRAPHY_LEGEND), Fill(R(Role::Connector))],
+        ),
+        rule(".credit-mark", &[Fill(R(Role::Connector))]),
+        rule(
+            ".credit-glyph",
+            &[
+                Fill(NoPaint),
+                Stroke(R(Role::Canvas)),
+                // The logo's own stroke, in its 64 grid (docs/images/logo.svg).
+                StrokeWidth(5.5),
+                RoundCaps,
+                RoundJoins,
+            ],
+        ),
+    ]
+}
+
 /// The legend's swatches and text.
 #[must_use]
 pub fn legend() -> Vec<Rule> {
-    let mut out = vec![rule(".swatch", &[Fill(NoPaint), StrokeWidth(STROKE_ICON)])];
-    out.extend(
-        HUES.iter()
-            .map(|&(hue, role)| rule(format!(".swatch.{hue}"), &[Stroke(R(role))])),
-    );
-    out.push(rule(
+    vec![rule(
         ".legend-text",
         &[Font(TYPOGRAPHY_LEGEND), Fill(R(Role::TextMuted))],
-    ));
-    out
+    )]
 }

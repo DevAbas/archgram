@@ -30,6 +30,10 @@ pub struct Spec {
     /// What the still image shows of the flows, where nothing moves.
     #[serde(default)]
     pub still: Still,
+    /// Whether a small "by archgram" sits in the drawing's bottom-right
+    /// corner (DESIGN.md, Components: Credit).
+    #[serde(default = "default_true")]
+    pub credit: bool,
     pub nodes: Vec<Node>,
     #[serde(default)]
     pub frames: Vec<Frame>,

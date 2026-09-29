@@ -70,6 +70,9 @@ pub struct Placement {
     pub legend: Vec<legend::Entry>,
     /// The flows in words, under the legend, when the still image lists them.
     pub flow_lines: Vec<legend::FlowLine>,
+    /// The credit's box, under everything and against the right edge, when
+    /// the spec keeps it.
+    pub credit: Option<Rect>,
     /// The size of the whole drawing, from the origin: every card, path and label.
     pub size: Size,
 }
@@ -90,6 +93,11 @@ pub fn place(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     placement.legend = entries;
     placement.flow_lines = flow_lines;
     placement.size = size;
+    if spec.credit {
+        let (credit, size) = legend::credit(placement.size);
+        placement.credit = Some(credit);
+        placement.size = size;
+    }
     Ok(placement)
 }
 
@@ -939,6 +947,7 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
         frame_labels,
         legend: Vec::new(),
         flow_lines: Vec::new(),
+        credit: None,
         layers: layer,
         size: Size { w, h },
     })

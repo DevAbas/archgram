@@ -122,6 +122,7 @@ pub fn rule(r: &Rule) -> String {
             ),
             Decl::RoundCaps => "stroke-linecap: round;".to_owned(),
             Decl::RoundJoins => "stroke-linejoin: round;".to_owned(),
+            Decl::Opacity(o) => format!("opacity: {};", num(*o)),
             Decl::Font(t) => {
                 let spacing = if t.letter_spacing == 0.0 {
                     String::new()

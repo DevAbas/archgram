@@ -143,3 +143,46 @@ jobs:
             npm stage publish "$package" --access public
           done
           npm stage publish dist/archgram-[0-9]*.tgz
+
+  # The GitHub release, as a draft a person reads and publishes: the Claude
+  # Code skill as an archive, its checksum, and a signed record of the build
+  # that made it (build provenance, SLSA Build Level 2; `gh attestation
+  # verify <file> -R DevAbas/archgram`), with the version's section of the
+  # changelog as its notes. The command itself ships on npm, with npm's own
+  # provenance. Published, an immutable release keeps its tag and files.
+  github-release:
+    name: GitHub release (draft)
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Archive the skill
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir dist
+          tar -czf "dist/archgram-skill-${version}.tar.gz" -C skills archgram
+          (cd dist && sha256sum -- *.tar.gz > SHA256SUMS)
+          ls -l dist
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*.tar.gz
+      - name: Take the version's notes from the changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v heading="## [${version}]" '
+            /^## \[/ { if (found) exit; if (index($0, heading) == 1) { found = 1; next } }
+            found' CHANGELOG.md > notes.md
+          test -s notes.md
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag
+          --title "archgram ${GITHUB_REF_NAME#v}" --notes-file notes.md dist/*
