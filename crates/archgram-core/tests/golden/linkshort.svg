@@ -41,6 +41,7 @@
     .lit.ai { fill: var(--icon-ai); fill-opacity: 0.1; stroke: var(--icon-ai); stroke-width: 2; }
     .lit.build { fill: var(--icon-build); fill-opacity: 0.1; stroke: var(--icon-build); stroke-width: 2; }
     .lit.client { fill: var(--icon-client); fill-opacity: 0.1; stroke: var(--icon-client); stroke-width: 2; }
+    .signal .lit-text { fill: currentColor; }
     @media (prefers-reduced-motion: reduce) { .signals, .lit { display: none; } }
     .swatch { fill: none; stroke-width: 1.7; }
     .swatch.core { stroke: var(--icon-core); }

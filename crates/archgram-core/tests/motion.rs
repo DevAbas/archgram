@@ -286,3 +286,67 @@ fn the_still_image_lists_or_numbers_the_flows() {
     // The screen reader hears the flow whatever the still image shows.
     assert!(plain.contains("fan: A \u{2192} B, C.</desc>"));
 }
+
+const LABELLED: &str = r#"{ "archgram": 1, "title": "t", "description": "d",
+    "nodes": [{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "database", "label": "B" }],
+    "edges": [{ "from": "a", "to": "b", "label": "reads" }],
+    "flows": [{ "name": "a read", "steps": ["a", "b"] }] }"#;
+
+/// A signal on a labelled edge fades out round the label and carries the
+/// label's text above it in the signal's colour, with no patch to box it
+/// (DESIGN.md, Components: Signal); the still label stays as it was.
+#[test]
+fn a_signal_carries_its_edges_label() {
+    let svg = build(LABELLED, Options::default()).unwrap();
+    let signal = svg
+        .lines()
+        .find(|l| l.contains(r#"<g class="signal core""#))
+        .expect("a signal");
+    assert!(signal.contains(r#"<g mask="url(#label-gap)">"#), "{signal}");
+    assert!(
+        !signal.contains("label-patch"),
+        "no patch boxes the lit text: {signal}"
+    );
+    assert!(svg.contains(r#"<mask id="label-gap""#));
+    assert!(signal.contains(r#"<text class="sub lit-text""#), "{signal}");
+    assert!(signal.contains(">reads</text>"), "{signal}");
+    assert_eq!(
+        svg.matches(">reads</text>").count(),
+        2,
+        "the label and its lit copy"
+    );
+    assert!(svg.contains(".signal .lit-text { fill: currentColor; }"));
+    assert!(
+        !svg.contains("lit-box"),
+        "only the text takes the colour, no border"
+    );
+    assert!(
+        !svg.contains(".lit-text { fill: var(--text); }"),
+        "every mono hue reads on the canvas"
+    );
+}
+
+/// A hue short of text contrast on the canvas lights the label in the text
+/// colour instead, in that theme only.
+#[test]
+fn a_hue_too_faint_for_text_lights_the_label_in_the_text_colour() {
+    use archgram_core::theme::ThemeColors;
+    use archgram_core::tokens::{Rgb, Role, theme};
+    let light = theme("mono", "light").unwrap().colors;
+    let mut dark = theme("mono", "dark").unwrap().colors;
+    dark.set(Role::IconCore, Rgb::parse("#333333").unwrap());
+    let options = Options {
+        colors: Some(ThemeColors { light, dark }),
+        ..Options::default()
+    };
+    let svg = build(LABELLED, options).unwrap();
+    assert_eq!(
+        svg.matches(".signal.core .lit-text { fill: var(--text); }")
+            .count(),
+        1,
+        "{svg}"
+    );
+    assert!(svg.contains(
+        "@media (prefers-color-scheme: dark) { .signal.core .lit-text { fill: var(--text); } }"
+    ));
+}

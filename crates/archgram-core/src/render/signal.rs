@@ -1,19 +1,22 @@
 //! The flows' animation as SMIL (DESIGN.md, Motion and Components: Signal):
 //! a signal per hop, in the style the spec names, following its edge's own
-//! path; and, while a signal is at a card, the card lit and its logo in its
-//! brand's colour. SMIL runs where CSS and scripts do not, in an `<img>`
+//! path, with its edge's label over it in the signal's colour; and, while a
+//! signal is at a card, the card lit and its logo in its brand's colour. SMIL runs where CSS and scripts do not, in an `<img>`
 //! and on GitHub. Every element starts invisible, so a reader that runs no
 //! animation shows the still diagram.
 
+use crate::geometry::Rect;
+use std::fmt::Write as _;
+
 use crate::motion::{Hop, Lit, Timeline, fade};
-use crate::render::edge::Drawn;
+use crate::render::edge::{Drawn, edge_label};
 use crate::render::scene::{GroupOf, Item};
-use crate::render::svg::num;
+use crate::render::svg::{inline, num};
 use crate::spec::SignalStyle;
 use crate::tokens::{
-    MOTION_EASE, MOTION_HOP_GAP_MS, SIGNAL_BOLT, SIGNAL_BOLT_WIDTH, SIGNAL_COMET, SIGNAL_CORE,
-    SIGNAL_DASH, SIGNAL_DASH_PERIOD_MS, SIGNAL_DOT, SIGNAL_FLICKER_FAST_MS, SIGNAL_FLICKER_MS,
-    SIGNAL_HALO, SIGNAL_RING, SIGNAL_RIPPLE, SIGNAL_TRAIL,
+    MOTION_EASE, MOTION_HOP_GAP_MS, SIGNAL_BLUR, SIGNAL_BOLT, SIGNAL_BOLT_WIDTH, SIGNAL_COMET,
+    SIGNAL_CORE, SIGNAL_DASH, SIGNAL_DASH_PERIOD_MS, SIGNAL_DOT, SIGNAL_FLICKER_FAST_MS,
+    SIGNAL_FLICKER_MS, SIGNAL_HALO, SIGNAL_RING, SIGNAL_RIPPLE, SIGNAL_TRAIL,
 };
 
 /// The keyframes of one animation: times in whole milliseconds within the
@@ -204,11 +207,16 @@ fn streak(
     )
 }
 
-/// Every signal, drawn above the cards.
+/// Every signal, drawn above the cards. `labels` holds each edge's label
+/// and its box, by the edge's index. On a labelled edge the signal's line
+/// and glow fade out round the label (`label_gap`), with no patch to box
+/// the text, and a copy of the label's text above them takes the signal's
+/// colour for as long as the signal is seen.
 pub fn signals(
     style: SignalStyle,
     timeline: &Timeline,
     drawn: &[Drawn],
+    labels: &[Option<(&str, Rect)>],
     hue: impl Fn(usize) -> &'static str,
 ) -> Item {
     let mut items = Vec::new();
@@ -226,8 +234,18 @@ pub fn signals(
         } else {
             seen(hop.start, hop.end, period)
         };
+        let (body, label) = match labels.get(hop.edge).copied().flatten() {
+            Some((text, at)) => {
+                let [_, copy] = edge_label(text, at, ("label-patch", "sub lit-text"));
+                (
+                    format!(r#"<g mask="url(#{GAP})">{body}</g>"#),
+                    inline(&[copy]),
+                )
+            }
+            None => (body, String::new()),
+        };
         items.push(Item::Motion(format!(
-            r#"<g class="signal {}" opacity="0">{shown}{body}</g>"#,
+            r#"<g class="signal {}" opacity="0">{shown}{body}{label}</g>"#,
             hue(hop.from)
         )));
     }
@@ -235,6 +253,40 @@ pub fn signals(
         of: GroupOf::Class("signals"),
         items,
     }
+}
+
+/// The mask a signal on a labelled edge is drawn through.
+const GAP: &str = "label-gap";
+
+/// The mask that keeps signals off every label in `boxes`, in a drawing
+/// `width` by `height`: clear everywhere but over each label, where a black
+/// box softened by `signal.blur` fades the line and its glow out before the
+/// text, as the still line stops at the label's patch.
+#[must_use]
+pub fn label_gap(boxes: &[Rect], width: f64, height: f64) -> Option<String> {
+    if boxes.is_empty() {
+        return None;
+    }
+    let area = format!(
+        r#"x="0" y="0" width="{}" height="{}""#,
+        num(width),
+        num(height)
+    );
+    let mut holes = String::new();
+    for r in boxes {
+        let _ = write!(
+            holes,
+            r##"<rect x="{}" y="{}" width="{}" height="{}" fill="#000" filter="url(#{GAP}-soft)"/>"##,
+            num(r.x),
+            num(r.y),
+            num(r.w),
+            num(r.h)
+        );
+    }
+    Some(format!(
+        r##"<defs><filter id="{GAP}-soft" filterUnits="userSpaceOnUse" {area}><feGaussianBlur stdDeviation="{}"/></filter><mask id="{GAP}" maskUnits="userSpaceOnUse" {area}><rect {area} fill="#fff"/>{holes}</mask></defs>"##,
+        num(SIGNAL_BLUR)
+    ))
 }
 
 /// The mark one hop draws in `style`: along edge `id`, whose path is `d`

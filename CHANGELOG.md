@@ -12,6 +12,10 @@ follow [Semantic Versioning](https://semver.org/).
   `<name>.svg` beside it, so a project keeps each spec next to its
   drawing under a plain name.
 - `-o` into a folder that does not exist creates the folder.
+- An edge's label lights with its signal: while the signal is seen, the
+  label's text takes the signal's colour, and the signal and its glow fade
+  out round it, so nothing crosses or boxes the text. A colour too faint
+  for text on the canvas shows as the text colour instead.
 
 ### Changed
 

@@ -253,6 +253,17 @@ fn item(svg: &mut Svg, it: &Item) {
     }
 }
 
+/// A few items as one line of SVG, for markup that only motion shows
+/// (`Item::Motion`), drawn exactly as the scene draws them.
+#[must_use]
+pub fn inline(items: &[Item]) -> String {
+    let mut svg = Svg::default();
+    for i in items {
+        item(&mut svg, i);
+    }
+    svg.finish().lines().collect()
+}
+
 /// A scene as SVG text.
 #[must_use]
 pub fn write(scene: &Scene) -> String {

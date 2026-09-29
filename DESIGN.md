@@ -373,6 +373,13 @@ sends has arrived (`lit-card`): a border of `signal.lit` in its hue just
 outside its own edge, over a fill of that hue at `signal.tint`. The last
 card of a flow stays lit for `motion.hop-gap`.
 
+An edge's label is lit while its signal is seen: the signal's line and
+glow fade out round the label, softened by `signal.blur`, as the still line
+stops at it, and a copy of the label's text above them takes the signal's
+hue, with nothing behind it: no patch, no glow. Where the hue
+falls short of text contrast on `color.canvas` in a theme (4.5:1, Colors),
+the text is in `color.text` in that theme.
+
 Where nothing moves, the still image shows what the spec chooses: nothing
 more than the diagram; each flow in words under the legend, its steps'
 labels joined by arrows and a branch's by commas, in the legend's type; or
