@@ -19,6 +19,11 @@ twice, a second document, and a tag outside YAML's core schema are errors
 too, and a plain word that reads as a number or a boolean (`title: 2026`)
 must be quoted to stay text.
 
+A spec named `<name>.archgram.yaml` (or `<name>.archgram.json`) draws
+`<name>.svg` beside it, so each spec sits next to its drawing and the
+drawing keeps a plain name; any other spec draws its own name with `.svg`.
+`-o` names another file, and creates its folder when it does not exist.
+
 ## Top level
 
 ```json
@@ -33,6 +38,7 @@ must be quoted to stay text.
   "legend": true,
   "signal": "wire",
   "still": "none",
+  "credit": true,
   "nodes": [],
   "frames": [],
   "edges": [],
@@ -53,6 +59,7 @@ must be quoted to stay text.
 | `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
 | `signal` | no | `wire`, `spark`, `arc`, `comet`, `dot`, `pulse`, `current` | `wire` | How a flow's signal is drawn along the lines (DESIGN.md, Components: Signal) |
 | `still` | no | `none`, `legend`, `numbers` | `none` | What the still image shows of the flows, where nothing moves: nothing more, each flow in words under the legend, or each step's number on its lines |
+| `credit` | no | `true`, `false` | `true` | Whether to write a small "by archgram" in the drawing's bottom-right corner, hidden from screen readers |
 | `nodes` | yes | list | | At least one node |
 | `frames`, `edges`, `flows` | no | list | empty | |
 | `hints` | no | object | empty | Layout hints, below |
