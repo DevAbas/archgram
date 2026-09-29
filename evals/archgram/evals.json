@@ -33,21 +33,21 @@
       "id": 5,
       "name": "draws-a-pipeline",
       "prompt": "Draw how the nightly sales data moves, for the README.",
-      "expected_output": "The skill recognises a data pipeline. The drawing starts from the Airflow DAG in dags/nightly_sales.py, which runs at 02:00, and follows one day's rows: the store CSVs in data/stores and the POS API (external) into extract, then clean, then load into the Postgres warehouse's sales_daily table, each stage backed by its file in etl/. It shows where bad rows go (quarantine/bad_rows.parquet), since that is where the data is checked. It has about 10 nodes and 12 edges or fewer, each edge in the report with the file and line that makes it, is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises a data pipeline and says so in the report. The drawing starts from the Airflow DAG in dags/nightly_sales.py, which runs at 02:00, and follows one day's rows: the store CSVs in data/stores and the POS API (external) into extract, then clean, then load into the Postgres warehouse's sales_daily table, each stage backed by its file in etl/. It shows where bad rows go (quarantine/bad_rows.parquet), since that is where the data is checked. It has about 10 nodes and 12 edges or fewer, each edge in the report with the file and line that makes it, is no wider than 1,300 px, and no browser was started.",
       "files": ["files/pipeline"]
     },
     {
       "id": 6,
       "name": "draws-ports-and-adapters",
       "prompt": "Draw this service's architecture for the README.",
-      "expected_output": "The skill recognises ports and adapters. The core (the billInvoice use case in src/app and the rules in src/domain) sits between what drives it (the POST /invoices route and the rebill CLI) and what it drives (the Postgres repository, Stripe and Postmark adapters, each with its logo). No edge leaves src/domain for an adapter; the one idea, that the rules depend on nothing outside the ports, is visible and said in the report, with src/wiring.ts named as where the adapters are plugged in. A flow follows one invoice from the route through the core to the three adapters. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises ports and adapters and says so in the report. The core (the billInvoice use case in src/app and the rules in src/domain) sits between what drives it (the POST /invoices route and the rebill CLI) and what it drives (the Postgres repository, Stripe and Postmark adapters, each with its logo). No edge leaves src/domain for an adapter; the one idea, that the rules depend on nothing outside the ports, is visible and said in the report, with src/wiring.ts named as where the adapters are plugged in. A flow follows one invoice from the route through the core to the three adapters. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
       "files": ["files/billing"]
     },
     {
       "id": 7,
       "name": "merges-parts-with-the-same-relations",
       "prompt": "Draw what each lintkit command reads and writes.",
-      "expected_output": "The four commands (init, check, fix, report) are nodes. Parts the reader need not tell apart are merged, each merged node naming its parts in its note: the rule plugins in plugins/ with their registry, and lintkit.config.json with .lintkit/rules.json, which init writes and check reads. .lintkit/results.json joins check, fix and report; the source files are read by check and changed by fix; report writes .lintkit/report.html. The drawing has about 10 nodes and 12 edges or fewer, and every edge moves data: fix running check again is a note or the flow's order, not an edge among the reads and writes. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises a plugin host and says so in the report. The four commands (init, check, fix, report) are nodes. Parts the reader need not tell apart are merged, each merged node naming its parts in its note: the rule plugins in plugins/ with their registry, and lintkit.config.json with .lintkit/rules.json, which init writes and check reads. .lintkit/results.json joins check, fix and report; the source files are read by check and changed by fix; report writes .lintkit/report.html. The drawing has about 10 nodes and 12 edges or fewer, and every edge moves data: fix running check again is a note or the flow's order, not an edge among the reads and writes. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
       "files": ["files/lintkit"]
     }
   ]

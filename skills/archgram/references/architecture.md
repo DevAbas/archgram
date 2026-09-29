@@ -124,6 +124,6 @@ questions touch, within how much to draw, and list the rest as left out.
 ## Styles of architecture
 
 Most systems follow a known style, and each has its usual parts and
-questions: `references/styles.md` lists them, with how to recognise each
-in the code. Read the entry for the style you recognise; when none fits,
-the rules above are enough.
+questions: the table in `references/styles.md` says how to recognise
+each in the code and which file describes it. Read the file for the style
+you recognise; when none fits, the rules above are enough.
