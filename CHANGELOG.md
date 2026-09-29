@@ -21,6 +21,9 @@ follow [Semantic Versioning](https://semver.org/).
   it off.
 - `archgram spec` prints the spec format this archgram reads, so whoever
   writes a spec reads the format of the very command that draws it.
+- The `archgram` skill for Claude Code, in `skills/archgram`: it draws a
+  project's architecture from its code and docs, in the project's own
+  colours, and lists each part with the file behind it.
 
 ### Changed
 

@@ -60,6 +60,25 @@ npx archgram check docs/diagrams/linkshort.archgram.yaml   # every problem, at i
 To draw in your own design system's colours, point archgram at your
 design tokens (W3C Design Tokens) with `--theme-file`.
 
+## Draw with Claude Code
+
+The `archgram` skill lets Claude Code draw a project's architecture from
+its code: it reads the code and the docs, writes the spec in
+`docs/diagrams/`, checks and draws it with `npx archgram`, in the project's
+own colours, and lists each part it drew with the file behind it. Install
+it for every project:
+
+```sh
+mkdir -p ~/.claude/skills && curl -sL https://github.com/DevAbas/archgram/releases/download/v0.4.0/archgram-skill-0.4.0.tar.gz | tar -xz -C ~/.claude/skills
+```
+
+or for one project, into its `.claude/skills/` instead. Then ask Claude to
+draw the architecture, or type `/archgram`.
+
+Every release's files, the skill and a binary for each platform, carry a
+signed record of the build that made them:
+`gh attestation verify <file> -R DevAbas/archgram`.
+
 ## Documentation
 
 - [docs/SPEC.md](docs/SPEC.md): the spec, every field and rule, with examples.

@@ -51,8 +51,10 @@ node --test packages/archgram/lib/platform.test.js
 - **No new dependency without an issue first.** Every dependency is a
   supply-chain decision; `cargo xtask deps` and `deny.toml` check the ones
   there are.
-- **Commit messages** are `type: subject`, such as `fix: an edge label no
-  longer covers its arrowhead`.
+- **Commit messages** are `type: subject`, the subject in the imperative
+  ("if applied, this commit will …"), such as `fix: keep an edge label off
+  its arrowhead`. A pull request is squashed into one commit on `main`, so
+  its title is that commit's message.
 
 ## Reporting a vulnerability
 

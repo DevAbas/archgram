@@ -391,6 +391,14 @@ spec generator are small helpers inside the workspace.
   provenance and needs no stored token, and it only stages: each package
   goes public when a maintainer approves it with two-factor
   authentication (RELEASE.md).
+- The GitHub release carries each platform's binary and the Claude Code
+  skill (`skills/archgram`) as archives, for people without Node, each
+  with a signed build provenance attestation (`actions/attest`, SLSA Build
+  Level 2) and a `SHA256SUMS`. The workflow drafts it and a maintainer
+  publishes it; releases are immutable once published.
+- The skill is one folder the user copies into a skills directory. It runs
+  `npx archgram` and reads the spec format from `archgram spec`, the text
+  of docs/SPEC.md carried in the binary, so it keeps no copy of the format.
 - Later: a WASM package for the browser, and the PNG module as a
   separate, optional package.
 - Crates on crates.io once the API is stable.
