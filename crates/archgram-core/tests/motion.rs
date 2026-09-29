@@ -367,3 +367,84 @@ fn a_hue_too_faint_for_text_lights_the_label_in_the_text_colour() {
         "@media (prefers-color-scheme: dark) { .signal.core .lit-text { fill: var(--text); } }"
     ));
 }
+
+/// Design-system's gates, drawn by the skill with `still: numbers`: step
+/// numbers landed on two frames' names (#23).
+const GATES: &str = r#"{ "archgram": 1, "title": "t", "description": "d", "direction": "down", "still": "numbers",
+  "nodes": [
+    { "id": "agent", "kind": "agent", "label": "Claude Code agent", "note": "Edit, Write, Bash", "variant": "external" },
+    { "id": "protect", "kind": "script", "label": "protect-generated", "note": "before an edit, denies", "frame": "adapters" },
+    { "id": "after", "kind": "script", "label": "check-on-edit", "note": "+ check-after-bash; reports", "frame": "adapters" },
+    { "id": "guard", "kind": "script", "label": "guard-commit", "note": "before git commit, refuses", "frame": "adapters" },
+    { "id": "precommit", "kind": "script", "label": "git pre-commit", "note": "a person's commit", "frame": "noagent" },
+    { "id": "ci", "kind": "service", "label": "CI job", "note": "design-system.yml", "frame": "noagent" },
+    { "id": "rungates", "kind": "script", "label": "run-gates.mjs", "note": "CLI, only translates", "frame": "core" },
+    { "id": "gates", "kind": "check", "label": "gates.mjs", "note": "every decision, from gates.json", "frame": "core" },
+    { "id": "lint", "kind": "check", "label": "ESLint token rules", "note": "raw values fail, strict", "frame": "commands" },
+    { "id": "tokens", "kind": "check", "label": "tokens:check", "note": "tokens, DESIGN.md, staleness", "frame": "commands" }
+  ],
+  "frames": [
+    { "id": "adapters", "label": ".claude/hooks/design-system/" },
+    { "id": "noagent", "label": "Without an agent" },
+    { "id": "core", "label": "design-system/harness/" },
+    { "id": "commands", "label": "Commands in gates.json" }
+  ],
+  "edges": [
+    { "from": "agent", "to": "protect" }, { "from": "agent", "to": "after" }, { "from": "agent", "to": "guard" },
+    { "from": "protect", "to": "gates", "label": "check-generated" }, { "from": "after", "to": "gates", "label": "check-files" },
+    { "from": "guard", "to": "gates", "label": "before-commit" }, { "from": "precommit", "to": "rungates" },
+    { "from": "ci", "to": "rungates" }, { "from": "rungates", "to": "gates", "label": "before-commit" },
+    { "from": "gates", "to": "lint" }, { "from": "gates", "to": "tokens" }
+  ],
+  "flows": [
+    { "name": "an edit to a generated CSS file", "steps": ["agent", "protect", "gates"], "stop": "gates" },
+    { "name": "an edit with a raw colour", "steps": ["agent", "after", "gates", "lint"], "stop": "lint" },
+    { "name": "the agent's commit", "steps": ["agent", "guard", "gates", ["lint", "tokens"]] },
+    { "name": "a person's commit", "steps": ["precommit", "rungates", "gates", ["lint", "tokens"]] },
+    { "name": "CI", "steps": ["ci", "rungates", "gates", ["lint", "tokens"]] }
+  ],
+  "hints": { "sameLayer": [["agent", "precommit", "ci"]] } }"#;
+
+/// The boxes of every `<rect class="{class}" …>` in `svg`, and of a frame
+/// name's patch when `class` is `label-patch` and a frame's name follows it.
+fn boxes(svg: &str, class: &str, before: Option<&str>) -> Vec<[f64; 4]> {
+    let mut out = Vec::new();
+    let open = format!(r#"<rect class="{class}" "#);
+    let mut rest = svg;
+    while let Some(i) = rest.find(&open) {
+        let tag_end = rest[i..].find('>').map_or(rest.len(), |j| i + j);
+        let tag = &rest[i..=tag_end.min(rest.len() - 1)];
+        let after = rest[tag_end..].trim_start_matches(|c: char| c == '>' || c.is_whitespace());
+        if before.is_none_or(|b| after.starts_with(b)) {
+            let num = |k: &str| -> f64 {
+                let at = tag.find(&format!(r#" {k}=""#)).expect(k) + k.len() + 3;
+                tag[at..at + tag[at..].find('"').unwrap()].parse().unwrap()
+            };
+            out.push([num("x"), num("y"), num("width"), num("height")]);
+        }
+        rest = &rest[tag_end..];
+    }
+    out
+}
+
+#[test]
+fn a_step_number_keeps_clear_of_a_frames_name() {
+    let svg = build(GATES, Options::default()).unwrap();
+    let steps = boxes(&svg, "step", None);
+    let names = boxes(&svg, "label-patch", Some(r#"<text class="frame-label""#));
+    assert!(
+        !steps.is_empty() && names.len() == 4,
+        "{} steps, {} names",
+        steps.len(),
+        names.len()
+    );
+    for s in &steps {
+        for n in &names {
+            let apart = s[0] + s[2] <= n[0]
+                || n[0] + n[2] <= s[0]
+                || s[1] + s[3] <= n[1]
+                || n[1] + n[3] <= s[1];
+            assert!(apart, "step {s:?} covers a frame's name {n:?}");
+        }
+    }
+}
