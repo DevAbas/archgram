@@ -57,13 +57,61 @@ flows:
 Then draw it:
 
 ```sh
-npx archgram build docs/diagrams/linkshort.archgram.yaml   # linkshort.svg beside it, light and dark in one file
-npx archgram build docs/diagrams/linkshort.archgram.yaml --split-themes
-npx archgram check docs/diagrams/linkshort.archgram.yaml   # every problem, at its line and column
+npx archgram build docs/diagrams/linkshort.archgram.yaml
 ```
 
-To draw in your own design system's colours, point archgram at your
-design tokens (W3C Design Tokens) with `--theme-file`.
+It writes `docs/diagrams/linkshort.svg` beside the spec, light and dark in
+one file.
+
+## Commands
+
+### `archgram build <spec>`
+
+Draws the diagram. A spec named `<name>.archgram.yaml` (or `.yml`,
+`.json`) draws `<name>.svg` beside it.
+
+```sh
+npx archgram build docs/diagrams/linkshort.archgram.yaml
+```
+
+| Option | What it does |
+|---|---|
+| `-o <file.svg>` | Writes another file, and creates its folder when it does not exist |
+| `--theme auto\|light\|dark` | Which theme the file carries: `auto`, the default, both, following the reader's dark mode; `light` or `dark` one only |
+| `--split-themes` | Writes `<name>.light.svg` and `<name>.dark.svg`, for a page that picks one per reader |
+| `--theme-file <archgram.theme.json>` | Draws in your design system's colours, from its design tokens (W3C Design Tokens) |
+| `--system-font` | Leaves the text to the reader's font instead of embedding Geist |
+
+### `archgram check <spec>`
+
+Checks a spec without drawing it, and lists every problem at its line and
+column, with the nearest id or logo when one is misspelt.
+
+```sh
+npx archgram check docs/diagrams/linkshort.archgram.yaml
+```
+
+### `archgram spec`
+
+Prints the spec format this archgram reads: every field, node kind and
+rule.
+
+```sh
+npx archgram spec
+```
+
+### `archgram theme check <archgram.theme.json>`
+
+Reads your design tokens as the theme and shows each colour role in light
+and dark, or every problem, such as a pair that falls short of contrast.
+
+```sh
+npx archgram theme check archgram.theme.json
+```
+
+### `archgram --version`, `archgram --help`
+
+Print the version, or every command and option.
 
 ## Draw with Claude Code
 
