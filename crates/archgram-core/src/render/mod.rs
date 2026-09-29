@@ -542,18 +542,37 @@ pub fn step_label(numbers: &[u32]) -> String {
 /// Each step's number on the lines the flows take, for the still image
 /// (`still: numbers`): a badge where the step arrives, just before the
 /// arrowhead, or else as near to it along the line as clears every card,
-/// edge label, frame name and badge in `blocked`. Lines that meet before a card share their
-/// last stretch, and show their number there once.
+/// edge label, frame name and badge in `blocked`. Lines that meet before a
+/// card share their last stretch, and show all their numbers there in one
+/// badge.
 fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<Item> {
     use crate::tokens::{SIGNAL_NUMBER, TYPOGRAPHY_LEGEND};
     let numbers = crate::motion::step_numbers(spec);
     if numbers.iter().all(Vec::is_empty) {
         return None;
     }
+    // Lines ending at one point share their last stretch: one badge on the
+    // first of them carries every number, in order.
+    let mut groups: Vec<(usize, Vec<u32>)> = Vec::new();
+    for (e, list) in numbers.iter().enumerate().filter(|(_, n)| !n.is_empty()) {
+        let tip = drawn[e].tip();
+        let meets = |g: usize| {
+            let t = drawn[g].tip();
+            (t.x - tip.x).abs() < 0.5 && (t.y - tip.y).abs() < 0.5
+        };
+        match groups.iter_mut().find(|(g, _)| meets(*g)) {
+            Some((_, all)) => {
+                all.extend(list);
+                all.sort_unstable();
+                all.dedup();
+            }
+            None => groups.push((e, list.clone())),
+        }
+    }
     let mut placed: Vec<(Rect, String)> = Vec::new();
     let mut items = Vec::new();
-    for (e, list) in numbers.iter().enumerate().filter(|(_, n)| !n.is_empty()) {
-        let text = step_label(list);
+    for (e, list) in &groups {
+        let (e, text) = (*e, step_label(list));
         let h = SIGNAL_NUMBER;
         // As wide as the text and the room either side a single digit has.
         let w = h

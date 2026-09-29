@@ -448,3 +448,22 @@ fn a_step_number_keeps_clear_of_a_frames_name() {
         }
     }
 }
+
+#[test]
+fn lines_that_meet_before_a_card_show_their_numbers_in_one_badge() {
+    // Two flows reach c by two lines that join before its arrowhead (#18).
+    let spec = r#"{ "archgram": 1, "title": "t", "description": "d", "direction": "down", "still": "numbers",
+        "nodes": [{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "service", "label": "B" },
+                  { "id": "c", "kind": "database", "label": "C" }],
+        "edges": [{ "from": "a", "to": "c" }, { "from": "b", "to": "c" }],
+        "flows": [{ "name": "f", "steps": ["a", "c"] }, { "name": "g", "steps": ["b", "c"] }] }"#;
+    let svg = build(spec, Options::default()).unwrap();
+    let texts: Vec<&str> = svg
+        .match_indices(r#"<text class="step-text""#)
+        .map(|(i, _)| {
+            let start = i + svg[i..].find('>').unwrap() + 1;
+            &svg[start..start + svg[start..].find('<').unwrap()]
+        })
+        .collect();
+    assert_eq!(texts, ["1,2"]);
+}
