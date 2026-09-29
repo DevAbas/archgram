@@ -15,4 +15,4 @@ the refusal goes back to the person, and the fixed commit then passes.
 | `ring.{light,dark}.svg` | The border sweeps once around from the arrowhead |
 | `afterglow.{light,dark}.svg` | The border fades back to the card's own edge while the card is lit |
 | `pending.{light,dark}.svg` | The refused card waits with a slow dashed border |
-| `glow.{light,dark}.svg` | Signals, the ✕, the refusal and the border heads glow |
+| `glow.{light,dark}.svg` | Signals, the ✕, the refusal and the border heads glow. The design chosen after it keeps a faint glow on a signal's line only |

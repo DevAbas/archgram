@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "The flow signal, its timing and the card it lights.",
+  "$description": "The flow signal, its timing, the lit card's border and a refusal.",
   "motion": {
     "ease": {
       "$type": "cubicBezier",
@@ -108,6 +108,13 @@
       },
       "$description": "The glow's blur (a Gaussian's standard deviation)."
     },
+    "blur-dark": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "The glow's blur in the dark theme, where a lighter line needs less."
+    },
     "glow": {
       "$value": {
         "value": 6,
@@ -115,9 +122,20 @@
       },
       "$description": "The width of a line's glow."
     },
+    "glow-dark": {
+      "$value": {
+        "value": 5,
+        "unit": "px"
+      },
+      "$description": "The width of a line's glow in the dark theme."
+    },
     "glow-opacity": {
       "$type": "number",
       "$value": 0.35
+    },
+    "glow-opacity-dark": {
+      "$type": "number",
+      "$value": 0.28
     },
     "trail": {
       "$value": {
@@ -156,18 +174,6 @@
         "unit": "px"
       },
       "$description": "How far a pulse's ring spreads."
-    },
-    "lit": {
-      "$value": {
-        "value": 2,
-        "unit": "px"
-      },
-      "$description": "The border of a card the signal is at."
-    },
-    "tint": {
-      "$type": "number",
-      "$value": 0.1,
-      "$description": "The opacity of a lit card's fill in its hue."
     },
     "dash": {
       "$type": "strokeStyle",
@@ -239,7 +245,7 @@
         "value": 6,
         "unit": "px"
       },
-      "$description": "The room between the ✕ and the arrowhead after it."
+      "$description": "The room between the ✕ and the base of the arrowhead after it."
     },
     "pending": {
       "$type": "strokeStyle",

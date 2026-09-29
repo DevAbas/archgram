@@ -49,6 +49,7 @@ fn examples_match_their_golden_files() {
         "kinds",
         "kinds-vertical",
         "cv-screener-architecture",
+        "commit-gates",
     ] {
         golden(name, Mode::Auto);
     }

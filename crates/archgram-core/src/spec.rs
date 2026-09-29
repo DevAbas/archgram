@@ -37,9 +37,9 @@ pub struct Spec {
     /// Components: Refusal).
     #[serde(default)]
     pub wait: Wait,
-    /// Whether the signal styles that have a glow, and a refusal's marks,
-    /// glow (DESIGN.md, Colors).
-    #[serde(default)]
+    /// Whether a signal glows, in the styles that have a glow (DESIGN.md,
+    /// Components: Signal).
+    #[serde(default = "default_true")]
     pub glow: bool,
     /// Whether a small "by archgram" sits in the drawing's bottom-right
     /// corner (DESIGN.md, Components: Credit).

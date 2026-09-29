@@ -78,7 +78,7 @@ same file every time.
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
 | 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the `archgram` skill for Claude Code, which draws a project's architecture from its code |
-| 0.5 | A flow may stop at a step, and the refusal goes back to where the flow began; a card's border is drawn from the arrow that reaches it, in a colour for passing and one for a refusal, in one of four styles; nothing glows unless asked |
+| 0.5 | A flow may stop at a step, and the refusal goes back to where the flow began; a card's border is drawn from the arrow that reaches it, in a colour for passing and one for a refusal, in one of four styles; only a signal glows, faintly |
 | Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
@@ -125,8 +125,9 @@ same file every time.
   spec picks how it is drawn from a fixed set of styles; by default the
   line fills with that colour. An arrowhead takes the colour of the signal
   that reaches it.
-- Nothing glows: a signal is a flat line in its colour. The spec may turn
-  the glow on.
+- Only a signal glows, faintly, under its line, and more softly in dark,
+  where a light line needs less; the spec may turn it off. Nothing else
+  glows.
 - A card is lit from the moment a signal reaches its arrowhead until every
   signal it sends has arrived. Its border takes the passing colour, drawn
   from the point where the arrow meets the card, both ways round, closing
@@ -285,4 +286,4 @@ None.
 | 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
 | 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
 | 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
-| 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; nothing glows unless the spec asks; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |
+| 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; only a signal glows, faintly, and more softly in dark, unless the spec turns it off; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |

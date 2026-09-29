@@ -40,7 +40,7 @@ drawing keeps a plain name; any other spec draws its own name with `.svg`.
   "still": "none",
   "border": "spark",
   "wait": "solid",
-  "glow": false,
+  "glow": true,
   "credit": true,
   "nodes": [],
   "frames": [],
@@ -64,7 +64,7 @@ drawing keeps a plain name; any other spec draws its own name with `.svg`.
 | `still` | no | `none`, `legend`, `numbers` | `none` | What the still image shows of the flows, where nothing moves: nothing more, each flow in words under the legend, or each step's number on its lines |
 | `border` | no | `spark`, `drain`, `ring`, `afterglow` | `spark` | How a lit card's border is drawn from the arrow that reaches it: both ways round with a dot on each growing end, then draining toward the arrow that leaves, once round clockwise, or fading while the card is lit (DESIGN.md, Components: Signal) |
 | `wait` | no | `solid`, `pending` | `solid` | How a refused card waits for a later flow to pass it: its refusal border as drawn, or marching round it as dashes (DESIGN.md, Components: Refusal) |
-| `glow` | no | `true`, `false` | `false` | Whether the signal styles that have a glow (`wire`, `spark`, `arc`), and a refusal's marks, glow |
+| `glow` | no | `true`, `false` | `true` | Whether a signal glows, faintly, in the styles that have a glow (`wire`, `spark`, `arc`); nothing else glows |
 | `credit` | no | `true`, `false` | `true` | Whether to write a small "by archgram" in the drawing's bottom-right corner, hidden from screen readers |
 | `nodes` | yes | list | | At least one node |
 | `frames`, `edges`, `flows` | no | list | empty | |

@@ -109,7 +109,7 @@ compete for attention.
 The language is minimalist. Surfaces and text are neutral greys; colour
 appears only in technology logos and in what happens on a flow: a card a
 signal passes, a step that refuses it. There are no shadows, no gradients
-and, unless the spec asks for it, no glow. The shapes
+and no glow but a signal's faint one. The shapes
 carry the meaning, following the conventions architecture diagrams have
 settled on: every kind of thing has its own icon, several instances of a
 thing are stacked cards, a thing we do not own has a dashed border, and a
@@ -181,9 +181,10 @@ Rules:
   it and `color.signal-refusal` while a refusal marks it; its fill, icon
   and text never change (Components: Signal, Refusal).
 - Hues are muted and there is no neon; a logo's brand colour is its
-  brand's own (Components: Technology logo). Nothing glows unless the spec
-  asks for it (`glow: true`); then a signal glows in the styles that have
-  a glow, and a refusal's marks glow with it.
+  brand's own (Components: Technology logo). Only a signal glows, faintly,
+  in the styles that have a glow, so it reads against the connector it
+  runs along; the spec may turn it off (`glow: false`). A refusal's marks
+  and a lit border never glow.
 - A flow's signal takes the icon hue of the node it leaves.
 - Technology logos are drawn in their brands' own colours, always; a
   logo whose brand gives none is in `color.text-muted`.
@@ -364,8 +365,8 @@ rounded by `rounded.connector`, ending in an open arrowhead drawn with the
 line's own stroke, `arrowhead.length` back along the line and
 `arrowhead.width` across it. The tip stops `arrowhead.gap` short of the
 card, so the arrowhead never touches the card's edge. The arrowhead takes
-the colour of the signal that reaches it, for as long as that signal is
-seen. Edges leaving one
+the colour of the signal that reaches it, for `motion.hop-gap` from its
+arrival, or until a refusal leaves from it. Edges leaving one
 side of a card leave from its middle as one trunk and fork in the gap;
 edges entering one side merge into one point. An edge with a label near
 the card, or one drawn against the flow, keeps a port of its own,
@@ -400,9 +401,12 @@ stroke:
 - **Current**: the line runs as dashes of `signal.dash`, moving on by one
   dash and gap every `signal.dash-period`, behind a dot.
 
-When the spec asks for glow (`glow: true`), the wire, spark and arc
-styles glow: a second line of `signal.glow` at `signal.glow-opacity`
-under the signal, blurred by `signal.blur`. The other styles have none.
+The wire, spark and arc styles glow: a second line under the signal, in
+light `signal.glow` wide at `signal.glow-opacity`, blurred by
+`signal.blur`; in dark, where a light line on a dark canvas needs less,
+`signal.glow-dark` at `signal.glow-opacity-dark`, blurred by
+`signal.blur-dark`. The other styles have none, and the spec turns the
+glow off with `glow: false`.
 
 A card is lit from the moment a signal reaches its arrowhead until every
 signal it sends has arrived (`lit-card`): its own border, at its own width
@@ -493,7 +497,7 @@ turns it off (`credit: false`), and the drawing is then a line shorter.
 - Do name technologies with `tech`, so the logo appears. A logo takes the
   kind's icon's place only when the diagram asks for it (`logo: icon`).
 - Don't use neon hues, gradients, shadows or glow; brand colours belong to
-  the technology logos alone, and glow to a spec that asks for it.
+  the technology logos alone, and glow to a signal's line.
 - Don't animate for decoration; if the flow does not need it, the diagram
   is still.
 - Don't write a value in this file. A new value is a token first.

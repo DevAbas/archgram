@@ -1,14 +1,14 @@
 //! The flows' animation as SMIL (DESIGN.md, Motion and Components: Signal):
 //! a signal per hop, in the style the spec names, following its edge's own
-//! path, with its edge's label over it in the signal's colour; and, while a
-//! signal is at a card, the card lit and its logo in its brand's colour. SMIL runs where CSS and scripts do not, in an `<img>`
-//! and on GitHub. Every element starts invisible, so a reader that runs no
-//! animation shows the still diagram.
+//! path, with its edge's label over it in the signal's colour, and the
+//! arrowhead it reaches in that colour. SMIL runs where CSS and scripts do
+//! not, in an `<img>` and on GitHub. Every element starts invisible, so a
+//! reader that runs no animation shows the still diagram.
 
 use crate::geometry::Rect;
 use std::fmt::Write as _;
 
-use crate::motion::{Hop, Lit, Timeline, fade};
+use crate::motion::{Hop, Timeline, fade};
 use crate::render::edge::{Drawn, edge_label};
 use crate::render::scene::{GroupOf, Item};
 use crate::render::svg::{inline, num};
@@ -146,26 +146,6 @@ fn seen(start: u32, end: u32, period: u32) -> String {
     )
 }
 
-/// The lit times of one card as an opacity animation: fully on from each
-/// start to each end, fading over `motion.fade` either side.
-#[must_use]
-pub fn lit_animation(lit: &[Lit], period: u32) -> String {
-    let f = fade();
-    let mut t = KeyTrack::new(period);
-    t.key(0, "0");
-    for l in lit {
-        t.key(l.start.saturating_sub(f), "0")
-            .key(l.start, "1")
-            .key(l.end, "1")
-            .key((l.end + f).min(period), "0");
-    }
-    t.key(period, "0");
-    format!(
-        r#"<animate attributeName="opacity" {}/>"#,
-        t.attributes("values")
-    )
-}
-
 /// A flicker: the opacity wavering on its own short loop.
 fn flicker(period_ms: f64, values: &str) -> String {
     format!(
@@ -207,17 +187,20 @@ fn streak(
     )
 }
 
-/// Every signal, drawn above the cards. `labels` holds each edge's label
-/// and its box, by the edge's index. On a labelled edge the signal's line
-/// and glow fade out round the label (`label_gap`), with no patch to box
-/// the text, and a copy of the label's text above them takes the signal's
-/// colour for as long as the signal is seen.
+/// Every signal, drawn above the cards, and after them what a refusal
+/// draws (`extra`). `labels` holds each edge's label and its box, by the
+/// edge's index. On a labelled edge the signal's line and glow fade out
+/// round the label (`label_gap`), with no patch to box the text, and a copy
+/// of the label's text above them takes the signal's colour for as long as
+/// the signal is seen. The arrowhead a signal reaches takes its colour from
+/// its arrival for `motion.hop-gap`, or until a refusal leaves from it.
 pub fn signals(
-    style: SignalStyle,
+    (style, glow): (SignalStyle, bool),
     timeline: &Timeline,
     drawn: &[Drawn],
     labels: &[Option<(&str, Rect)>],
     hue: impl Fn(usize) -> &'static str,
+    extra: Vec<Item>,
 ) -> Item {
     let mut items = Vec::new();
     let period = timeline.period;
@@ -225,7 +208,7 @@ pub fn signals(
         let id = edge_id(hop.edge);
         let d = drawn[hop.edge].d();
         let length = drawn[hop.edge].length();
-        let body = mark(style, hop, period, (&id, &d, length));
+        let body = mark((style, glow), hop, period, (&id, &d, length));
         // A filled line stays while the card it reached is lit, then fades
         // with it; every other mark goes as it arrives.
         let shown = if style == SignalStyle::Wire {
@@ -248,7 +231,19 @@ pub fn signals(
             r#"<g class="signal {}" opacity="0">{shown}{body}{label}</g>"#,
             hue(hop.from)
         )));
+        let refused = timeline
+            .refusals
+            .iter()
+            .find(|r| r.edge == hop.edge && r.start == hop.end);
+        let until = refused.map_or(hop.end + ms(MOTION_HOP_GAP_MS), |r| r.back) + fade();
+        items.push(Item::Motion(format!(
+            r#"<g class="signal {}" opacity="0">{}<path class="chevron" d="{}"/></g>"#,
+            hue(hop.from),
+            seen(hop.end, until.min(period), period),
+            drawn[hop.edge].chevron()
+        )));
     }
+    items.extend(extra);
     Item::Group {
         of: GroupOf::Class("signals"),
         items,
@@ -256,7 +251,7 @@ pub fn signals(
 }
 
 /// The mask a signal on a labelled edge is drawn through.
-const GAP: &str = "label-gap";
+pub const GAP: &str = "label-gap";
 
 /// The mask that keeps signals off every label in `boxes`, in a drawing
 /// `width` by `height`: clear everywhere but over each label, where a black
@@ -290,9 +285,25 @@ pub fn label_gap(boxes: &[Rect], width: f64, height: f64) -> Option<String> {
 }
 
 /// The mark one hop draws in `style`: along edge `id`, whose path is `d`
-/// and `length` long.
-fn mark(style: SignalStyle, hop: &Hop, period: u32, (id, d, length): (&str, &str, f64)) -> String {
+/// and `length` long; its glow only when the spec asks for one.
+fn mark(
+    (style, glow): (SignalStyle, bool),
+    hop: &Hop,
+    period: u32,
+    (id, d, length): (&str, &str, f64),
+) -> String {
     let head = |inner: &str| format!("<g>{inner}{}</g>", mover(id, hop, period));
+    let halo = |every: f64, flickering: &str| {
+        if glow {
+            format!(
+                r#"<circle class="halo" r="{}">{}</circle>"#,
+                num(SIGNAL_HALO),
+                flicker(every, flickering)
+            )
+        } else {
+            String::new()
+        }
+    };
     match style {
         SignalStyle::Wire => {
             let fill = |class: &str| {
@@ -301,29 +312,42 @@ fn mark(style: SignalStyle, hop: &Hop, period: u32, (id, d, length): (&str, &str
                     progress(hop, period, "1000", "0")
                 )
             };
-            format!("{}{}", fill("fill glowing"), fill("fill"))
+            if glow {
+                format!("{}{}", fill("fill glowing"), fill("fill"))
+            } else {
+                fill("fill")
+            }
         }
         SignalStyle::Spark => format!(
             "{}{}{}{}",
-            streak(d, length, SIGNAL_TRAIL, "trail glowing", "", hop, period),
+            if glow {
+                streak(d, length, SIGNAL_TRAIL, "trail glowing", "", hop, period)
+            } else {
+                String::new()
+            },
             streak(d, length, SIGNAL_TRAIL, "trail", "", hop, period),
             streak(d, length, SIGNAL_BOLT, "bolt", "", hop, period),
             head(&format!(
-                r#"<circle class="halo" r="{}">{}</circle><circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
-                num(SIGNAL_HALO),
-                flicker(SIGNAL_FLICKER_MS, "0.55;1;0.7;0.95;0.6;1;0.55"),
+                r#"{}<circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
+                halo(SIGNAL_FLICKER_MS, "0.55;1;0.7;0.95;0.6;1;0.55"),
                 num(SIGNAL_DOT),
                 num(SIGNAL_CORE)
             ))
         ),
         SignalStyle::Arc => format!(
-            r#"<path class="wire-glow" d="{d}">{}</path>{}{}"#,
-            flicker(SIGNAL_FLICKER_FAST_MS, "0.25;0.6;0.35;0.7;0.3;0.55;0.25"),
+            "{}{}{}",
+            if glow {
+                format!(
+                    r#"<path class="wire-glow" d="{d}">{}</path>"#,
+                    flicker(SIGNAL_FLICKER_FAST_MS, "0.25;0.6;0.35;0.7;0.3;0.55;0.25")
+                )
+            } else {
+                String::new()
+            },
             streak(d, length, SIGNAL_BOLT, "bolt", "", hop, period),
             head(&format!(
-                r#"<circle class="halo" r="{}">{}</circle><circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
-                num(SIGNAL_HALO),
-                flicker(SIGNAL_FLICKER_FAST_MS, "0.6;1;0.5;0.9;0.7;1;0.6"),
+                r#"{}<circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
+                halo(SIGNAL_FLICKER_FAST_MS, "0.6;1;0.5;0.9;0.7;1;0.6"),
                 num(SIGNAL_DOT),
                 num(SIGNAL_CORE)
             ))
@@ -353,31 +377,7 @@ fn mark(style: SignalStyle, hop: &Hop, period: u32, (id, d, length): (&str, &str
             num(SIGNAL_RING),
             num(SIGNAL_DOT)
         )),
-        SignalStyle::Pulse => {
-            let ripple = |begin: u32| {
-                let timing = format!(
-                    r#"dur="{}ms"{} repeatCount="indefinite""#,
-                    ms(crate::tokens::SIGNAL_RIPPLE_PERIOD_MS),
-                    if begin == 0 {
-                        String::new()
-                    } else {
-                        format!(r#" begin="{begin}ms""#)
-                    }
-                );
-                format!(
-                    r#"<circle class="ripple" r="{dot}"><animate attributeName="r" values="{dot};{}" {timing}/><animate attributeName="opacity" values="0.6;0" {timing}/></circle>"#,
-                    num(SIGNAL_RIPPLE),
-                    dot = num(SIGNAL_DOT)
-                )
-            };
-            head(&format!(
-                r#"{}{}<circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
-                ripple(0),
-                ripple(ms(crate::tokens::SIGNAL_RIPPLE_PERIOD_MS / 2.0)),
-                num(SIGNAL_DOT),
-                num(SIGNAL_CORE)
-            ))
-        }
+        SignalStyle::Pulse => head(&pulse()),
         SignalStyle::Current => {
             let cycle: f64 = SIGNAL_DASH.iter().sum();
             format!(
@@ -390,7 +390,34 @@ fn mark(style: SignalStyle, hop: &Hop, period: u32, (id, d, length): (&str, &str
     }
 }
 
-/// Whether a style draws a glow, so the drawing needs the blur filter.
+/// A pulse's head: a dot with a core, sending out two rings in turn.
+fn pulse() -> String {
+    let ripple = |begin: u32| {
+        let timing = format!(
+            r#"dur="{}ms"{} repeatCount="indefinite""#,
+            ms(crate::tokens::SIGNAL_RIPPLE_PERIOD_MS),
+            if begin == 0 {
+                String::new()
+            } else {
+                format!(r#" begin="{begin}ms""#)
+            }
+        );
+        format!(
+            r#"<circle class="ripple" r="{dot}"><animate attributeName="r" values="{dot};{}" {timing}/><animate attributeName="opacity" values="0.6;0" {timing}/></circle>"#,
+            num(SIGNAL_RIPPLE),
+            dot = num(SIGNAL_DOT)
+        )
+    };
+    format!(
+        r#"{}{}<circle class="dot" r="{}"/><circle class="core" r="{}"/>"#,
+        ripple(0),
+        ripple(ms(crate::tokens::SIGNAL_RIPPLE_PERIOD_MS / 2.0)),
+        num(SIGNAL_DOT),
+        num(SIGNAL_CORE)
+    )
+}
+
+/// Whether a style has a glow to draw when the spec asks for one.
 #[must_use]
 pub fn glows(style: SignalStyle) -> bool {
     matches!(

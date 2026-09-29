@@ -6,7 +6,10 @@ use crate::geometry::{Point, Rect};
 use crate::render::scene::{Anchor, Item};
 use crate::render::svg::num;
 use crate::spec::{Edge, EdgeStyle};
-use crate::tokens::{ARROWHEAD_GAP, CARD_PADDING, ROUNDED_CONNECTOR, TYPOGRAPHY_SUBTITLE};
+use crate::tokens::{
+    ARROWHEAD_GAP, ARROWHEAD_LENGTH, ARROWHEAD_WIDTH, CARD_PADDING, ROUNDED_CONNECTOR,
+    TYPOGRAPHY_SUBTITLE,
+};
 
 /// How far the line stops short of the card it points at: the arrowhead's
 /// tip is the line's end, so the tip leaves `arrowhead.gap` of air.
@@ -121,6 +124,57 @@ impl Drawn {
             at = end(*piece);
         }
         out
+    }
+
+    /// Where the line ends: the arrowhead's tip.
+    #[must_use]
+    pub fn tip(&self) -> Point {
+        self.pieces.last().map_or(self.start, |&p| end(p))
+    }
+
+    /// The way the line points at its tip, as a unit vector: along its last
+    /// straight piece, which every edge ends with.
+    #[must_use]
+    pub fn heading(&self) -> Point {
+        let (a, b) = self
+            .straights()
+            .last()
+            .copied()
+            .unwrap_or((self.start, self.tip()));
+        let l = distance(a, b).max(f64::EPSILON);
+        Point {
+            x: (b.x - a.x) / l,
+            y: (b.y - a.y) / l,
+        }
+    }
+
+    /// The point `back` pixels behind the tip, along the last straight piece.
+    #[must_use]
+    pub fn behind_tip(&self, back: f64) -> Point {
+        let (tip, u) = (self.tip(), self.heading());
+        Point {
+            x: tip.x - u.x * back,
+            y: tip.y - u.y * back,
+        }
+    }
+
+    /// The arrowhead as its own path, as the connector's marker draws it:
+    /// two legs `arrowhead.length` back along the line, `arrowhead.width`
+    /// apart across it, meeting at the tip.
+    #[must_use]
+    pub fn chevron(&self) -> String {
+        let (tip, u) = (self.tip(), self.heading());
+        let base = self.behind_tip(ARROWHEAD_LENGTH);
+        let (nx, ny) = (-u.y * ARROWHEAD_WIDTH / 2.0, u.x * ARROWHEAD_WIDTH / 2.0);
+        format!(
+            "M{} {}L{} {}L{} {}",
+            num(base.x + nx),
+            num(base.y + ny),
+            num(tip.x),
+            num(tip.y),
+            num(base.x - nx),
+            num(base.y - ny)
+        )
     }
 }
 

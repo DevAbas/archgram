@@ -278,16 +278,16 @@ fn border_wait_and_glow_take_their_named_values() {
     let spec = parse_spec(&spec_with(TWO, "")).unwrap();
     assert_eq!(
         (spec.border, spec.wait, spec.glow),
-        (BorderStyle::Spark, Wait::Solid, false)
+        (BorderStyle::Spark, Wait::Solid, true)
     );
     let spec = parse_spec(&spec_with(
         TWO,
-        r#", "border": "afterglow", "wait": "pending", "glow": true"#,
+        r#", "border": "afterglow", "wait": "pending", "glow": false"#,
     ))
     .unwrap();
     assert_eq!(
         (spec.border, spec.wait, spec.glow),
-        (BorderStyle::Afterglow, Wait::Pending, true)
+        (BorderStyle::Afterglow, Wait::Pending, false)
     );
     let e = errors(&spec_with(TWO, r#", "border": "neon""#));
     assert!(

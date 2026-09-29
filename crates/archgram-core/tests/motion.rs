@@ -24,9 +24,12 @@ impl Rng {
 
 const STYLES: [&str; 7] = ["wire", "spark", "arc", "comet", "dot", "pulse", "current"];
 const STILL: [&str; 3] = ["none", "legend", "numbers"];
+const BORDERS: [&str; 4] = ["spark", "drain", "ring", "afterglow"];
+const WAITS: [&str; 2] = ["solid", "pending"];
 const KINDS: [&str; 5] = ["service", "database", "model", "script", "browser"];
 
-/// A random DAG and flows along it, some steps branching, as a JSON spec.
+/// A random DAG and flows along it, some steps branching and some flows
+/// refused at their last step, as a JSON spec.
 fn random_spec(seed: u64) -> String {
     let mut rng = Rng(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
     let n = 3 + rng.below(10);
@@ -100,15 +103,23 @@ fn random_spec(seed: u64) -> String {
                 ),
             })
             .collect();
+        // A flow ending at a single node is sometimes refused there.
+        let refusal = match steps.last().map(Vec::as_slice) {
+            Some([last]) if rng.below(3) == 0 => format!(r#", "stop": "n{last}""#),
+            _ => String::new(),
+        };
         flows.push(format!(
-            r#"{{ "name": "flow {f}", "steps": [{}] }}"#,
+            r#"{{ "name": "flow {f}", "steps": [{}]{refusal} }}"#,
             words.join(", ")
         ));
     }
     format!(
-        r#"{{ "archgram": 1, "title": "random {seed}", "description": "d", "signal": "{}", "still": "{}", "nodes": [{}], "edges": [{}], "flows": [{}] }}"#,
+        r#"{{ "archgram": 1, "title": "random {seed}", "description": "d", "signal": "{}", "still": "{}", "border": "{}", "wait": "{}", "glow": {}, "nodes": [{}], "edges": [{}], "flows": [{}] }}"#,
         STYLES[rng.below(STYLES.len())],
         STILL[rng.below(STILL.len())],
+        BORDERS[rng.below(BORDERS.len())],
+        WAITS[rng.below(WAITS.len())],
+        rng.below(2) == 0,
         nodes.join(", "),
         edges.join(", "),
         flows.join(", ")
@@ -208,7 +219,7 @@ fn check(seed: u64, svg: &str) {
 
 #[test]
 fn random_flows_keep_smils_rules() {
-    let mut animated = 0;
+    let (mut animated, mut refused) = (0, 0);
     for seed in 1..=300 {
         let spec = random_spec(seed);
         for mode in [Mode::Auto, Mode::Dark] {
@@ -223,6 +234,9 @@ fn random_flows_keep_smils_rules() {
             check(seed, &svg);
             if svg.contains("<animateMotion") || svg.contains("stroke-dashoffset") {
                 animated += 1;
+            }
+            if svg.contains(r#"class="still-refusal""#) {
+                refused += 1;
             }
             assert_eq!(
                 build(
@@ -239,6 +253,7 @@ fn random_flows_keep_smils_rules() {
         }
     }
     assert!(animated > 300, "only {animated} drawings moved");
+    assert!(refused > 50, "only {refused} drawings refused a flow");
 }
 
 #[test]
@@ -251,6 +266,8 @@ fn a_diagram_without_flows_has_no_motion() {
         "<animate",
         "signal",
         "lit",
+        "border",
+        "refusal",
         "steps",
         "glow",
         "prefers-reduced-motion",
