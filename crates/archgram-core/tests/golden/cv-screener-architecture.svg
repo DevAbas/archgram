@@ -128,7 +128,7 @@
   </g>
   <g data-node="index">
     <rect class="card" x="1205.5" y="146.5" width="191" height="56" rx="10"/>
-    <rect class="lit core" x="1205" y="146" width="192" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="14738ms" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.4433;0.4541;0.4813;0.4921;1"/></rect>
+    <rect class="lit core" x="1205" y="146" width="192" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="14738ms" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.4433;0.4541;0.5016;0.5125;1"/></rect>
     <rect class="badge" x="1215.5" y="156.5" width="36" height="36" rx="8"/>
     <g class="icon core" transform="translate(1221.5 162.5)" stroke-width="1.7"><path d="M4 7.5h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><ellipse cx="12" cy="7.5" rx="8" ry="2.5"/></g>
     <text class="title" x="1261.5" y="172.27">data/index</text>
@@ -143,7 +143,7 @@
   </g>
   <g data-node="chat">
     <rect class="card" x="46.5" y="650.5" width="213" height="56" rx="10"/>
-    <rect class="lit client" x="46" y="650" width="214" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="14738ms" repeatCount="indefinite" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0;0.0109;0.1488;0.1597;0.8806;0.8914;0.9186;0.9294;1"/></rect>
+    <rect class="lit client" x="46" y="650" width="214" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="14738ms" repeatCount="indefinite" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0;0.0109;0.1488;0.1597;0.8806;0.8914;0.9389;0.9498;1"/></rect>
     <rect class="badge" x="56.5" y="660.5" width="36" height="36" rx="8"/>
     <g class="icon client" transform="translate(62.5 666.5)" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6"/><circle cx="8.2" cy="6.3" r=".6"/></g>
     <text class="title" x="102.5" y="676.27">Chat screen</text>

@@ -124,7 +124,7 @@
   </g>
   <g data-node="chat">
     <rect class="card" x="46.5" y="410.5" width="184" height="56" rx="10"/>
-    <rect class="lit client" x="46" y="410" width="185" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="7630ms" repeatCount="indefinite" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0;0.021;0.1651;0.1861;0.7693;0.7903;0.8427;0.8637;1"/></rect>
+    <rect class="lit client" x="46" y="410" width="185" height="57" rx="10.5" opacity="0"><animate attributeName="opacity" dur="7630ms" repeatCount="indefinite" values="0;0;1;1;0;0;1;1;0;0" keyTimes="0;0;0.021;0.1651;0.1861;0.7693;0.7903;0.882;0.903;1"/></rect>
     <rect class="badge" x="56.5" y="420.5" width="36" height="36" rx="8"/>
     <g class="icon client" transform="translate(62.5 426.5)" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><circle cx="6" cy="6.3" r=".6"/><circle cx="8.2" cy="6.3" r=".6"/></g>
     <text class="title" x="102.5" y="443.47">Chat screen</text>
