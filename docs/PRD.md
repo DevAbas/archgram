@@ -2,8 +2,8 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.9        |
-| Date    | 2026-09-27 |
+| Version | 0.10       |
+| Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
 
@@ -76,8 +76,9 @@ same file every time.
 |---|---|
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
-| 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform |
-| Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; open-source release under MIT; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
+| 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
+| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing |
+| Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer; the `drawing-architecture-diagrams` skill builds its diagrams with archgram |
 
 ## 6. Functional requirements
 
@@ -108,6 +109,8 @@ same file every time.
   roles, through a mapping file; the colours must keep the same contrast
   as archgram's own, in both themes.
 - Output is self-contained: no script, no external file, no web font.
+- A small "by archgram" credit sits in the drawing's bottom-right corner,
+  faint and hidden from screen readers; the spec turns it off.
 
 ### 6.4 Animation
 - Off by default. A flow in the spec turns it on for that path. A flow
@@ -119,6 +122,9 @@ same file every time.
   sends has arrived: its border and a faint fill take its category's hue,
   and its technology logo shows its brand's own colour. Then it returns
   to its usual look.
+- An edge's label is lit while its signal travels the edge: it takes the
+  signal's colour, or the theme's text colour where the signal's colour
+  would fall short of text contrast.
 - archgram computes the timeline: branches start together, converging
   paths arrive together, the last node of a flow lights last.
 - Native SMIL only; every animation stops under
@@ -130,6 +136,9 @@ same file every time.
 - A command-line tool, one native binary per platform, installed by hand
   or from npm (`npm install archgram`), so a Node project's scripts run
   it with no Rust toolchain.
+- A spec named `<name>.archgram.yaml` (or `.json`) draws `<name>.svg`
+  beside it, so a project keeps each spec next to its drawing; a folder
+  given for the output is created when it does not exist.
 - A library, usable from Rust and, later through WASM, from the browser
   (§5).
 - PNG, one file per theme, through the optional module (later, §5).
@@ -183,7 +192,7 @@ guidelines for them.
 
 ## 10. Open questions
 
-- A trademark check of the name before the public release.
+None.
 
 ## 11. Changelog
 
@@ -198,3 +207,4 @@ guidelines for them.
 | 0.7     | 2026-09-27 | A project's DTCG tokens as the theme, through a mapping file, held to the same contrast (§6.3). |
 | 0.8     | 2026-09-28 | The PNG module moves after 0.3 (§5, §6.5). |
 | 0.9     | 2026-09-28 | 0.3 ships the command on npm for Node, a native binary per platform; the WASM package, for the browser, moves after 0.3 (§5, §6.5, §8). |
+| 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
