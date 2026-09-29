@@ -100,7 +100,9 @@ Run it on the drawing before you report, and fix what it finds.
    "configures" and "references" are frames or notes, not edges.
 5. **Level of detail.** Is an implementation detail shown while a
    load-bearing idea is missing? Is anything there only because it exists
-   in the code?
+   in the code? More than about 10 nodes and 12 edges, or two nodes with
+   the same relations that no question tells apart
+   (`references/architecture.md`, Same relations, one node)?
 6. **Missing steps.** Any hop the data takes that the picture skips: an
    embedding call, a build step, a check? Any entry point, mode, output or
    enforcement at this level that is neither drawn nor listed as left out

@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.16       |
+| Version | 0.17       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -206,7 +206,8 @@ same file every time.
   project. Its text changes only by review, like the code.
 - Its evaluations live beside it: that it is chosen when asked for an
   architecture diagram and not otherwise, that it draws a project it is
-  given, and that it asks when the architecture is unclear. They run on
+  given, in more than one style of architecture, and that it asks when
+  the architecture is unclear. They run on
   request, since each run is a paid model call.
 - It draws in the project's own colours, found in this order: the
   project's DTCG tokens, through a mapping file; else the colours its
@@ -215,6 +216,14 @@ same file every time.
   tokens and a mapping beside the spec; else colours the user gives in
   the request; else archgram's own palette. archgram's contrast check
   holds either way; a colour that fails it is reported with the reason.
+- It recognises the style the system follows (layered, ports and
+  adapters, microservices, a pipeline, a plugin host and others) and
+  looks for that style's parts; a system that follows none is drawn from
+  the general rules alone.
+- A drawing holds what a reader takes in within thirty seconds, about ten
+  nodes and twelve edges: parts with the same relations, which no question
+  tells apart, are one node naming them all; what is still over goes to
+  a second diagram, or is left out and said so.
 - A drawing is at most 1,300 px wide, so its text stays readable in a
   README on GitHub; a wider one is drawn top to bottom or split in two.
 - The skill judges a drawing from its spec and its size. It never starts a
@@ -295,3 +304,4 @@ None.
 | 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
 | 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; only a signal glows, faintly, and more softly in dark, unless the spec turns it off; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |
 | 0.16    | 2026-09-29 | The skill backs every edge with the line of code that makes it, walks from the entry points at one level of detail, names each part after the file that decides, draws no wider than 1,300 px, and never starts a browser (§6.6). |
+| 0.17    | 2026-09-29 | The skill recognises the system's style of architecture, merges parts with the same relations into one node, and keeps a drawing to about ten nodes and twelve edges; its evaluations cover a pipeline, ports and adapters, and a plugin host (§6.6). |
