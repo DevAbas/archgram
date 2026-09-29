@@ -235,8 +235,8 @@ fn logos_are_in_their_brands_colours() {
     );
 }
 
-/// The credit is drawn in the legend's type, muted, and `credit: false`
-/// leaves out both the text and its rule.
+/// The credit is "by", the mark and "archgram" in the legend's type, and
+/// `credit: false` leaves out the credit and its rules.
 #[test]
 fn the_credit_is_drawn_unless_turned_off() {
     let spec = |credit: &str| {
@@ -247,9 +247,13 @@ fn the_credit_is_drawn_unless_turned_off() {
     };
     let on = archgram_core::build(&spec(""), Options::default()).unwrap();
     assert!(on.contains(r#"<text class="credit""#), "{on}");
-    assert!(on.contains(">by archgram</text>"));
+    assert!(on.contains(">by</text>") && on.contains(">archgram</text>"));
+    assert!(
+        on.contains(r#"<path class="credit-mark""#),
+        "the mark between the words"
+    );
     assert!(on.contains(".credit {"));
     let off = archgram_core::build(&spec(r#", "credit": false"#), Options::default()).unwrap();
     assert!(!off.contains("credit"), "{off}");
-    assert!(!off.contains("by archgram"));
+    assert!(!off.contains(">archgram</text>"));
 }

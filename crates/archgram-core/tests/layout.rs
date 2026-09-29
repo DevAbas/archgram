@@ -649,7 +649,6 @@ fn a_hundred_nodes_lay_out_within_the_budget() {
 #[test]
 fn the_legend_lists_what_the_diagram_uses() {
     use archgram_core::layout::legend::Swatch;
-    use archgram_core::spec::Category;
     let spec = |legend: &str, nodes: &str| {
         parse_spec(&format!(
             r#"{{ "archgram": 1, "title": "t", "description": "d", {legend} "nodes": [{nodes}] }}"#
@@ -660,15 +659,9 @@ fn the_legend_lists_what_the_diagram_uses() {
     let s = spec("", two);
     let p = place(&s, &card_sizes(&s)).unwrap();
     let kinds: Vec<Swatch> = p.legend.iter().map(|e| e.swatch).collect();
-    assert_eq!(
-        kinds,
-        [
-            Swatch::Category(Category::Core),
-            Swatch::Category(Category::Client),
-            Swatch::Multi
-        ]
-    );
-    // Asked away, or with nothing to tell apart, there is none.
+    // Only the variants: colour tells no category apart.
+    assert_eq!(kinds, [Swatch::Multi]);
+    // Asked away, or with no variant to tell apart, there is none.
     let s = spec(r#""legend": false,"#, two);
     assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
     let s = spec(

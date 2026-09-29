@@ -1,6 +1,7 @@
 //! Drawing the diagram as SVG (ARCHITECTURE.md, Render).
 
 mod card;
+mod credit;
 mod edge;
 mod frame;
 mod icons;
@@ -164,14 +165,7 @@ pub fn scene(
     }
     items.extend(placed_legend(placement, at));
     if let Some(c) = placement.credit {
-        let c = at(c);
-        items.push(Item::Text {
-            class: "credit".into(),
-            x: c.x,
-            y: c.y + font::baseline_in_line(&crate::tokens::TYPOGRAPHY_LEGEND),
-            anchor: scene::Anchor::Start,
-            text: crate::layout::legend::CREDIT.into(),
-        });
+        items.push(credit::credit(at(c)));
     }
     Scene {
         width: w,

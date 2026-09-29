@@ -28,16 +28,16 @@
       "$value": "{palette.light.neutral-450}"
     },
     "icon-core": {
-      "$value": "{palette.light.blue}"
+      "$value": "{palette.light.neutral-900}"
     },
     "icon-ai": {
-      "$value": "{palette.light.violet}"
+      "$value": "{palette.light.neutral-900}"
     },
     "icon-build": {
-      "$value": "{palette.light.amber}"
+      "$value": "{palette.light.neutral-900}"
     },
     "icon-client": {
-      "$value": "{palette.light.teal}"
+      "$value": "{palette.light.neutral-900}"
     },
     "signal-core": {
       "$value": "{palette.light.neutral-0}"

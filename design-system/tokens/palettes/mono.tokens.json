@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "Palette mono: neutral surfaces and text, one muted hue per node category used only for icon strokes. Values only; roles in themes/ point here.",
+  "$description": "Palette mono: neutral surfaces and text. Its themes point the icon roles at the text colour, so a diagram is monochrome; the muted hues stay here for a theme that wants them. Values only; roles in themes/ point here.",
   "palette": {
     "$type": "color",
     "light": {

@@ -7,7 +7,7 @@
 
 use crate::font::text_width;
 use crate::geometry::{Rect, Size};
-use crate::spec::{Category, Spec, Still, Variant};
+use crate::spec::{Spec, Still, Variant};
 use crate::tokens::{
     LEGEND_SWATCH, LEGEND_SWATCH_GAP, SPACING_LEGEND, SPACING_LEGEND_ENTRY, SPACING_LEGEND_ROW,
     TYPOGRAPHY_LEGEND,
@@ -16,8 +16,6 @@ use crate::tokens::{
 /// What an entry's swatch shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Swatch {
-    /// A category: a small square outlined in its icon hue.
-    Category(Category),
     /// Several instances: a small card with two copies behind it.
     Multi,
     /// A system we do not own: a small dashed card.
@@ -52,33 +50,22 @@ pub fn flow_texts(spec: &Spec) -> Vec<String> {
         .collect()
 }
 
-/// The categories in the order the legend lists them, with their names.
-const CATEGORIES: [(Category, &str); 4] = [
-    (Category::Core, "Core"),
-    (Category::Ai, "AI and LLM"),
-    (Category::Build, "Build and tooling"),
-    (Category::Client, "Clients"),
-];
-
 /// The entries a spec's legend has, in order; none when it draws no legend.
+/// Every icon is in the text colour, so colour tells no category apart and
+/// the icon's shape tells the kind: the legend lists only the variants the
+/// spec uses (DESIGN.md, Components: Legend).
 #[must_use]
 pub fn entries(spec: &Spec) -> Vec<(Swatch, &'static str)> {
-    let used = |c: Category| spec.nodes.iter().any(|n| n.kind.category() == c);
     let has = |v: Variant| spec.nodes.iter().any(|n| n.variant == v);
-    let mut out: Vec<(Swatch, &'static str)> = CATEGORIES
-        .iter()
-        .filter(|(c, _)| used(*c))
-        .map(|&(c, name)| (Swatch::Category(c), name))
-        .collect();
-    let categories = out.len();
+    if !spec.legend {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
     if has(Variant::Multi) {
         out.push((Swatch::Multi, "Several instances"));
     }
     if has(Variant::External) {
         out.push((Swatch::External, "External"));
-    }
-    if !spec.legend || (categories < 2 && out.len() == categories) {
-        return Vec::new();
     }
     out
 }
@@ -94,10 +81,6 @@ pub fn stack_step() -> f64 {
 /// it is tall for a variant, with its copies' reach for several instances.
 fn swatch_size(s: Swatch) -> Size {
     match s {
-        Swatch::Category(_) => Size {
-            w: LEGEND_SWATCH,
-            h: LEGEND_SWATCH,
-        },
         Swatch::External => Size {
             w: 1.5 * LEGEND_SWATCH,
             h: LEGEND_SWATCH,
@@ -109,14 +92,31 @@ fn swatch_size(s: Swatch) -> Size {
     }
 }
 
-/// The credit's words (DESIGN.md, Components: Credit).
+/// The credit's words, either side of archgram's mark (DESIGN.md,
+/// Components: Credit), and all its characters, for the font subset.
+pub const CREDIT_BY: &str = "by";
+pub const CREDIT_NAME: &str = "archgram";
 pub const CREDIT: &str = "by archgram";
 
-/// The credit's box in `typography.legend`, `spacing.legend` below all else
-/// and against the drawing's right edge, and the drawing's size with it.
+/// The credit's measures in `typography.legend`: the width of "by", of a
+/// space, of the mark (as tall as the type is large) and of "archgram".
+#[must_use]
+pub fn credit_parts() -> [f64; 4] {
+    [
+        text_width(CREDIT_BY, &TYPOGRAPHY_LEGEND),
+        text_width(" ", &TYPOGRAPHY_LEGEND),
+        TYPOGRAPHY_LEGEND.size,
+        text_width(CREDIT_NAME, &TYPOGRAPHY_LEGEND),
+    ]
+}
+
+/// The credit's box, "by", the mark and "archgram" a space apart,
+/// `spacing.legend` below all else and against the drawing's right edge,
+/// and the drawing's size with it.
 #[must_use]
 pub fn credit(size: Size) -> (Rect, Size) {
-    let w = text_width(CREDIT, &TYPOGRAPHY_LEGEND);
+    let [by, space, mark, name] = credit_parts();
+    let w = by + space + mark + space + name;
     let h = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
     let right = size.w.max(w);
     let at = Rect {

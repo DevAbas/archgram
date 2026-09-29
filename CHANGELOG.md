@@ -16,13 +16,18 @@ follow [Semantic Versioning](https://semver.org/).
   label's text takes the signal's colour, and the signal and its glow fade
   out round it, so nothing crosses or boxes the text. A colour too faint
   for text on the canvas shows as the text colour instead.
-- A small "by archgram" in the drawing's bottom-right corner, in the
-  legend's type and the muted text colour; `credit: false` turns it off.
+- A small, quiet "by [mark] archgram" in the drawing's bottom-right
+  corner, with archgram's mark between the words; `credit: false` turns
+  it off.
 - `archgram spec` prints the spec format this archgram reads, so whoever
   writes a spec reads the format of the very command that draws it.
 
 ### Changed
 
+- A diagram is monochrome: icons, signals and lit cards are in the text
+  colour, black on light and white on dark; the technology logos keep
+  their brands' colours. The legend lists only the variants, since colour
+  no longer tells a category apart.
 - A technology logo is always in its brand's own colour, not only while a
   flow's signal lights its card. A brand colour that would not show on the
   card in a theme is the text colour there.

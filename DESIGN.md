@@ -76,7 +76,7 @@ components:
     textColor: "{color.text-muted}"
     typography: "{typography.legend}"
   credit:
-    textColor: "{color.text-muted}"
+    textColor: "{color.connector}"
     typography: "{typography.legend}"
   signal:
     size: "{signal.dot}"
@@ -131,7 +131,9 @@ defining the same entries, and light and dark work for it at once.
 
 ## Colors
 
-The one palette today is `mono`: neutral greys and four muted hues.
+The one palette today is `mono`: neutral greys, and its four icon roles
+are the text colour, black on light and white on dark, so a diagram is
+monochrome and colour belongs to the technology logos.
 
 - **Canvas** (`color.canvas`): the diagram's background. Near-white in
   light, near-black in dark, painted by the diagram itself so it reads on
@@ -147,17 +149,20 @@ The one palette today is `mono`: neutral greys and four muted hues.
   arrowheads and frame borders. Strong enough to follow, quieter than
   text.
 - **Icon hues** (`color.icon-core`, `color.icon-ai`, `color.icon-build`,
-  `color.icon-client`): the stroke of a node's icon, by its category.
-  Nothing else takes these colours except a flow's signal and the card it
-  lights.
+  `color.icon-client`): the stroke of a node's icon, by its category. In
+  `mono` all four are `color.text`; a project's own tokens may give each
+  category a hue of its own. Nothing else takes these colours except a
+  flow's signal and the card it lights.
 - **Signal core** (`color.signal-core`): the bright centre of a signal's
   dot, in the styles that have one. Only the signal takes it.
 
 Rules:
 
-- Colour lives in icon lines and technology logos only. Cards, badges,
-  frames and connectors stay neutral, whatever the category; a card turns
-  its hue only while a flow's signal lights it (Components: Signal).
+- Colour lives in technology logos only. Icon lines, a flow's signal and a
+  lit card take the icon roles, which in `mono` are the text colour; cards,
+  badges, frames and connectors stay neutral, whatever the category, and a
+  card turns its icon role's colour only while a flow's signal lights it
+  (Components: Signal).
 - Hues are muted and there is no neon; a logo's brand colour is its
   brand's own (Components: Technology logo). The only glow is a signal's,
   and only in the styles that have one.
@@ -268,8 +273,8 @@ The unit of every diagram: a card (`node-card` or `node-card-vertical`)
 with an icon in a badge (`icon-badge`, `icon-badge-vertical`), a title and
 an optional subtitle (`node-subtitle`).
 
-The icon says what the thing is; the category says which hue its lines
-take.
+The icon says what the thing is; the category says which icon role its
+lines take (in `mono`, one colour for all).
 
 | Category | Kinds | Icon role |
 |---|---|---|
@@ -394,21 +399,24 @@ are counted on from one flow to the next.
 
 ### Legend
 
-Generated from what the diagram uses: one entry per category present, in
-a fixed order (core, AI and LLM, build and tooling, clients), then one per
-variant present (several instances, external), in `typography.legend` and
-`color.text-muted`. Each entry leads with a swatch of `legend.swatch`,
-`legend.swatch-gap` before its text: a category is a small square outlined
-in its icon hue with `stroke.icon`, so colour stays in lines; several
-instances a small card with two copies behind; external a small dashed
-card. A legend that would say nothing is not drawn: one category and no
-variant.
+Generated from what the diagram uses: one entry per variant present
+(several instances, external), in `typography.legend` and
+`color.text-muted`. Colour tells no category apart, and each kind's icon
+already says what it is, so categories have no entry. Each entry leads
+with a swatch of `legend.swatch`, `legend.swatch-gap` before its text:
+several instances a small card with two copies behind; external a small
+dashed card. A diagram with no variant draws no legend.
 
 ### Credit
 
-"by archgram", small and quiet: the legend's type, `typography.legend`, in
-`color.text-muted`, on a line of its own `spacing.legend` below everything
-else, against the drawing's right edge. It is part of the picture, not of
+"by", archgram's mark, then "archgram", a space apart, small and quieter
+than any text: the legend's type, `typography.legend`, in
+`color.connector`, with the mark as tall as the type is large, its badge
+in that colour and its lines cut out of it in `color.canvas`, so it reads
+in either theme, and the whole of it shown faded, as one. It sits on a
+line of its own `spacing.legend` below
+everything else, against the drawing's right edge. As a logotype it keeps
+no text contrast (WCAG 1.4.3 exempts logotypes). It is part of the picture, not of
 its meaning, so like every text inside the drawing a screen reader skips
 it: the SVG is one image, named by its title and description. The spec
 turns it off (`credit: false`), and the drawing is then a line shorter.

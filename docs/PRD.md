@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.12       |
+| Version | 0.13       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -101,8 +101,11 @@ same file every time.
 ### 6.3 Rendering
 - Each node kind has its own shape, so a reader recognises it before
   reading its label.
-- Each node category has its own hue, and only the lines of its icons take
-  it; cards, frames and connectors stay neutral.
+- The diagram is monochrome: every icon, a flow's signal and a lit card are
+  in the text colour, black on light and white on dark, and the icon's
+  shape tells a node's kind. Colour belongs to the technology logos alone;
+  cards, frames and connectors stay neutral. A project's own tokens may
+  still give each category a hue of its own.
 - One SVG carries both themes and follows `prefers-color-scheme`; on
   request archgram writes one file per theme.
 - On request, a project's own DTCG design tokens fill archgram's colour
@@ -252,3 +255,4 @@ None.
 | 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5), and the archgram plugin for Claude Code with its `archgram:draw` skill, replacing `drawing-architecture-diagrams` (§5, §6.5, §6.6). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
 | 0.11    | 2026-09-29 | A logo is always in its brand's colour, not only while its card is lit (§6.4, §7). |
 | 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
+| 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
