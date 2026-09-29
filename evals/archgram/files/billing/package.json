@@ -1,0 +1,7 @@
+{
+  "name": "billing",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "tsx src/main.ts", "rebill": "tsx src/adapters/cli/rebill.ts" },
+  "dependencies": { "express": "^4.21.0", "pg": "^8.13.0", "stripe": "^17.2.0", "postmark": "^4.0.5" }
+}

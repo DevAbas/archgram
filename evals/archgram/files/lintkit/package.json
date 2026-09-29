@@ -1,0 +1,6 @@
+{
+  "name": "lintkit",
+  "type": "module",
+  "bin": { "lintkit": "./src/cli.ts" },
+  "dependencies": { "fast-glob": "^3.3.2" }
+}

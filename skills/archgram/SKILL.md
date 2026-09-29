@@ -39,15 +39,18 @@ README's audience, the user's words); ask only when nothing tells you.
 ## 2. Gather the facts
 
 Read `references/architecture.md`, then the code and the docs the diagram
-describes. Pick one level for the whole diagram, list the entry points,
-and follow each the reader cares about to what it calls, reads and
-writes. Draw a part only when a file backs it: a module, a route, a
-script, a store. Name it after the file that decides, found by following
-the imports, not by a name that looks right. Draw an edge only where a
-line of code makes it, and note that line (`src/api.ts:42`). Keep the
-list of parts with their files and edges with their lines; the report
-ends with it, and it catches boxes and lines that exist only in someone's
-memory.
+describes. Recognise the style the system follows in the table in
+`references/styles.md`, and read that style's own file. Pick one level for
+the whole diagram, list the entry points, and follow each the reader cares
+about to what it calls, reads and writes. Draw a part only when a file
+backs it: a module, a route, a script, a store. Name it after the file
+that decides, found by following the imports, not by a name that looks
+right. Draw an edge only where a line of code makes it, and note that line
+(`src/api.ts:42`). Keep the list of parts with their files and edges with
+their lines; the report ends with it, and it catches boxes and lines that
+exist only in someone's memory. Then fit it to what a reader takes in:
+merge parts with the same relations, and split what is left over about 10
+nodes and 12 edges (`references/architecture.md`, How much to draw).
 
 Ask the user, and only then, when the architecture is unclear: the README
 describes a part the code does not have, two readings of the code are
@@ -125,6 +128,7 @@ Then open the drawing for the user, once, with the system's own viewer:
 Tell the user, briefly:
 
 - the reader contract, and how the drawing answers it;
+- the style of architecture you recognised, or that none fitted;
 - each part drawn, with the file behind it, and each edge with the line
   that makes it;
 - on an update, what changed in the spec and why;

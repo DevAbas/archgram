@@ -1,6 +1,6 @@
 # Evaluations of the archgram skill
 
-Four cases for `skills/archgram`, in the format of Anthropic's
+Seven cases for `skills/archgram`, in the format of Anthropic's
 [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator):
 `evals.json` holds each prompt and what a good run produces, and `files/`
 the small projects the prompts run in.
@@ -11,6 +11,9 @@ the small projects the prompts run in.
 | `asks-when-unclear` | It asks when the README and the code disagree, rather than drawing what does not exist |
 | `updates-an-existing-diagram` | It changes an existing spec and says what changed |
 | `not-for-other-work` | It stays out of a request that is not a diagram |
+| `draws-a-pipeline` | It recognises a data pipeline and follows one day's rows from their sources to the warehouse, with where bad rows go |
+| `draws-ports-and-adapters` | It recognises ports and adapters and shows the rules depending on nothing outside their ports |
+| `merges-parts-with-the-same-relations` | It merges parts no question tells apart and keeps a crowded system within about 10 nodes and 12 edges |
 
 Each case runs with the skill and without it, as skill-creator does. The
 runs call a model and cost money, so they run on request, not in CI; the

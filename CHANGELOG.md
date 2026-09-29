@@ -30,7 +30,9 @@ follow [Semantic Versioning](https://semver.org/).
 - The `archgram` skill walks from a project's entry points at one level
   of detail, names each part after the file that decides, backs every
   edge with the line of code that makes it, draws no wider than 1,300 px,
-  and never starts a browser.
+  and never starts a browser. It recognises the system's style of
+  architecture, merges parts with the same relations into one node, and
+  keeps a drawing to about ten nodes and twelve edges.
 
 ## [0.4.0] - 2026-09-29
 
