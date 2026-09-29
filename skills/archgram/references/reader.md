@@ -96,8 +96,10 @@ Run it on the drawing before you report, and fix what it finds.
    the file that decides (`references/architecture.md`)? Any name that
    does not exist in the code?
 4. **Edges.** Does every edge have the line of code that makes it, and
-   mean the same kind of thing (a call, data moving)? "Contains",
-   "configures" and "references" are frames or notes, not edges.
+   mean the same kind of thing (a call, data moving)? Open each line you
+   cite and check it does what the edge says: a line number read from
+   memory drifts. "Contains", "configures" and "references" are frames or
+   notes, not edges.
 5. **Level of detail.** Is an implementation detail shown while a
    load-bearing idea is missing? Is anything there only because it exists
    in the code? More than about 10 nodes and 12 edges, or two nodes with

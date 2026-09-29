@@ -32,7 +32,8 @@ follow [Semantic Versioning](https://semver.org/).
   edge with the line of code that makes it, draws no wider than 1,300 px,
   and never starts a browser. It recognises the system's style of
   architecture, merges parts with the same relations into one node, and
-  keeps a drawing to about ten nodes and twelve edges.
+  keeps a drawing to about ten nodes and twelve edges, and checks each
+  line it cites by opening it.
 
 ## [0.4.0] - 2026-09-29
 
