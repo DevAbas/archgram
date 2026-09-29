@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.11       |
+| Version | 0.12       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -77,7 +77,7 @@ same file every time.
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
-| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; the archgram plugin for Claude Code with its `archgram:draw` skill, the archgram repository being its marketplace |
+| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the archgram plugin for Claude Code with its `archgram:draw` skill, the archgram repository being its marketplace |
 | Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
@@ -138,6 +138,9 @@ same file every time.
 - A spec named `<name>.archgram.yaml` (or `.yml`, `.json`) draws `<name>.svg`
   beside it, so a project keeps each spec next to its drawing; a folder
   given for the output is created when it does not exist.
+- `archgram spec` prints the spec format this version reads (docs/SPEC.md,
+  carried in the binary), so whoever writes a spec, a person or an agent,
+  reads the format of the very command that draws it.
 - A library, usable from Rust and, later through WASM, from the browser
   (§5).
 - PNG, one file per theme, through the optional module (later, §5).
@@ -160,6 +163,16 @@ same file every time.
   missing, and draws `<name>.svg` beside it with `npx archgram@<version>`,
   the plugin's own version. The spec is kept, so a later call changes it
   and draws again, and says what changed.
+- It learns the spec format from that same command (`archgram spec`), so
+  the format it writes always matches the command that draws it; it keeps
+  no copy of the format that could fall behind.
+- One version runs through it: the plugin's, the command it runs, and the
+  command it may run without asking; the build fails when they differ.
+  Its text changes only by review, like the code.
+- Its evaluations live beside it: that it is chosen when asked for an
+  architecture diagram and not otherwise, that it draws a project it is
+  given, and that it asks when the architecture is unclear. They run on
+  request, since each run is a paid model call.
 - It draws in the project's own colours, found in this order: the
   project's DTCG tokens, through a mapping file; else the colours its
   code styles with (CSS custom properties, a Tailwind theme, Sass
@@ -238,3 +251,4 @@ None.
 | 0.9     | 2026-09-28 | 0.3 ships the command on npm for Node, a native binary per platform; the WASM package, for the browser, moves after 0.3 (§5, §6.5, §8). |
 | 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5), and the archgram plugin for Claude Code with its `archgram:draw` skill, replacing `drawing-architecture-diagrams` (§5, §6.5, §6.6). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
 | 0.11    | 2026-09-29 | A logo is always in its brand's colour, not only while its card is lit (§6.4, §7). |
+| 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
