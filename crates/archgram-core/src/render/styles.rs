@@ -132,6 +132,15 @@ pub fn steps() -> Vec<Rule> {
     ]
 }
 
+/// The credit: the legend's type, muted (DESIGN.md, Components: Credit).
+#[must_use]
+pub fn credit() -> Vec<Rule> {
+    vec![rule(
+        ".credit",
+        &[Font(TYPOGRAPHY_LEGEND), Fill(R(Role::TextMuted))],
+    )]
+}
+
 /// The legend's swatches and text.
 #[must_use]
 pub fn legend() -> Vec<Rule> {

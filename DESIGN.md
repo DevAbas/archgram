@@ -75,6 +75,9 @@ components:
   legend:
     textColor: "{color.text-muted}"
     typography: "{typography.legend}"
+  credit:
+    textColor: "{color.text-muted}"
+    typography: "{typography.legend}"
   signal:
     size: "{signal.dot}"
     backgroundColor: "{color.signal-core}"
@@ -400,6 +403,15 @@ in its icon hue with `stroke.icon`, so colour stays in lines; several
 instances a small card with two copies behind; external a small dashed
 card. A legend that would say nothing is not drawn: one category and no
 variant.
+
+### Credit
+
+"by archgram", small and quiet: the legend's type, `typography.legend`, in
+`color.text-muted`, on a line of its own `spacing.legend` below everything
+else, against the drawing's right edge. It is part of the picture, not of
+its meaning, so like every text inside the drawing a screen reader skips
+it: the SVG is one image, named by its title and description. The spec
+turns it off (`credit: false`), and the drawing is then a line shorter.
 
 ## Do's and Don'ts
 

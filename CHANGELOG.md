@@ -16,6 +16,10 @@ follow [Semantic Versioning](https://semver.org/).
   label's text takes the signal's colour, and the signal and its glow fade
   out round it, so nothing crosses or boxes the text. A colour too faint
   for text on the canvas shows as the text colour instead.
+- A small "by archgram" in the drawing's bottom-right corner, in the
+  legend's type and the muted text colour; `credit: false` turns it off.
+- `archgram spec` prints the spec format this archgram reads, so whoever
+  writes a spec reads the format of the very command that draws it.
 
 ### Changed
 

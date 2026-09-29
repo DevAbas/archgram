@@ -677,3 +677,51 @@ fn the_legend_lists_what_the_diagram_uses() {
     );
     assert!(place(&s, &card_sizes(&s)).unwrap().legend.is_empty());
 }
+
+/// The credit sits under everything, against the right edge, inside the
+/// drawing, and overlaps nothing; `credit: false` leaves it out and the
+/// drawing shorter (DESIGN.md, Components: Credit).
+#[test]
+fn the_credit_sits_below_everything_at_the_right() {
+    for name in ["linkshort", "rag", "kinds", "cv-screener-architecture"] {
+        let path = format!("{}/../../examples/{name}.json", env!("CARGO_MANIFEST_DIR"));
+        let spec = parse_spec(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let p = place(&spec, &card_sizes(&spec)).unwrap();
+        let c = p.credit.expect("on by default");
+        assert!(
+            (c.x + c.w - p.size.w).abs() < 1e-9,
+            "{name}: against the right edge"
+        );
+        assert!(
+            (c.y + c.h - p.size.h).abs() < 1e-9,
+            "{name}: the last thing down"
+        );
+        let mut others: Vec<archgram_core::geometry::Rect> = p.nodes.clone();
+        others.extend(p.frames.iter().flatten());
+        others.extend(p.labels.iter().flatten());
+        others.extend(p.legend.iter().flat_map(|e| [e.swatch_box, e.text_box]));
+        others.extend(p.flow_lines.iter().map(|l| l.text_box));
+        for o in &others {
+            assert!(o.y + o.h <= c.y, "{name}: {o:?} reaches the credit {c:?}");
+        }
+        let without = parse_spec(
+            &serde_json::to_string(&{
+                let mut v: serde_json::Value = serde_json::from_str(
+                    &std::fs::read_to_string(format!(
+                        "{}/../../examples/{name}.json",
+                        env!("CARGO_MANIFEST_DIR")
+                    ))
+                    .unwrap(),
+                )
+                .unwrap();
+                v["credit"] = serde_json::Value::Bool(false);
+                v
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        let q = place(&without, &card_sizes(&without)).unwrap();
+        assert!(q.credit.is_none());
+        assert!(q.size.h < p.size.h, "{name}: the credit's line is gone");
+    }
+}

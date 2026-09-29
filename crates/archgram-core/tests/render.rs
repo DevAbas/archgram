@@ -234,3 +234,22 @@ fn logos_are_in_their_brands_colours() {
         "no copy only motion shows"
     );
 }
+
+/// The credit is drawn in the legend's type, muted, and `credit: false`
+/// leaves out both the text and its rule.
+#[test]
+fn the_credit_is_drawn_unless_turned_off() {
+    let spec = |credit: &str| {
+        format!(
+            r#"{{ "archgram": 1, "title": "t", "description": "d"{credit},
+            "nodes": [{{ "id": "a", "kind": "service", "label": "A" }}] }}"#
+        )
+    };
+    let on = archgram_core::build(&spec(""), Options::default()).unwrap();
+    assert!(on.contains(r#"<text class="credit""#), "{on}");
+    assert!(on.contains(">by archgram</text>"));
+    assert!(on.contains(".credit {"));
+    let off = archgram_core::build(&spec(r#", "credit": false"#), Options::default()).unwrap();
+    assert!(!off.contains("credit"), "{off}");
+    assert!(!off.contains("by archgram"));
+}

@@ -109,6 +109,31 @@ fn swatch_size(s: Swatch) -> Size {
     }
 }
 
+/// The credit's words (DESIGN.md, Components: Credit).
+pub const CREDIT: &str = "by archgram";
+
+/// The credit's box in `typography.legend`, `spacing.legend` below all else
+/// and against the drawing's right edge, and the drawing's size with it.
+#[must_use]
+pub fn credit(size: Size) -> (Rect, Size) {
+    let w = text_width(CREDIT, &TYPOGRAPHY_LEGEND);
+    let h = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
+    let right = size.w.max(w);
+    let at = Rect {
+        x: right - w,
+        y: size.h + SPACING_LEGEND,
+        w,
+        h,
+    };
+    (
+        at,
+        Size {
+            w: right,
+            h: at.y + at.h,
+        },
+    )
+}
+
 /// Lays the legend out under a drawing of `size`, left-aligned, in rows no
 /// wider than it (or than the widest entry), then the flows in words, one a
 /// line. Returns the entries, the flow lines and the drawing's new size.

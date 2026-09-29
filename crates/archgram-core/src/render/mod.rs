@@ -163,6 +163,16 @@ pub fn scene(
         items.push(signal::signals(spec.signal, t, &drawn, &labels, hue));
     }
     items.extend(placed_legend(placement, at));
+    if let Some(c) = placement.credit {
+        let c = at(c);
+        items.push(Item::Text {
+            class: "credit".into(),
+            x: c.x,
+            y: c.y + font::baseline_in_line(&crate::tokens::TYPOGRAPHY_LEGEND),
+            anchor: scene::Anchor::Start,
+            text: crate::layout::legend::CREDIT.into(),
+        });
+    }
     Scene {
         width: w,
         height: h,
@@ -407,6 +417,9 @@ fn style(
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
         sheet.rules(styles::steps());
+    }
+    if spec.credit {
+        sheet.rules(styles::credit());
     }
     if placement_has_legend(spec) {
         sheet.rules(styles::legend());
