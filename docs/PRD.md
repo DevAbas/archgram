@@ -132,8 +132,9 @@ same file every time.
   from the point where the arrow meets the card, both ways round, closing
   on the far side, no faster than the shortest hop. The first card of a
   flow, which no arrow reaches, closes its border where its signal leaves,
-  as it leaves. The border keeps the card's own width; the icon and the
-  text keep their colours. Then the card returns to its usual look.
+  as it leaves. The border keeps the card's own width; the card takes no
+  fill, and the icon and the text keep their colours. Then the card
+  returns to its usual look.
 - The spec picks how the border is drawn: by default a bright head rides
   each growing end (spark); instead it may drain out through the arrow
   that leaves the card (drain), sweep once around from the arrowhead
@@ -146,6 +147,8 @@ same file every time.
   border takes the refusal colour too. The refusing card keeps it until a
   later flow passes it, which draws its border in the passing colour.
   The spec may show that wait as a slow dashed border instead (pending).
+- The passing and the refusal colours each hold 3:1 against the card, in
+  both themes, as any graphic does.
 - An edge's label is lit while its signal travels the edge: it takes the
   signal's colour, or the theme's text colour where the signal's colour
   would fall short of text contrast.
@@ -262,11 +265,7 @@ guidelines for them.
 
 ## 10. Open questions
 
-- A lit card's faint fill: keep it in the category's hue, or drop it now
-  that the border carries what happened.
-- The passing colour stays under the 3:1 a graphic needs against the card
-  in both themes: an exception for a border that shows only while its card
-  is lit, or a darker tone.
+None.
 
 ## 11. Changelog
 
@@ -286,4 +285,4 @@ guidelines for them.
 | 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
 | 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
 | 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
-| 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), the icon and text unchanged; an arrowhead takes its signal's colour; nothing glows unless the spec asks (§5, §6.3, §6.4). Two open questions: the lit card's fill and the passing colour's contrast (§10). The samples that chose this are in `docs/samples/stop/`. |
+| 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; nothing glows unless the spec asks; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |
