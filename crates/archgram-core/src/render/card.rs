@@ -5,7 +5,7 @@ use crate::geometry::Rect;
 use crate::logos::Logos;
 use crate::render::icons::{GRID, icon};
 use crate::render::scene::{Anchor, GroupOf, Item, Place};
-use crate::render::svg::{escape, num};
+use crate::render::svg::num;
 use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING,
@@ -33,37 +33,29 @@ struct Lines<'a> {
     brand: Option<&'a Brand<'a>>,
 }
 
-/// A card's lighting while a flow's signal is at it: its opacity animation,
-/// and the class that gives its logo the brand's colour when it has one.
+/// A card's lighting while a flow's signal is at it, its opacity animation
+/// when a flow reaches it, and the class that gives its logo the brand's
+/// colour when the brand has one.
 #[derive(Debug)]
 pub struct Brand<'a> {
-    pub animation: &'a str,
+    pub animation: Option<&'a str>,
     pub class: Option<String>,
 }
 
-/// A logo path; on a card a signal lights, a copy in the brand's colour
-/// over it that shows only while the card is lit.
+/// A logo path, in its brand's colour when `brand` gives one (DESIGN.md,
+/// Components: Technology logo).
 fn logo_path(out: &mut Vec<Item>, class: &str, place: Place, d: &str, brand: Option<&Brand>) {
+    let class = match brand.and_then(|b| b.class.as_deref()) {
+        Some(colour) => format!("{class} {colour}"),
+        None => class.to_owned(),
+    };
     out.push(Item::Path {
         id: None,
-        class: class.to_owned(),
+        class,
         place: Some(place),
         d: d.to_owned(),
         arrowhead: false,
     });
-    if let Some(Brand {
-        animation,
-        class: Some(colour),
-    }) = brand
-    {
-        out.push(Item::Motion(format!(
-            r#"<path class="brand {colour}" transform="translate({} {}) scale({})" d="{}" opacity="0">{animation}</path>"#,
-            num(place.x),
-            num(place.y),
-            num(place.scale),
-            escape(d)
-        )));
-    }
 }
 
 impl Lines<'_> {
@@ -144,7 +136,7 @@ pub fn card(
         .map(|p| (p, place));
     let r = outline(&mut out, node, r);
     let hue = category_class(node.kind.category());
-    if let Some(b) = brand {
+    if let Some(animation) = brand.and_then(|b| b.animation) {
         // Its border in the card's hue, `signal.lit` wide on whole pixels
         // just outside the card's own edge, over a tint of that hue.
         let o = SIGNAL_LIT / 2.0 - STROKE_CARD / 2.0;
@@ -155,7 +147,7 @@ pub fn card(
             num(r.w + 2.0 * o),
             num(r.h + 2.0 * o),
             num(ROUNDED_CARD + o),
-            b.animation
+            animation
         )));
     }
 
@@ -270,7 +262,7 @@ fn outline(out: &mut Vec<Item>, node: &Node, r: Rect) -> Rect {
 /// The logo on card `r`: in its top-right corner, inside its padding, at
 /// `card.logo-corner`; or in a round chip of `card.logo-chip-ring`, filled
 /// and edged like a card, centred on the badge's lower-right corner, at
-/// `card.logo-chip`. Always in `color.text-muted` (DESIGN.md, Components:
+/// `card.logo-chip`. In its brand's colour (DESIGN.md, Components:
 /// Technology logo).
 fn draw_logo(
     out: &mut Vec<Item>,
@@ -314,8 +306,8 @@ fn draw_logo(
     );
 }
 
-/// The badge and, in it, the kind's icon; or the technology's logo in the
-/// category's hue when logos go in place of the icon.
+/// The badge and, in it, the kind's icon; or the technology's logo, in its
+/// brand's colour, when logos go in place of the icon.
 fn badge_with_icon(
     out: &mut Vec<Item>,
     (badge, icon_size): (Rect, f64),

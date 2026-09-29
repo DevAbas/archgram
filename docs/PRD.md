@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.10       |
+| Version | 0.11       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -119,9 +119,8 @@ same file every time.
   spec picks how it is drawn from a fixed set of styles; by default the
   line fills with that colour.
 - A card is lit from the moment a signal reaches it until every signal it
-  sends has arrived: its border and a faint fill take its category's hue,
-  and its technology logo shows its brand's own colour. Then it returns
-  to its usual look.
+  sends has arrived: its border and a faint fill take its category's hue.
+  Then it returns to its usual look.
 - An edge's label is lit while its signal travels the edge: it takes the
   signal's colour, or the theme's text colour where the signal's colour
   would fall short of text contrast.
@@ -191,9 +190,10 @@ diagram chooses: the card's corner, before the note (or the technology's
 name) on the card's second line, a chip on the icon, or in place of the
 kind's icon. Logos come from
 a pinned Simple Icons release, CC0 data; a logo under a licence of its
-own is left out. They are drawn in one neutral colour to name a
-technology, as Simple Icons intends (in place of the icon, in the
-category's hue, as the icon was); the brands' guidelines stay with
+own is left out. Each is drawn in its brand's own colour, in every place
+and whether or not a flow lights its card, so a reader knows the
+technology at a glance; a brand colour that would not show on the card in
+a theme is the text colour there. The brands' guidelines stay with
 whoever publishes a diagram, and archgram records each logo's source and
 guidelines for them.
 
@@ -237,3 +237,4 @@ None.
 | 0.8     | 2026-09-28 | The PNG module moves after 0.3 (§5, §6.5). |
 | 0.9     | 2026-09-28 | 0.3 ships the command on npm for Node, a native binary per platform; the WASM package, for the browser, moves after 0.3 (§5, §6.5, §8). |
 | 0.10    | 2026-09-29 | 0.4: an edge's label lit with its signal (§6.4), an optional credit (§6.3), `<name>.archgram.yaml` draws `<name>.svg` into a folder created when missing (§6.5), and the archgram plugin for Claude Code with its `archgram:draw` skill, replacing `drawing-architecture-diagrams` (§5, §6.5, §6.6). 0.3 was the open-source release (§5). The trademark check is done, removed from the open questions: no "archgram" mark in the USPTO or TMview searches of 2026-09-29, classes 9 and 42 (TMview's one hit, "searchgram", is a different word, registered in Korea for point, billing and big-data software). |
+| 0.11    | 2026-09-29 | A logo is always in its brand's colour, not only while its card is lit (§6.4, §7). |
