@@ -7,3 +7,7 @@
 *.ttf binary
 *.png binary
 *.webp binary
+
+# The skill's evaluation projects are small made-up codebases for the skill
+# to draw, not archgram's code: kept out of the repository's language stats.
+evals/** linguist-documentation
