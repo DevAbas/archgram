@@ -92,19 +92,21 @@ Run it on the drawing before you report, and fix what it finds.
 
 1. **Contract.** Can each question be answered from the picture alone?
 2. **The one idea.** Is it visible without reading any note?
-3. **Truth.** Is every node and edge backed by a file you read? Any name
-   that does not exist in the code?
-4. **Edge meaning.** Does every edge mean the same kind of thing (a call,
-   data moving)? "Contains", "configures" and "references" are frames or
-   notes, not edges.
+3. **Truth.** Is every node backed by a file you read, and named after
+   the file that decides (`references/architecture.md`)? Any name that
+   does not exist in the code?
+4. **Edges.** Does every edge have the line of code that makes it, and
+   mean the same kind of thing (a call, data moving)? "Contains",
+   "configures" and "references" are frames or notes, not edges.
 5. **Level of detail.** Is an implementation detail shown while a
    load-bearing idea is missing? Is anything there only because it exists
    in the code?
 6. **Missing steps.** Any hop the data takes that the picture skips: an
-   embedding call, a build step, a check?
-7. **Width.** GitHub shows a README image about 880 px wide. A drawing much
-   wider than about 1,300 px shrinks its text below a comfortable size
-   there: prefer `direction: down`, fewer nodes in a row, or two diagrams.
+   embedding call, a build step, a check? Any entry point, mode, output or
+   enforcement at this level that is neither drawn nor listed as left out
+   (`references/architecture.md`, What is easy to miss)?
+7. **Width.** No wider than 1,300 px (SKILL.md, step 6); over it, redraw
+   top to bottom or split it.
 8. **Clutter.** A label on an edge that could be a node's note; a line that
    detours round the whole drawing; a frame that groups nothing a reader
    needs.

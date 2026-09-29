@@ -7,7 +7,7 @@ the small projects the prompts run in.
 
 | Case | What it checks |
 |---|---|
-| `draws-a-project` | It draws a project from its code, every part backed by a file, in the colours of its CSS |
+| `draws-a-project` | It draws a project from its code, every part backed by a file and every edge by a line, no wider than 1,300 px, in the colours of its CSS, without starting a browser |
 | `asks-when-unclear` | It asks when the README and the code disagree, rather than drawing what does not exist |
 | `updates-an-existing-diagram` | It changes an existing spec and says what changed |
 | `not-for-other-work` | It stays out of a request that is not a diagram |

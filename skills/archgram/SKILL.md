@@ -38,10 +38,16 @@ README's audience, the user's words); ask only when nothing tells you.
 
 ## 2. Gather the facts
 
-Read the code and the docs the diagram describes. Draw a part only when a
-file backs it: a module, a route, a script, a store, a call. Keep a list of
-each part with its file; the report ends with it, and it catches boxes that
-exist only in someone's memory. Use the code's own names.
+Read `references/architecture.md`, then the code and the docs the diagram
+describes. Pick one level for the whole diagram, list the entry points,
+and follow each the reader cares about to what it calls, reads and
+writes. Draw a part only when a file backs it: a module, a route, a
+script, a store. Name it after the file that decides, found by following
+the imports, not by a name that looks right. Draw an edge only where a
+line of code makes it, and note that line (`src/api.ts:42`). Keep the
+list of parts with their files and edges with their lines; the report
+ends with it, and it catches boxes and lines that exist only in someone's
+memory.
 
 Ask the user, and only then, when the architecture is unclear: the README
 describes a part the code does not have, two readings of the code are
@@ -99,17 +105,28 @@ npx --yes archgram build docs/diagrams/<name>.archgram.yaml
 Add `--theme-file archgram.theme.json` when step 5 wrote one. The drawing
 lands beside the spec as `docs/diagrams/<name>.svg`.
 
+Check its width: the SVG's first line says it (`width="1231"`). Wider
+than 1,300 px, its text shrinks below a comfortable size on GitHub, which
+shows a README image about 880 px wide: set `direction: down`, or split it
+into two diagrams, and build again until it fits.
+
 Run the critique in `references/reader.md` against the contract and fix
 what it finds: a question the picture cannot answer, a box no file backs,
-a missing hop. Then open the drawing for the user with the system's own
-viewer: `open` on macOS, `xdg-open` on Linux, `start ""` on Windows.
+an edge with no line of code behind it, a missing hop. Judge from the spec
+and what `archgram build` wrote; never start a browser, headless or not,
+and never take a screenshot: the user sees the drawing, and a browser
+started in the background alarms them.
+
+Then open the drawing for the user, once, with the system's own viewer:
+`open` on macOS, `xdg-open` on Linux, `start ""` on Windows.
 
 ## 7. Report
 
 Tell the user, briefly:
 
 - the reader contract, and how the drawing answers it;
-- each part drawn, with the file behind it;
+- each part drawn, with the file behind it, and each edge with the line
+  that makes it;
 - on an update, what changed in the spec and why;
 - where the colours came from;
 - what the diagram still does not show;
