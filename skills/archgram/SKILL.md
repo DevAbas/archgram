@@ -81,6 +81,13 @@ call or data movement an edge; a boundary (a service, a trust zone, the
 plugin versus the project) a frame; the path the contract's questions
 follow a flow, so it animates. Keep labels to the words a reader needs.
 
+Leave `still` out, so the drawing carries no extra text, unless the user
+asks for it or the drawing is meant to be seen still (a PNG, print): then
+`numbers` for one or two flows, whose step numbers a reader can follow on
+the lines, and `legend` for more, whose flows read better as words. With
+four flows, numbers pile up into badges such as `5,8,11,14` that a reader
+cannot tie to a flow.
+
 Then check it, and repeat until it passes:
 
 ```bash
