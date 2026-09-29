@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.13       |
+| Version | 0.14       |
 | Date    | 2026-09-29 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -77,7 +77,7 @@ same file every time.
 | 0.1 | JSON spec; every node kind in section 7 with its icon; horizontal and vertical cards; layered layout without frames; orthogonal edge routing; one static SVG with light and dark; the mono palette, with the token structure ready for more palettes; text measured with an embedded font; the `archgram build` command |
 | 0.2 | Frames, nested; single, multi-node and external variants; an automatic legend; the YAML module; technology logos from Simple Icons; separate light and dark SVG files |
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
-| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the archgram plugin for Claude Code with its `archgram:draw` skill, the archgram repository being its marketplace |
+| 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the `archgram` skill for Claude Code, which draws a project's architecture from its code |
 | Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
@@ -147,15 +147,16 @@ same file every time.
 - A library, usable from Rust and, later through WASM, from the browser
   (§5).
 - PNG, one file per theme, through the optional module (later, §5).
-- A plugin for Claude Code, `archgram`, whose marketplace is the archgram
-  repository itself, at the same version as the command (§6.6).
+- A skill for Claude Code, `archgram`, in the repository's `skills/`
+  folder: one folder the user copies into a skills directory, their own or
+  a project's (§6.6).
 
-### 6.6 The `archgram:draw` skill
+### 6.6 The `archgram` skill
 - It draws a project's architecture for its README and docs, from the
   code and the documentation, so the agent writes the spec and archgram
   does the drawing. It replaces the `drawing-architecture-diagrams`
   skill.
-- The user calls it (`/archgram:draw`, with instructions such as which
+- The user calls it (`/archgram`, with instructions such as which
   flow or which direction), or Claude chooses it when asked for an
   architecture diagram. It never runs by itself.
 - A part is drawn only when a file in the project backs it, and the skill
@@ -163,15 +164,15 @@ same file every time.
   architecture is unclear, it asks the user; it asks for no other
   approval.
 - It writes `docs/diagrams/<name>.archgram.yaml`, creating the folder when
-  missing, and draws `<name>.svg` beside it with `npx archgram@<version>`,
-  the plugin's own version. The spec is kept, so a later call changes it
-  and draws again, and says what changed.
+  missing, and draws `<name>.svg` beside it with `npx archgram`: the
+  project's own archgram when it has one, the latest otherwise. The spec is
+  kept, so a later call changes it and draws again, and says what changed.
 - It learns the spec format from that same command (`archgram spec`), so
   the format it writes always matches the command that draws it; it keeps
   no copy of the format that could fall behind.
-- One version runs through it: the plugin's, the command it runs, and the
-  command it may run without asking; the build fails when they differ.
-  Its text changes only by review, like the code.
+- It works on its own: everything it needs is in its folder or comes from
+  `npx archgram`, so it needs no plugin and nothing installed in the
+  project. Its text changes only by review, like the code.
 - Its evaluations live beside it: that it is chosen when asked for an
   architecture diagram and not otherwise, that it draws a project it is
   given, and that it asks when the architecture is unclear. They run on
@@ -256,3 +257,4 @@ None.
 | 0.11    | 2026-09-29 | A logo is always in its brand's colour, not only while its card is lit (§6.4, §7). |
 | 0.12    | 2026-09-29 | `archgram spec` prints the format the command reads (§5, §6.5); the skill learns the format from it, runs one version throughout, and carries its evaluations (§6.6). |
 | 0.13    | 2026-09-29 | The diagram is monochrome: icons, signals and lit cards in the text colour, colour for the logos alone; the legend lists the variants only (§6.3). |
+| 0.14    | 2026-09-29 | A skill, `archgram`, not a plugin: one folder in `skills/` the user copies into a skills directory; it runs `npx archgram`, the project's own or the latest, not a pinned version (§5, §6.5, §6.6). |
