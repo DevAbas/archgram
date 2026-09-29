@@ -136,6 +136,8 @@ fn own_mapping(dir: &Path, resolver: &str, extra_role: &str) -> PathBuf {
         "icon-client",
         "icon-core",
         "signal-core",
+        "signal-pass",
+        "signal-refusal",
         "text",
         "text-muted",
     ]
@@ -164,7 +166,7 @@ fn a_theme_file_is_checked_and_drawn_with() {
     );
     let shown = String::from_utf8_lossy(&run.stdout);
     assert!(
-        shown.contains("card-edge    #d4d4d4  {color.card-edge}"),
+        shown.contains("card-edge      #d4d4d4  {color.card-edge}"),
         "{shown}"
     );
     // archgram's own tokens draw what the built-in palette draws.

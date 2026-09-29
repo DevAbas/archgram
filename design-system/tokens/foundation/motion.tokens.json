@@ -51,6 +51,22 @@
         "unit": "ms"
       },
       "$description": "How long a signal, a lit card or a brand colour takes to appear or go."
+    },
+    "refusal-hop": {
+      "$type": "duration",
+      "$value": {
+        "value": 250,
+        "unit": "ms"
+      },
+      "$description": "How long a refusal takes to travel back along one line of its flow."
+    },
+    "pending": {
+      "$type": "duration",
+      "$value": {
+        "value": 1600,
+        "unit": "ms"
+      },
+      "$description": "One step of a pending border's dashes as they march round a refused card."
     }
   },
   "signal": {
@@ -207,6 +223,40 @@
         "unit": "px"
       },
       "$description": "The height of a step's number on a line in the still image, and its width at the least."
+    }
+  },
+  "refusal": {
+    "$type": "dimension",
+    "mark": {
+      "$value": {
+        "value": 9,
+        "unit": "px"
+      },
+      "$description": "The size of the ✕ on the line a step refuses."
+    },
+    "mark-gap": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "The room between the ✕ and the arrowhead after it."
+    },
+    "pending": {
+      "$type": "strokeStyle",
+      "$value": {
+        "dashArray": [
+          {
+            "value": 4,
+            "unit": "px"
+          },
+          {
+            "value": 4,
+            "unit": "px"
+          }
+        ],
+        "lineCap": "butt"
+      },
+      "$description": "The dashes of a refused card's border while it waits for a flow to pass it."
     }
   }
 }

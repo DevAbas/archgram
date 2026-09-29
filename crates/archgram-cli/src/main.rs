@@ -9,6 +9,7 @@ use std::process::ExitCode;
 
 use archgram_core::SpecError;
 use archgram_core::render::{Mode, Options};
+use archgram_core::tokens::Role;
 use archgram_icons::Icons;
 
 const USAGE: &str = "\
@@ -428,13 +429,15 @@ fn theme_check(path: &str) -> ExitCode {
         Ok(i) => i,
         Err(code) => return code,
     };
+    // The role column is as wide as the longest role's name.
+    let width = Role::ALL.iter().map(|r| r.name().len()).max().unwrap_or(0);
     for (name, roles) in [("light", &imported.light), ("dark", &imported.dark)] {
         println!("{name}:");
         for (role, source, colour) in roles {
             let from = source
                 .as_deref()
                 .map_or_else(|| "(mono)".to_owned(), |id| format!("{{{id}}}"));
-            println!("  {:<12} {colour}  {}", role.name(), printable(&from));
+            println!("  {:<width$} {colour}  {}", role.name(), printable(&from));
         }
     }
     println!("{path}: every pair keeps its contrast in both themes");

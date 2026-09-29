@@ -6,7 +6,7 @@
 # part of a diagram reads.
 version: alpha
 name: archgram
-description: Minimalist architecture diagrams. Neutral surfaces, colour only in the icon lines, one shape per kind of thing.
+description: Minimalist architecture diagrams. Neutral surfaces, colour only in technology logos and in what happens on a flow, one shape per kind of thing.
 imports: ./design-system/tokens/design.resolver.json
 components:
   canvas:
@@ -82,7 +82,14 @@ components:
     size: "{signal.dot}"
     backgroundColor: "{color.signal-core}"
   lit-card:
-    size: "{signal.lit}"
+    textColor: "{color.signal-pass}"
+    size: "{stroke.card}"
+  refused-card:
+    textColor: "{color.signal-refusal}"
+    size: "{stroke.card}"
+  refusal-mark:
+    textColor: "{color.signal-refusal}"
+    size: "{refusal.mark}"
   step-number:
     backgroundColor: "{color.card}"
     textColor: "{color.text}"
@@ -100,8 +107,9 @@ box is, how things connect and where the flow goes, and nothing else should
 compete for attention.
 
 The language is minimalist. Surfaces and text are neutral greys; colour
-appears only in the lines of the icons, where it says which family a node
-belongs to. There are no shadows, no gradients and no glow. The shapes
+appears only in technology logos and in what happens on a flow: a card a
+signal passes, a step that refuses it. There are no shadows, no gradients
+and, unless the spec asks for it, no glow. The shapes
 carry the meaning, following the conventions architecture diagrams have
 settled on: every kind of thing has its own icon, several instances of a
 thing are stacked cards, a thing we do not own has a dashed border, and a
@@ -133,7 +141,8 @@ defining the same entries, and light and dark work for it at once.
 
 The one palette today is `mono`: neutral greys, and its four icon roles
 are the text colour, black on light and white on dark, so a diagram is
-monochrome and colour belongs to the technology logos.
+monochrome and colour belongs to the technology logos and to a flow's
+outcome: green where a signal passes a card, red where a step refuses it.
 
 - **Canvas** (`color.canvas`): the diagram's background. Near-white in
   light, near-black in dark, painted by the diagram itself so it reads on
@@ -155,23 +164,33 @@ monochrome and colour belongs to the technology logos.
   flow's signal and the card it lights.
 - **Signal core** (`color.signal-core`): the bright centre of a signal's
   dot, in the styles that have one. Only the signal takes it.
+- **Signal pass** (`color.signal-pass`): the border of a card a flow's
+  signal passes, drawn while the card is lit (Components: Signal). Green,
+  so passing reads at once.
+- **Signal refusal** (`color.signal-refusal`): a step that refuses a flow:
+  the ✕ on its line, the arrowhead after it, the refusal on its way back
+  and the borders of the cards it marks (Components: Refusal). Red, the
+  one colour a reader already takes for "stopped".
 
 Rules:
 
-- Colour lives in technology logos only. Icon lines, a flow's signal and a
-  lit card take the icon roles, which in `mono` are the text colour; cards,
-  badges, frames and connectors stay neutral, whatever the category, and a
-  card turns its icon role's colour only while a flow's signal lights it
-  (Components: Signal).
+- Colour lives in technology logos and in a flow's outcome. Icon lines
+  and a flow's signal take the icon roles, which in `mono` are the text
+  colour; cards, badges, frames and connectors stay neutral, whatever the
+  category. A card's border turns `color.signal-pass` while a signal lights
+  it and `color.signal-refusal` while a refusal marks it; its fill, icon
+  and text never change (Components: Signal, Refusal).
 - Hues are muted and there is no neon; a logo's brand colour is its
-  brand's own (Components: Technology logo). The only glow is a signal's,
-  and only in the styles that have one.
+  brand's own (Components: Technology logo). Nothing glows unless the spec
+  asks for it (`glow: true`); then a signal glows in the styles that have
+  a glow, and a refusal's marks glow with it.
 - A flow's signal takes the icon hue of the node it leaves.
 - Technology logos are drawn in their brands' own colours, always; a
   logo whose brand gives none is in `color.text-muted`.
 - Contrast follows WCAG 2.1 AA in both themes: text 4.5:1 against what it
-  sits on; icon lines, connectors and frame borders 3:1 against their
-  background (1.4.11).
+  sits on; icon lines, connectors, frame borders and a flow's pass and
+  refusal colours 3:1 against their background (1.4.11): the pass colour
+  against the card, the refusal colour against the card and the canvas.
 - A project's own tokens may fill the roles instead of a palette
   (docs/SPEC.md, Theme file); they are held to every rule here, and an
   import that misses a contrast is refused.
@@ -235,8 +254,13 @@ Motion:
   eased with `motion.ease`. It waits `motion.hop-gap` at each card before
   it leaves; `motion.rest` passes before the cycle repeats. A branch's
   signals leave together; signals that meet at a card arrive together.
-- Anything that appears or goes, a signal or a lit card, fades over
-  `motion.fade`.
+- A lit card's border is drawn from the arrowhead round the card, over
+  `motion.hop-min`, so it never moves faster than a signal; the last card
+  of a flow stays lit until its border has closed.
+- A refusal travels back along its flow, `motion.refusal-hop` for each
+  line, and `motion.rest` passes after it before the next flow.
+- Anything that appears or goes, a signal, an arrowhead's colour or a lit
+  border, fades over `motion.fade`.
 - Nothing moves for decoration: no ambient background, nothing moving
   where no flow goes.
 - Under `prefers-reduced-motion` the diagram is the still image, and the
@@ -339,7 +363,9 @@ An edge (`connector`): an orthogonal line in `color.connector`, its bends
 rounded by `rounded.connector`, ending in an open arrowhead drawn with the
 line's own stroke, `arrowhead.length` back along the line and
 `arrowhead.width` across it. The tip stops `arrowhead.gap` short of the
-card, so the arrowhead never touches the card's edge. Edges leaving one
+card, so the arrowhead never touches the card's edge. The arrowhead takes
+the colour of the signal that reaches it, for as long as that signal is
+seen. Edges leaving one
 side of a card leave from its middle as one trunk and fork in the gap;
 edges entering one side merge into one point. An edge with a label near
 the card, or one drawn against the flow, keeps a port of its own,
@@ -358,14 +384,12 @@ timing (Layout: Motion), and lines are drawn with the connector's own
 stroke:
 
 - **Wire** (the default): no marker; the line fills with the hue from its
-  start to its end, under a glow of `signal.glow` at
-  `signal.glow-opacity`, blurred by `signal.blur`. It stays filled while
-  the card it reached is lit.
+  start to its end. It stays filled while the card it reached is lit.
 - **Spark**: a dot of `signal.dot` with a core of `signal.core` in
   `color.signal-core`, in a halo of `signal.halo` that flickers every
   `signal.flicker`; behind it a bright stretch of `signal.bolt` at
   `signal.bolt-width` and a trail of `signal.trail` at
-  `signal.trail-opacity`, glowing.
+  `signal.trail-opacity`.
 - **Arc**: a spark whose whole line glows and flickers every
   `signal.flicker-fast`.
 - **Comet**: a dot and a tail of `signal.comet` that thins from
@@ -376,10 +400,45 @@ stroke:
 - **Current**: the line runs as dashes of `signal.dash`, moving on by one
   dash and gap every `signal.dash-period`, behind a dot.
 
-A card is lit from the moment a signal reaches it until every signal it
-sends has arrived (`lit-card`): a border of `signal.lit` in its hue just
-outside its own edge, over a fill of that hue at `signal.tint`. The last
-card of a flow stays lit for `motion.hop-gap`.
+When the spec asks for glow (`glow: true`), the wire, spark and arc
+styles glow: a second line of `signal.glow` at `signal.glow-opacity`
+under the signal, blurred by `signal.blur`. The other styles have none.
+
+A card is lit from the moment a signal reaches its arrowhead until every
+signal it sends has arrived (`lit-card`): its own border, at its own width
+(`stroke.card`), turns `color.signal-pass`, drawn from the point where
+the arrow meets the card, both ways round, closing on the far side. The
+card takes no fill, and its icon and text keep their colours. The first
+card of a flow, which no arrow reaches, draws its border from the far side
+and closes it where its signal leaves, as it leaves. The spec picks how
+the border is drawn:
+
+- **Spark** (the default): a dot of `signal.core` in the pass colour rides
+  each growing end.
+- **Drain**: the border drains away toward the arrow that leaves the card,
+  as that arrow's signal leaves.
+- **Ring**: the border sweeps once round, clockwise from the arrowhead.
+- **Afterglow**: once drawn, the border fades back to the card's own edge
+  while the card is lit.
+
+### Refusal
+
+A step may refuse its flow. The refusal is marked in
+`color.signal-refusal`:
+
+- A ✕ of `refusal.mark` (`refusal-mark`) sits on the line into the
+  refusing card, `refusal.mark-gap` before its arrowhead, on a patch of
+  the canvas's colour so the line does not cross it; the arrowhead after
+  it turns the refusal colour.
+- The refusing card's border (`refused-card`) is drawn in the refusal
+  colour from the arrowhead, as a lit card's is.
+- The refusal then travels back along the flow to the node where the flow
+  began, whose border is drawn in the refusal colour from where it
+  arrives.
+- The refusing card keeps its refusal border until a later flow passes
+  it, which draws its border in the pass colour. On request (`wait:
+  pending`) it waits as dashes of `refusal.pending` marching round it,
+  one step every `motion.pending`.
 
 An edge's label is lit while its signal is seen: the signal's line and
 glow fade out round the label, softened by `signal.blur`, as the still line
@@ -395,7 +454,9 @@ each step's number on the lines it takes (`step-number`): a pill
 `signal.number` high, edged like a line, just before the arrowhead where
 the step arrives, or as near as it fits clear of cards, labels and other
 numbers. Lines that meet before a card share their number there. Steps
-are counted on from one flow to the next.
+are counted on from one flow to the next. A refused step keeps its ✕ and
+the refusing card its border in the refusal colour; the flow's words end
+with the step that refused it.
 
 ### Legend
 
@@ -424,14 +485,15 @@ turns it off (`credit: false`), and the drawing is then a line shorter.
 ## Do's and Don'ts
 
 - Do let the icon say what a thing is and the title say which one.
-- Do keep colour in icon lines; a coloured card or frame is a new rule,
-  written here first. The one written so far is a card a signal lights.
+- Do keep colour to logos and a flow's outcome; a coloured card or frame
+  is a new rule, written here first. The ones written so far are a lit
+  card's border and a refused card's.
 - Do use the external variant for anything the system calls but does not
   own, including managed services and third-party APIs.
 - Do name technologies with `tech`, so the logo appears. A logo takes the
   kind's icon's place only when the diagram asks for it (`logo: icon`).
 - Don't use neon hues, gradients, shadows or glow; brand colours belong to
-  the technology logos alone, and glow to the signal styles that have it.
+  the technology logos alone, and glow to a spec that asks for it.
 - Don't animate for decoration; if the flow does not need it, the diagram
   is still.
 - Don't write a value in this file. A new value is a token first.
