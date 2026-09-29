@@ -4,7 +4,7 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-29
 
 ### Added
 
@@ -136,7 +136,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
-[Unreleased]: https://github.com/DevAbas/archgram/compare/v0.4.0...HEAD
+[0.5.0]: https://github.com/DevAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/DevAbas/archgram/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DevAbas/archgram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DevAbas/archgram/compare/v0.1.0...v0.2.0
