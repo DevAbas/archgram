@@ -5,13 +5,12 @@ use crate::geometry::Rect;
 use crate::logos::Logos;
 use crate::render::icons::{GRID, icon};
 use crate::render::scene::{Anchor, GroupOf, Item, Place};
-use crate::render::svg::num;
 use crate::spec::{CardStyle, Category, LogoPlace, Node, Variant};
 use crate::tokens::{
     CARD_HORIZONTAL_BADGE, CARD_HORIZONTAL_ICON, CARD_LOGO_CHIP, CARD_LOGO_CHIP_RING,
     CARD_LOGO_CORNER, CARD_LOGO_INLINE, CARD_LOGO_INLINE_GAP, CARD_MULTI_OFFSET, CARD_PADDING,
-    CARD_VERTICAL_BADGE, CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, SIGNAL_LIT, STROKE_CARD,
-    STROKE_ICON, TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
+    CARD_VERTICAL_BADGE, CARD_VERTICAL_ICON, ROUNDED_BADGE, ROUNDED_CARD, STROKE_ICON,
+    TYPOGRAPHY_SUBTITLE, TYPOGRAPHY_TITLE,
 };
 
 /// The CSS class that gives an icon its category's hue (DESIGN.md, Colors).
@@ -30,15 +29,13 @@ struct Lines<'a> {
     title: &'a str,
     note: Option<&'a str>,
     inline: Option<&'a str>,
-    brand: Option<&'a Brand<'a>>,
+    brand: Option<&'a Brand>,
 }
 
-/// A card's lighting while a flow's signal is at it, its opacity animation
-/// when a flow reaches it, and the class that gives its logo the brand's
-/// colour when the brand has one.
+/// The class that gives a card's logo its brand's colour, when the brand
+/// has one.
 #[derive(Debug)]
-pub struct Brand<'a> {
-    pub animation: Option<&'a str>,
+pub struct Brand {
     pub class: Option<String>,
 }
 
@@ -136,20 +133,6 @@ pub fn card(
         .map(|p| (p, place));
     let r = outline(&mut out, node, r);
     let hue = category_class(node.kind.category());
-    if let Some(animation) = brand.and_then(|b| b.animation) {
-        // Its border in the card's hue, `signal.lit` wide on whole pixels
-        // just outside the card's own edge, over a tint of that hue.
-        let o = SIGNAL_LIT / 2.0 - STROKE_CARD / 2.0;
-        out.push(Item::Motion(format!(
-            r#"<rect class="lit {hue}" x="{}" y="{}" width="{}" height="{}" rx="{}" opacity="0">{}</rect>"#,
-            num(r.x - o),
-            num(r.y - o),
-            num(r.w + 2.0 * o),
-            num(r.h + 2.0 * o),
-            num(ROUNDED_CARD + o),
-            animation
-        )));
-    }
 
     let second = crate::measure::note_line(node, place, logos);
     let lines = Lines {
@@ -215,6 +198,23 @@ pub fn card(
     }
 }
 
+/// The front card in `node`'s footprint `r`: the footprint itself, or for
+/// several instances the card at its lower left, the copies behind it
+/// stepping up and to the right.
+#[must_use]
+pub fn front(node: &Node, r: Rect) -> Rect {
+    if node.variant == Variant::Multi {
+        Rect {
+            x: r.x,
+            y: r.y + 2.0 * CARD_MULTI_OFFSET,
+            w: r.w - 2.0 * CARD_MULTI_OFFSET,
+            h: r.h - 2.0 * CARD_MULTI_OFFSET,
+        }
+    } else {
+        r
+    }
+}
+
 /// The card's outline in its footprint `r`, and the box the rest of the
 /// card is drawn on. For several instances the front card sits at the
 /// footprint's lower left and two copies of the outline step up and to the
@@ -225,12 +225,7 @@ fn outline(out: &mut Vec<Item>, node: &Node, r: Rect) -> Rect {
         Variant::Single | Variant::Multi => "card",
     };
     let r = if node.variant == Variant::Multi {
-        let front = Rect {
-            x: r.x,
-            y: r.y + 2.0 * CARD_MULTI_OFFSET,
-            w: r.w - 2.0 * CARD_MULTI_OFFSET,
-            h: r.h - 2.0 * CARD_MULTI_OFFSET,
-        };
+        let front = front(node, r);
         for step in [2.0, 1.0] {
             let d = step * CARD_MULTI_OFFSET;
             out.push(Item::Rect {

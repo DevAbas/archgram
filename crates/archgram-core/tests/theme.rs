@@ -207,7 +207,7 @@ fn each_problem_is_reported_where_it_is() {
     assert_eq!(
         e,
         [
-            "archgram.theme.json /roles/paper: `paper` is not an archgram role; the roles are badge, canvas, card, card-edge, connector, frame, icon-ai, icon-build, icon-client, icon-core, signal-core, text, text-muted"
+            "archgram.theme.json /roles/paper: `paper` is not an archgram role; the roles are badge, canvas, card, card-edge, connector, frame, icon-ai, icon-build, icon-client, icon-core, signal-core, signal-pass, signal-refusal, text, text-muted"
         ]
     );
     let e = project_errors(&mapping(r#""card": "surfac""#, BOTH));

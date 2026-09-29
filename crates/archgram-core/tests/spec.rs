@@ -1,7 +1,9 @@
 //! Reading and checking specs: the examples in docs/SPEC.md are valid, and
 //! each rule in docs/SPEC.md (Validation) reports its problem where it is.
 
-use archgram_core::spec::{CardStyle, Category, Direction, Kind, SignalStyle, Still, Variant};
+use archgram_core::spec::{
+    BorderStyle, CardStyle, Category, Direction, Kind, SignalStyle, Still, Variant, Wait,
+};
 use archgram_core::{Location, SpecError, parse_spec};
 
 fn example(name: &str) -> String {
@@ -231,6 +233,63 @@ fn signal_and_still_take_their_named_values() {
         (SignalStyle::Comet, Still::Numbers)
     );
     let e = errors(&spec_with(TWO, r#", "signal": "neon""#));
+    assert!(
+        e[0].message.starts_with("unknown variant `neon`"),
+        "{}",
+        e[0].message
+    );
+}
+
+#[test]
+fn a_flow_stops_at_its_last_step_a_single_node() {
+    let nodes = format!(r#"{TWO}, {{ "id": "x", "kind": "service", "label": "X" }}"#);
+    let edges = r#""edges": [{ "from": "api", "to": "db" }, { "from": "api", "to": "x" }]"#;
+    let ok = format!(
+        r#", {edges}, "flows": [{{ "name": "refused", "steps": ["api", "db"], "stop": "db" }}]"#
+    );
+    let spec = parse_spec(&spec_with(&nodes, &ok)).expect("a flow stopping at its last step");
+    assert_eq!(spec.flows[0].stop.as_deref(), Some("db"));
+    assert_eq!(
+        spec.flow_words(&spec.flows[0]),
+        "API \u{2192} DB, refused at DB"
+    );
+    // Not the last step; the last step a branch; no such node.
+    let bad = format!(
+        r#", {edges}, "flows": [{{ "name": "a", "steps": ["api", "db"], "stop": "api" }}, {{ "name": "b", "steps": ["api", ["db", "x"]], "stop": "x" }}, {{ "name": "c", "steps": ["api", "db"], "stop": "dbb" }}]"#
+    );
+    let e = errors(&spec_with(&nodes, &bad));
+    assert_eq!(
+        pointers(&e),
+        ["/flows/0/stop", "/flows/1/stop", "/flows/2/stop"]
+    );
+    assert_eq!(
+        e[0].message,
+        "flow `a` stops at `api`, which is not its last step: a flow stops at its last step"
+    );
+    assert_eq!(
+        e[1].message,
+        "flow `b` stops at `x`, but its last step is a branch: a flow stops at a single node"
+    );
+    assert_eq!(e[2].message, "no node has the id `dbb`; did you mean `db`?");
+}
+
+#[test]
+fn border_wait_and_glow_take_their_named_values() {
+    let spec = parse_spec(&spec_with(TWO, "")).unwrap();
+    assert_eq!(
+        (spec.border, spec.wait, spec.glow),
+        (BorderStyle::Spark, Wait::Solid, true)
+    );
+    let spec = parse_spec(&spec_with(
+        TWO,
+        r#", "border": "afterglow", "wait": "pending", "glow": false"#,
+    ))
+    .unwrap();
+    assert_eq!(
+        (spec.border, spec.wait, spec.glow),
+        (BorderStyle::Afterglow, Wait::Pending, false)
+    );
+    let e = errors(&spec_with(TWO, r#", "border": "neon""#));
     assert!(
         e[0].message.starts_with("unknown variant `neon`"),
         "{}",

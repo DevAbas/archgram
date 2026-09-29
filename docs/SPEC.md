@@ -38,6 +38,9 @@ drawing keeps a plain name; any other spec draws its own name with `.svg`.
   "legend": true,
   "signal": "wire",
   "still": "none",
+  "border": "spark",
+  "wait": "solid",
+  "glow": true,
   "credit": true,
   "nodes": [],
   "frames": [],
@@ -59,6 +62,9 @@ drawing keeps a plain name; any other spec draws its own name with `.svg`.
 | `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
 | `signal` | no | `wire`, `spark`, `arc`, `comet`, `dot`, `pulse`, `current` | `wire` | How a flow's signal is drawn along the lines (DESIGN.md, Components: Signal) |
 | `still` | no | `none`, `legend`, `numbers` | `none` | What the still image shows of the flows, where nothing moves: nothing more, each flow in words under the legend, or each step's number on its lines |
+| `border` | no | `spark`, `drain`, `ring`, `afterglow` | `spark` | How a lit card's border is drawn from the arrow that reaches it: both ways round with a dot on each growing end, then draining toward the arrow that leaves, once round clockwise, or fading while the card is lit (DESIGN.md, Components: Signal) |
+| `wait` | no | `solid`, `pending` | `solid` | How a refused card waits for a later flow to pass it: its refusal border as drawn, or marching round it as dashes (DESIGN.md, Components: Refusal) |
+| `glow` | no | `true`, `false` | `true` | Whether a signal glows, faintly, in the styles that have a glow (`wire`, `spark`, `arc`); nothing else glows |
 | `credit` | no | `true`, `false` | `true` | Whether to write a small "by archgram" in the drawing's bottom-right corner, hidden from screen readers |
 | `nodes` | yes | list | | At least one node |
 | `frames`, `edges`, `flows` | no | list | empty | |
@@ -126,7 +132,8 @@ with a label.
 ```json
 [
   { "name": "a visit", "steps": ["browser", "api", "redis", "worker", "postgres"] },
-  { "name": "a question", "steps": ["chat", "llm", ["find", "count"], "index"] }
+  { "name": "a question", "steps": ["chat", "llm", ["find", "count"], "index"] },
+  { "name": "a commit with a raw colour", "steps": ["person", "precommit", "core", "checks"], "stop": "checks" }
 ]
 ```
 
@@ -137,11 +144,21 @@ and when a step has several nodes, each must have an edge to a node of
 the step after it. A spec without flows gives a still diagram. When
 several flows exist they play one after another, in the order listed.
 
+A flow may stop: `stop` names the node that refuses it, which must be
+the flow's last step and a single node. A ✕ marks the line into it, and
+the refusal travels back along the flow to the node where it began
+(DESIGN.md, Components: Refusal). The refusing node stays marked until a
+later flow passes it, so a refused flow followed by one that passes the
+same node shows a retry.
+
 archgram times the flows itself (DESIGN.md, Layout: Motion): a signal's
 speed is fixed, so a longer line takes longer; a branch's signals leave
 together; signals that meet at a node arrive together. A card is lit
-from the moment a signal reaches it until every signal it sends has
-arrived. A screen reader hears each flow in words, after the description.
+from the moment a signal reaches its arrowhead until every signal it
+sends has arrived; the last card of a flow stays lit until its border
+has closed. A refused flow's refusal travels back before the next flow
+starts. A screen reader hears each flow in words, after the description,
+a refused flow ending with the node that refused it.
 
 ## Hints
 
@@ -189,6 +206,8 @@ its JSON pointer (or its line and column in YAML), when:
 - a flow step is not reached by an edge from the step before it, a node
   of a branching step has no edge to the step after it, a step lists no
   nodes, or a step lists a node twice;
+- a flow's `stop` names no node, or a node that is not its last step, or
+  its last step is a branch;
 - `tech` names a logo archgram does not carry (the error suggests the
   nearest slugs).
 
@@ -225,7 +244,8 @@ project's resolver and which token fills each of archgram's colour roles.
 
 The roles are `badge`, `canvas`, `card`, `card-edge`, `connector`,
 `frame`, `icon-ai`, `icon-build`, `icon-client`, `icon-core`,
-`signal-core`, `text` and `text-muted` (DESIGN.md, Colors). A role the file
+`signal-core`, `signal-pass`, `signal-refusal`, `text` and `text-muted`
+(DESIGN.md, Colors). A role the file
 leaves out keeps the mono palette's colour. The file replaces the spec's
 `palette`.
 

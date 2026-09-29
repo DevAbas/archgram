@@ -1,11 +1,13 @@
 //! Drawing the diagram as SVG (ARCHITECTURE.md, Render).
 
+mod border;
 mod card;
 mod credit;
 mod edge;
 mod frame;
 mod icons;
 mod legend;
+mod refusal;
 pub mod scene;
 pub mod signal;
 pub mod styles;
@@ -110,15 +112,8 @@ pub fn scene(
             width: ARROWHEAD_WIDTH,
         },
     ];
-    // The glow's blur, over the whole canvas: measured against a line's own
-    // box, a straight line's zero height would leave it no room at all.
-    if timeline.is_some() && signal::glows(spec.signal) {
-        items.push(Item::Motion(format!(
-            r#"<defs><filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="{}" height="{}"><feGaussianBlur stdDeviation="{}"/></filter></defs>"#,
-            num(w),
-            num(h),
-            num(crate::tokens::SIGNAL_BLUR)
-        )));
+    if timeline.is_some() && spec.glow && signal::glows(spec.signal) {
+        items.push(glow_filters(options.mode, (w, h)));
     }
     // Frames first, the outermost below the ones inside it; their names go
     // over the edges, below the cards.
@@ -146,22 +141,43 @@ pub fn scene(
         blocked.extend(label_boxes.iter().flatten());
         items.extend(step_numbers(spec, &drawn, &blocked));
     }
-    cards(
-        &mut items,
-        spec,
-        placement,
-        logos,
-        (timeline.as_ref(), &brands),
-    );
+    cards(&mut items, spec, placement, logos, &brands);
     if let Some(t) = &timeline {
+        // Each node's front card on the canvas, whose border a flow draws.
+        let fronts: Vec<Rect> = spec
+            .nodes
+            .iter()
+            .zip(&placement.nodes)
+            .map(|(node, &r)| card::front(node, at(r)))
+            .collect();
+        items.push(border::borders(
+            t,
+            &fronts,
+            &drawn,
+            (spec.border, spec.wait),
+        ));
         let hue = |n: usize| card::category_class(spec.nodes[n].kind.category());
+        let labelled: Vec<bool> = spec
+            .edges
+            .iter()
+            .zip(&label_boxes)
+            .map(|(e, at)| e.label.is_some() && at.is_some())
+            .collect();
         let labels: Vec<Option<(&str, Rect)>> = spec
             .edges
             .iter()
             .zip(&label_boxes)
             .map(|(e, at)| e.label.as_deref().zip(*at))
             .collect();
-        items.push(signal::signals(spec.signal, t, &drawn, &labels, hue));
+        items.push(signal::signals(
+            (spec.signal, spec.glow),
+            t,
+            &drawn,
+            &labels,
+            hue,
+            refusal::refusals(t, &drawn, &labelled),
+        ));
+        items.extend(refusal::still(t, &drawn, &fronts));
     }
     items.extend(placed_legend(placement, at));
     if let Some(c) = placement.credit {
@@ -175,6 +191,30 @@ pub fn scene(
         style,
         items,
     }
+}
+
+/// The glow's blur, over the whole canvas `size` large: measured against a
+/// line's own box, a straight line's zero height would leave it no room at
+/// all. One for each theme the drawing carries, the dark one softer.
+fn glow_filters(mode: Mode, (w, h): (f64, f64)) -> Item {
+    let filter = |id: &str, blur: f64| {
+        format!(
+            r#"<filter id="{id}" filterUnits="userSpaceOnUse" x="0" y="0" width="{}" height="{}"><feGaussianBlur stdDeviation="{}"/></filter>"#,
+            num(w),
+            num(h),
+            num(blur)
+        )
+    };
+    let (light, dark) = (
+        filter("glow", crate::tokens::SIGNAL_BLUR),
+        filter("glow-dark", crate::tokens::SIGNAL_BLUR_DARK),
+    );
+    let filters = match mode {
+        Mode::Light => light,
+        Mode::Dark => dark,
+        Mode::Auto => format!("{light}{dark}"),
+    };
+    Item::Motion(format!("<defs>{filters}</defs>"))
 }
 
 /// The legend and the flows in words, moved onto the canvas by `at`.
@@ -267,27 +307,21 @@ fn drawn_edges(placement: &Placement) -> Vec<edge::Drawn> {
         .collect()
 }
 
-/// Every card, each lit while a flow's signal is at it.
+/// Every card, its logo in its brand's colour.
 fn cards(
     items: &mut Vec<Item>,
     spec: &Spec,
     placement: &Placement,
     logos: &dyn crate::logos::Logos,
-    (timeline, brands): (Option<&Timeline>, &BTreeMap<String, Rgb>),
+    brands: &BTreeMap<String, Rgb>,
 ) {
-    for (i, (node, r)) in spec.nodes.iter().zip(&placement.nodes).enumerate() {
+    for (node, r) in spec.nodes.iter().zip(&placement.nodes) {
         let at = Rect {
             x: r.x + OFFSET,
             y: r.y + OFFSET,
             ..*r
         };
-        let lighting = timeline.and_then(|t| {
-            let lit: Vec<crate::motion::Lit> =
-                t.lit.iter().filter(|l| l.node == i).copied().collect();
-            (!lit.is_empty()).then(|| signal::lit_animation(&lit, t.period))
-        });
         let brand = card::Brand {
-            animation: lighting.as_deref(),
             class: node
                 .tech
                 .as_deref()
@@ -407,7 +441,7 @@ fn style(
     sheet.rules(styles::shapes());
     brand_rules(&mut sheet, brands, (&light, &dark, mode));
     if animated {
-        motion_style(&mut sheet, spec.signal, (&light, &dark, mode));
+        motion_style(&mut sheet, (spec.signal, spec.glow), (&light, &dark, mode));
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
         sheet.rules(styles::steps());
@@ -666,38 +700,33 @@ fn brand_fill(brand: Rgb, card: Rgb) -> String {
     }
 }
 
-/// The signal, the lit card and the lit label; none of it under
-/// `prefers-reduced-motion`, where the diagram is still.
+/// The signal, the lit border, the refusal and the lit label; under
+/// `prefers-reduced-motion` only what stays of a refusal, where the diagram
+/// is still.
 fn motion_style(
     svg: &mut Sheet,
-    style: SignalStyle,
+    (style, glow): (SignalStyle, bool),
     (light, dark, mode): (&Colors, &Colors, Mode),
 ) {
     use crate::tokens::{
-        SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, SIGNAL_LIT,
-        SIGNAL_RING_OPACITY, SIGNAL_TINT, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
+        SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_RING_OPACITY, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
     };
     for hue in ["core", "ai", "build", "client"] {
         svg.line(&format!(".signal.{hue} {{ color: var(--icon-{hue}); }}"));
     }
     svg.line(".signal path { fill: none; stroke: currentColor; stroke-linecap: round; }");
     let rules: Vec<String> = match style {
-        SignalStyle::Wire => vec![
-            format!(
-                ".signal .fill {{ stroke-width: {}; stroke-linecap: butt; }}",
-                num(STROKE_CONNECTOR)
-            ),
-            glowing(SIGNAL_GLOW, SIGNAL_GLOW_OPACITY),
-        ],
+        SignalStyle::Wire => vec![format!(
+            ".signal .fill {{ stroke-width: {}; stroke-linecap: butt; }}",
+            num(STROKE_CONNECTOR)
+        )],
         SignalStyle::Spark => vec![
             dots(),
-            halo(),
             format!(
                 ".signal .trail {{ stroke-width: {}; opacity: {}; }}",
                 num(STROKE_CONNECTOR),
                 num(SIGNAL_TRAIL_OPACITY)
             ),
-            glowing(SIGNAL_GLOW, SIGNAL_GLOW_OPACITY),
             format!(
                 ".signal .bolt {{ stroke-width: {}; }}",
                 num(SIGNAL_BOLT_WIDTH)
@@ -705,11 +734,6 @@ fn motion_style(
         ],
         SignalStyle::Arc => vec![
             dots(),
-            halo(),
-            format!(
-                ".signal .wire-glow {{ stroke-width: {}; filter: url(#glow); }}",
-                num(SIGNAL_GLOW)
-            ),
             format!(
                 ".signal .bolt {{ stroke-width: {}; }}",
                 num(SIGNAL_BOLT_WIDTH)
@@ -742,15 +766,86 @@ fn motion_style(
     for rule in rules {
         svg.line(&rule);
     }
-    for hue in ["core", "ai", "build", "client"] {
-        svg.line(&format!(
-            ".lit.{hue} {{ fill: var(--icon-{hue}); fill-opacity: {}; stroke: var(--icon-{hue}); stroke-width: {}; }}",
-            num(SIGNAL_TINT),
-            num(SIGNAL_LIT)
-        ));
+    svg.line(&format!(
+        ".signal .chevron {{ stroke-width: {}; stroke-linejoin: round; }}",
+        num(STROKE_CONNECTOR)
+    ));
+    border_style(svg);
+    if glow {
+        glow_style(svg, style, mode);
     }
     lit_text_rules(svg, (light, dark, mode));
-    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit { display: none; } }");
+    svg.line(".still-refusal { display: none; }");
+    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .borders { display: none; } .still-refusal { display: inline; } }");
+}
+
+/// A lit card's border and a refusal's marks.
+fn border_style(svg: &mut Sheet) {
+    use crate::tokens::{REFUSAL_PENDING, STROKE_CARD};
+    // A lit card's border, on the card's own edge at its own width.
+    svg.line(&format!(
+        ".border {{ fill: none; stroke-width: {}; stroke-linejoin: round; }} .border.pass {{ stroke: var(--signal-pass); }} .border.refused {{ stroke: var(--signal-refusal); }}",
+        num(STROKE_CARD)
+    ));
+    svg.line(".border-head.pass { fill: var(--signal-pass); } .border-head.refused { fill: var(--signal-refusal); }");
+    svg.line(&format!(
+        ".border.pending {{ stroke-dasharray: {}; }}",
+        dash(REFUSAL_PENDING)
+    ));
+    // A refusal: the ✕ on a patch of canvas, its arrowhead, its way back.
+    svg.line(&format!(
+        ".refusal path {{ fill: none; stroke: var(--signal-refusal); stroke-width: {}; stroke-linecap: round; stroke-linejoin: round; }} .refusal .back {{ stroke-linecap: butt; }}",
+        num(STROKE_CONNECTOR)
+    ));
+    // The patch covers the line a stroke's width either side of the ✕.
+    svg.line(&format!(
+        ".refusal .patch {{ stroke: var(--canvas); stroke-width: {}; }}",
+        num(3.0 * STROKE_CONNECTOR)
+    ));
+}
+
+/// A signal's glow, in the styles that have one: in light `signal.glow` at
+/// `signal.glow-opacity`, blurred by `signal.blur`; in dark, where a light
+/// line needs less, their `-dark` tokens (DESIGN.md, Components: Signal).
+fn glow_style(svg: &mut Sheet, style: SignalStyle, mode: Mode) {
+    use crate::tokens::{
+        SIGNAL_GLOW, SIGNAL_GLOW_DARK, SIGNAL_GLOW_OPACITY, SIGNAL_GLOW_OPACITY_DARK,
+    };
+    // Written after the lines they widen, so they win over them.
+    let rules = |width: f64, opacity: f64, filter: &str| -> String {
+        let mut out = Vec::new();
+        match style {
+            SignalStyle::Wire | SignalStyle::Spark => out.push(format!(
+                ".signal .glowing {{ stroke-width: {}; opacity: {}; filter: url(#{filter}); }}",
+                num(width),
+                num(opacity)
+            )),
+            SignalStyle::Arc => out.push(format!(
+                ".signal .wire-glow {{ stroke-width: {}; filter: url(#{filter}); }}",
+                num(width)
+            )),
+            _ => {}
+        }
+        if matches!(style, SignalStyle::Spark | SignalStyle::Arc) {
+            out.push(format!(
+                ".signal .halo {{ fill: currentColor; filter: url(#{filter}); }}"
+            ));
+        }
+        out.join(" ")
+    };
+    let light = rules(SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, "glow");
+    let dark = rules(SIGNAL_GLOW_DARK, SIGNAL_GLOW_OPACITY_DARK, "glow-dark");
+    if light.is_empty() {
+        return;
+    }
+    match mode {
+        Mode::Light => svg.line(&light),
+        Mode::Dark => svg.line(&dark),
+        Mode::Auto => {
+            svg.line(&light);
+            svg.line(&format!("@media (prefers-color-scheme: dark) {{ {dark} }}"));
+        }
+    }
 }
 
 /// An edge's label under its signal takes the signal's colour, or the text
@@ -846,18 +941,4 @@ fn brand_rules(
 /// A signal's dot, and the bright core some styles light it with.
 fn dots() -> String {
     ".signal .dot { fill: currentColor; } .signal .core { fill: var(--signal-core); }".into()
-}
-
-fn halo() -> String {
-    ".signal .halo { fill: currentColor; filter: url(#glow); }".into()
-}
-
-/// A line's glow: wide, faint and blurred. Written after the lines it
-/// widens, so it wins over them.
-fn glowing(width: f64, opacity: f64) -> String {
-    format!(
-        ".signal .glowing {{ stroke-width: {}; opacity: {}; filter: url(#glow); }}",
-        num(width),
-        num(opacity)
-    )
 }

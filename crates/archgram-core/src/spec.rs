@@ -30,6 +30,17 @@ pub struct Spec {
     /// What the still image shows of the flows, where nothing moves.
     #[serde(default)]
     pub still: Still,
+    /// How a lit card's border is drawn (DESIGN.md, Components: Signal).
+    #[serde(default)]
+    pub border: BorderStyle,
+    /// How a refused card waits for a flow to pass it (DESIGN.md,
+    /// Components: Refusal).
+    #[serde(default)]
+    pub wait: Wait,
+    /// Whether a signal glows, in the styles that have a glow (DESIGN.md,
+    /// Components: Signal).
+    #[serde(default = "default_true")]
+    pub glow: bool,
     /// Whether a small "by archgram" sits in the drawing's bottom-right
     /// corner (DESIGN.md, Components: Credit).
     #[serde(default = "default_true")]
@@ -47,8 +58,9 @@ pub struct Spec {
 
 impl Spec {
     /// A flow in words, its steps' labels in order: `A → B, C → D`, a
-    /// branch's nodes joined by commas. For a screen reader, which sees no
-    /// motion, and for the still image's legend.
+    /// branch's nodes joined by commas, and `, refused at D` when a step
+    /// refuses it. For a screen reader, which sees no motion, and for the
+    /// still image's legend.
     #[must_use]
     pub fn flow_words(&self, flow: &Flow) -> String {
         let label = |id: &str| -> String {
@@ -57,7 +69,8 @@ impl Spec {
                 .find(|n| n.id == id)
                 .map_or_else(|| id.to_owned(), |n| n.label.clone())
         };
-        flow.steps
+        let steps = flow
+            .steps
             .iter()
             .map(|s| {
                 s.nodes()
@@ -67,7 +80,11 @@ impl Spec {
                     .join(", ")
             })
             .collect::<Vec<_>>()
-            .join(" \u{2192} ")
+            .join(" \u{2192} ");
+        match &flow.stop {
+            Some(id) => format!("{steps}, refused at {}", label(id)),
+            None => steps,
+        }
     }
 }
 
@@ -130,6 +147,34 @@ pub enum SignalStyle {
     Pulse,
     /// Dashes flowing along the line behind a dot.
     Current,
+}
+
+/// How a lit card's border is drawn from the arrow that reaches it
+/// (DESIGN.md, Components: Signal).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum BorderStyle {
+    /// Both ways round, a dot riding each growing end.
+    #[default]
+    Spark,
+    /// Drawn both ways round, then draining toward the arrow that leaves.
+    Drain,
+    /// Once round, clockwise from the arrowhead.
+    Ring,
+    /// Drawn both ways round, then fading while the card is lit.
+    Afterglow,
+}
+
+/// How a refused card waits for a later flow to pass it (DESIGN.md,
+/// Components: Refusal).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Wait {
+    /// Its refusal border stays as drawn.
+    #[default]
+    Solid,
+    /// Its refusal border marches round it as dashes.
+    Pending,
 }
 
 /// What the still image shows of the flows: the picture where nothing moves,
@@ -262,6 +307,9 @@ pub enum EdgeStyle {
 pub struct Flow {
     pub name: String,
     pub steps: Vec<Step>,
+    /// The node that refuses the flow: its last step, a single node.
+    #[serde(default)]
+    pub stop: Option<String>,
 }
 
 /// One step of a flow: a node, or several reached at once (a branch).

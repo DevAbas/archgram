@@ -41,6 +41,12 @@
     },
     "signal-core": {
       "$value": "{palette.dark.neutral-25}"
+    },
+    "signal-pass": {
+      "$value": "{palette.dark.green}"
+    },
+    "signal-refusal": {
+      "$value": "{palette.dark.red}"
     }
   }
 }

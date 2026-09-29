@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
-  "$description": "The flow signal, its timing and the card it lights.",
+  "$description": "The flow signal, its timing, the lit card's border and a refusal.",
   "motion": {
     "ease": {
       "$type": "cubicBezier",
@@ -51,6 +51,22 @@
         "unit": "ms"
       },
       "$description": "How long a signal, a lit card or a brand colour takes to appear or go."
+    },
+    "refusal-hop": {
+      "$type": "duration",
+      "$value": {
+        "value": 250,
+        "unit": "ms"
+      },
+      "$description": "How long a refusal takes to travel back along one line of its flow."
+    },
+    "pending": {
+      "$type": "duration",
+      "$value": {
+        "value": 1600,
+        "unit": "ms"
+      },
+      "$description": "One step of a pending border's dashes as they march round a refused card."
     }
   },
   "signal": {
@@ -92,6 +108,13 @@
       },
       "$description": "The glow's blur (a Gaussian's standard deviation)."
     },
+    "blur-dark": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "The glow's blur in the dark theme, where a lighter line needs less."
+    },
     "glow": {
       "$value": {
         "value": 6,
@@ -99,9 +122,20 @@
       },
       "$description": "The width of a line's glow."
     },
+    "glow-dark": {
+      "$value": {
+        "value": 5,
+        "unit": "px"
+      },
+      "$description": "The width of a line's glow in the dark theme."
+    },
     "glow-opacity": {
       "$type": "number",
       "$value": 0.35
+    },
+    "glow-opacity-dark": {
+      "$type": "number",
+      "$value": 0.28
     },
     "trail": {
       "$value": {
@@ -140,18 +174,6 @@
         "unit": "px"
       },
       "$description": "How far a pulse's ring spreads."
-    },
-    "lit": {
-      "$value": {
-        "value": 2,
-        "unit": "px"
-      },
-      "$description": "The border of a card the signal is at."
-    },
-    "tint": {
-      "$type": "number",
-      "$value": 0.1,
-      "$description": "The opacity of a lit card's fill in its hue."
     },
     "dash": {
       "$type": "strokeStyle",
@@ -207,6 +229,40 @@
         "unit": "px"
       },
       "$description": "The height of a step's number on a line in the still image, and its width at the least."
+    }
+  },
+  "refusal": {
+    "$type": "dimension",
+    "mark": {
+      "$value": {
+        "value": 9,
+        "unit": "px"
+      },
+      "$description": "The size of the ✕ on the line a step refuses."
+    },
+    "mark-gap": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "The room between the ✕ and the base of the arrowhead after it."
+    },
+    "pending": {
+      "$type": "strokeStyle",
+      "$value": {
+        "dashArray": [
+          {
+            "value": 4,
+            "unit": "px"
+          },
+          {
+            "value": 4,
+            "unit": "px"
+          }
+        ],
+        "lineCap": "butt"
+      },
+      "$description": "The dashes of a refused card's border while it waits for a flow to pass it."
     }
   }
 }

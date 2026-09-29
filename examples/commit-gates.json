@@ -1,0 +1,37 @@
+{
+  "archgram": 1,
+  "title": "One set of gates for agent, person and CI",
+  "description": "An agent's edit or commit goes through its hooks in .claude/hooks/design-system, a person's commit through the git pre-commit hook, and CI calls the core directly. All three run a stage of design-system/harness/gates.mjs, which reads design-system/gates.json and runs the token and rules checks against the DTCG tokens and DESIGN.md. A commit with a raw colour is refused at the checks and goes back to the person; fixed, it passes.",
+  "direction": "down",
+  "nodes": [
+    { "id": "agent", "kind": "agent", "label": "Claude Code", "note": "an edit, a commit", "tech": "claude", "variant": "external" },
+    { "id": "person", "kind": "users", "label": "A person", "note": "git commit" },
+    { "id": "ci", "kind": "service", "label": "CI job", "note": "optional", "tech": "githubactions" },
+    { "id": "adapters", "kind": "script", "label": ".claude/hooks/design-system", "note": "only translate", "frame": "claude" },
+    { "id": "precommit", "kind": "script", "label": "pre-commit", "note": "git hook" },
+    { "id": "core", "kind": "script", "label": "harness/gates.mjs", "note": "every decision", "frame": "ds" },
+    { "id": "gates", "kind": "file", "label": "gates.json", "note": "what runs, and when", "frame": "ds" },
+    { "id": "checks", "kind": "check", "label": "checks/", "note": "tokens and rules contract", "frame": "ds" },
+    { "id": "tokens", "kind": "file", "label": "tokens/", "note": "DTCG, the one source of values", "frame": "ds" },
+    { "id": "designmd", "kind": "file", "label": "DESIGN.md", "note": "rules, no values" }
+  ],
+  "frames": [
+    { "id": "claude", "label": "The agent's own folder" },
+    { "id": "ds", "label": "design-system/ names no agent" }
+  ],
+  "edges": [
+    { "from": "agent", "to": "adapters" },
+    { "from": "person", "to": "precommit" },
+    { "from": "ci", "to": "core", "label": "before-commit" },
+    { "from": "adapters", "to": "core" },
+    { "from": "precommit", "to": "core", "label": "before-commit" },
+    { "from": "core", "to": "gates" },
+    { "from": "core", "to": "checks" },
+    { "from": "checks", "to": "tokens" },
+    { "from": "checks", "to": "designmd" }
+  ],
+  "flows": [
+    { "name": "a commit with a raw colour", "steps": ["person", "precommit", "core", "checks"], "stop": "checks" },
+    { "name": "the commit again, fixed", "steps": ["person", "precommit", "core", "checks", ["tokens", "designmd"]] }
+  ]
+}

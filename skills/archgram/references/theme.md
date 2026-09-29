@@ -1,8 +1,9 @@
 # The project's colours
 
-archgram draws in black and white by default: every icon, a flow's signal
-and a lit card in the text colour, and colour only in the technology
-logos. A project with a design of its own gets its colours through a
+archgram draws in black and white by default: every icon and a flow's
+signal in the text colour, and colour only in the technology logos and in
+what happens on a flow: a green border on a card a signal passes, red
+where a step refuses it. A project with a design of its own gets its colours through a
 mapping file, `archgram.theme.json` at the project's root, passed to
 `build` with `--theme-file archgram.theme.json`. Its format is in
 `npx --yes archgram spec`, under "Theme file"; read that section
@@ -49,8 +50,13 @@ Map by meaning, not by name. The roles, and what fills them:
 | `text-muted` | secondary text |
 | `signal-core` | the card surface |
 | `icon-core`, `icon-ai`, `icon-build`, `icon-client` | main text, to keep the diagram monochrome as archgram draws it; a category colour only when the user asks for one |
+| `signal-pass` | a success colour, green |
+| `signal-refusal` | a danger or error colour, red |
 
-A role the mapping leaves out keeps archgram's own colour.
+A role the mapping leaves out keeps archgram's own colour. Map
+`signal-pass` and `signal-refusal` when the project has such colours: each
+must hold 3:1 against the card (the refusal colour against the canvas
+too), and archgram's own green can fall short on a card that is not white.
 
 ## Colours from the styling code
 
@@ -68,12 +74,14 @@ build reads the same values:
           "canvas": { "$value": "#fafaf9" }, "card": { "$value": "#ffffff" },
           "badge": { "$value": "#f5f5f4" }, "border": { "$value": "#d6d3d1" },
           "line": { "$value": "#78716c" }, "text": { "$value": "#1c1917" },
-          "muted": { "$value": "#57534e" } } }],
+          "muted": { "$value": "#57534e" }, "success": { "$value": "#15803d" },
+          "danger": { "$value": "#b91c1c" } } }],
         "dark": [{ "color": { "$type": "color",
           "canvas": { "$value": "#0c0a09" }, "card": { "$value": "#1c1917" },
           "badge": { "$value": "#292524" }, "border": { "$value": "#44403c" },
           "line": { "$value": "#78716c" }, "text": { "$value": "#fafaf9" },
-          "muted": { "$value": "#a8a29e" } } }]
+          "muted": { "$value": "#a8a29e" }, "success": { "$value": "#4ade80" },
+          "danger": { "$value": "#f87171" } } }]
       },
       "default": "light"
     }
@@ -93,7 +101,8 @@ and the mapping at the root:
     "card-edge": "color.border", "connector": "color.line", "frame": "color.line",
     "text": "color.text", "text-muted": "color.muted", "signal-core": "color.card",
     "icon-core": "color.text", "icon-ai": "color.text",
-    "icon-build": "color.text", "icon-client": "color.text"
+    "icon-build": "color.text", "icon-client": "color.text",
+    "signal-pass": "color.success", "signal-refusal": "color.danger"
   },
   "themes": {
     "light": { "inputs": { "theme": "light" } },
