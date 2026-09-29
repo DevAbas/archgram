@@ -4,6 +4,13 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- A technology logo in a card's corner is larger, 18px instead of 14, so
+  it reads at a glance.
+
 ## [0.3.0] - 2026-09-28
 
 ### Added
@@ -72,6 +79,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
+[Unreleased]: https://github.com/DevAbas/archgram/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/DevAbas/archgram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DevAbas/archgram/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/DevAbas/archgram/releases/tag/v0.1.0
