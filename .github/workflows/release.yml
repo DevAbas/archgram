@@ -137,12 +137,14 @@ jobs:
       # trusted publisher being stage-only. The platform packages are staged
       # first and approved first, so the launcher never points at a version
       # that is not there yet. Provenance comes with trusted publishing.
+      # Each tarball by a path that starts with ./: npm reads a bare
+      # `dist/x.tgz` as the GitHub repository `dist/x.tgz`, not a file.
       - name: Stage
         run: |
-          for package in dist/archgram-cli-*.tgz; do
+          for package in ./dist/archgram-cli-*.tgz; do
             npm stage publish "$package" --access public
           done
-          npm stage publish dist/archgram-[0-9]*.tgz
+          npm stage publish ./dist/archgram-[0-9]*.tgz
 
   # The GitHub release, as a draft a person reads and publishes: the Claude
   # Code skill as an archive, its checksum, and a signed record of the build
