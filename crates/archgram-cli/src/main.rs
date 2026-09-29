@@ -19,6 +19,7 @@ Usage:
                      [--theme-file <archgram.theme.json>]
                                Draw the diagram (default output: the spec's name with .svg)
   archgram check <spec>        Check a spec and list every problem
+  archgram spec                Print the spec format this archgram reads (docs/SPEC.md)
   archgram theme check <archgram.theme.json>
                                Read a project's design tokens as the theme and show each role's colour
   archgram --version           Print the version
@@ -39,6 +40,11 @@ Themes: auto (light, dark under the reader's dark mode; the default), light, dar
   project's DTCG resolver, its light and dark inputs, and the token for each
   role (docs/SPEC.md, Theme file).";
 
+/// The spec format this archgram reads, carried in the binary so a spec's
+/// writer, a person or an agent, reads the format of the very command that
+/// draws it (docs/PRD.md, 6.5).
+const SPEC: &str = include_str!("../../../docs/SPEC.md");
+
 fn main() -> ExitCode {
     // A panic is archgram's bug, never the spec's: say so, and where to
     // report it, instead of a bare Rust panic.
@@ -53,6 +59,10 @@ fn main() -> ExitCode {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
         ["check", path] => check(path),
+        ["spec"] => {
+            print!("{SPEC}");
+            ExitCode::SUCCESS
+        }
         ["theme", "check", path] => theme_check(path),
         ["build", path, rest @ ..] => match build_options(rest) {
             Ok(b) => build(path, b),

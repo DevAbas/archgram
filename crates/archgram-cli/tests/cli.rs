@@ -348,3 +348,12 @@ fn the_output_folder_is_created_when_missing() {
     );
     assert!(read(&out).starts_with("<svg"));
 }
+
+/// `archgram spec` prints docs/SPEC.md as this build carries it.
+#[test]
+fn spec_prints_the_format_it_reads() {
+    let run = archgram(&["spec"]);
+    assert!(run.status.success());
+    let spec = read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/SPEC.md"));
+    assert_eq!(String::from_utf8_lossy(&run.stdout), spec);
+}
