@@ -30,7 +30,7 @@ pub fn edge(e: &Edge, drawn: &Drawn, label: Option<Rect>, id: Option<&str>) -> V
         arrowhead: true,
     }];
     if let (Some(text), Some(at)) = (&e.label, label) {
-        items.extend(edge_label(text, at));
+        items.extend(edge_label(text, at, ("label-patch", "sub")));
     }
     items
 }
@@ -266,12 +266,14 @@ fn length(a: Point, b: Point) -> f64 {
 }
 
 /// The label in its box, over a patch of canvas so the line does not run
-/// through the text.
-fn edge_label(label: &str, at: Rect) -> [Item; 2] {
+/// through the text; `classes` are the patch's and the text's, and a
+/// signal's copy of the label takes its colour through the text's
+/// (`signal::signals`).
+pub fn edge_label(label: &str, at: Rect, (patch, text): (&str, &str)) -> [Item; 2] {
     let pad = CARD_PADDING / 2.0;
     [
         Item::Rect {
-            class: "label-patch".into(),
+            class: patch.into(),
             x: at.x,
             y: at.y,
             w: at.w,
@@ -279,7 +281,7 @@ fn edge_label(label: &str, at: Rect) -> [Item; 2] {
             rx: Some(pad),
         },
         Item::Text {
-            class: "sub".into(),
+            class: text.into(),
             x: at.x + at.w / 2.0,
             y: at.y + crate::font::baseline_in_line(&TYPOGRAPHY_SUBTITLE),
             anchor: Anchor::Middle,

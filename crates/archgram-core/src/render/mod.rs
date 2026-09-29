@@ -127,30 +127,14 @@ pub fn scene(
         ..r
     };
     let outer_first = frames_outer_first(&mut items, spec, placement, at);
-    let followed: BTreeSet<usize> = timeline
-        .as_ref()
-        .map(|t| t.hops.iter().map(|h| h.edge).collect())
-        .unwrap_or_default();
-    let mut edges = Vec::new();
-    for (k, ((e, d), label)) in spec
-        .edges
-        .iter()
-        .zip(&drawn)
-        .zip(&placement.labels)
-        .enumerate()
-    {
-        let label = label.map(|r| Rect {
-            x: r.x + EDGE_OFFSET,
-            y: r.y + EDGE_OFFSET,
-            ..r
-        });
-        let id = followed.contains(&k).then(|| signal::edge_id(k));
-        edges.extend(edge::edge(e, d, label, id.as_deref()));
-    }
-    items.push(Item::Group {
-        of: GroupOf::Class("edges"),
-        items: edges,
-    });
+    let label_boxes = label_boxes(placement);
+    edges_drawn(
+        &mut items,
+        spec,
+        (&drawn, &label_boxes),
+        timeline.as_ref(),
+        (w, h),
+    );
     for &f in &outer_first {
         if let Some(label) = placement.frame_labels[f] {
             items.extend(frame::name(&spec.frames[f].label, at(label)));
@@ -158,11 +142,7 @@ pub fn scene(
     }
     if spec.still == crate::spec::Still::Numbers {
         let mut blocked: Vec<Rect> = placement.nodes.iter().map(|&r| at(r)).collect();
-        blocked.extend(placement.labels.iter().flatten().map(|r| Rect {
-            x: r.x + EDGE_OFFSET,
-            y: r.y + EDGE_OFFSET,
-            ..*r
-        }));
+        blocked.extend(label_boxes.iter().flatten());
         items.extend(step_numbers(spec, &drawn, &blocked));
     }
     cards(
@@ -174,7 +154,13 @@ pub fn scene(
     );
     if let Some(t) = &timeline {
         let hue = |n: usize| card::category_class(spec.nodes[n].kind.category());
-        items.push(signal::signals(spec.signal, t, &drawn, hue));
+        let labels: Vec<Option<(&str, Rect)>> = spec
+            .edges
+            .iter()
+            .zip(&label_boxes)
+            .map(|(e, at)| e.label.as_deref().zip(*at))
+            .collect();
+        items.push(signal::signals(spec.signal, t, &drawn, &labels, hue));
     }
     items.extend(placed_legend(placement, at));
     Scene {
@@ -207,6 +193,56 @@ fn placed_legend(placement: &Placement, at: impl Fn(Rect) -> Rect) -> Option<Ite
         })
         .collect();
     legend::legend(&entries, &flow_lines)
+}
+
+/// Each edge's label box, moved onto the canvas as its edge is.
+fn label_boxes(placement: &Placement) -> Vec<Option<Rect>> {
+    placement
+        .labels
+        .iter()
+        .map(|label| {
+            label.map(|r| Rect {
+                x: r.x + EDGE_OFFSET,
+                y: r.y + EDGE_OFFSET,
+                ..r
+            })
+        })
+        .collect()
+}
+
+/// The edges with their labels, each a flow takes named for its signal to
+/// follow; then, when signals pass labels, the mask that fades them out
+/// round the text (`signal::label_gap`) in a drawing `size` large.
+fn edges_drawn(
+    items: &mut Vec<Item>,
+    spec: &Spec,
+    (drawn, label_boxes): (&[edge::Drawn], &[Option<Rect>]),
+    timeline: Option<&crate::motion::Timeline>,
+    (w, h): (f64, f64),
+) {
+    let followed: BTreeSet<usize> = timeline
+        .map(|t| t.hops.iter().map(|h| h.edge).collect())
+        .unwrap_or_default();
+    let mut edges = Vec::new();
+    for (k, ((e, d), label)) in spec.edges.iter().zip(drawn).zip(label_boxes).enumerate() {
+        let id = followed.contains(&k).then(|| signal::edge_id(k));
+        edges.extend(edge::edge(e, d, *label, id.as_deref()));
+    }
+    items.push(Item::Group {
+        of: GroupOf::Class("edges"),
+        items: edges,
+    });
+    let passed: Vec<Rect> = spec
+        .edges
+        .iter()
+        .zip(label_boxes)
+        .enumerate()
+        .filter(|(k, (e, _))| followed.contains(k) && e.label.is_some())
+        .filter_map(|(_, (_, at))| *at)
+        .collect();
+    if let Some(gap) = signal::label_gap(&passed, w, h) {
+        items.push(Item::Motion(gap));
+    }
 }
 
 /// Every edge as drawn, moved onto the canvas.
@@ -367,7 +403,7 @@ fn style(
     sheet.rules(styles::shapes());
     brand_rules(&mut sheet, brands, (&light, &dark, mode));
     if animated {
-        motion_style(&mut sheet, spec.signal);
+        motion_style(&mut sheet, spec.signal, (&light, &dark, mode));
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
         sheet.rules(styles::steps());
@@ -623,9 +659,13 @@ fn brand_fill(brand: Rgb, card: Rgb) -> String {
     }
 }
 
-/// The signal and the lit card; neither under `prefers-reduced-motion`,
-/// where the diagram is still.
-fn motion_style(svg: &mut Sheet, style: SignalStyle) {
+/// The signal, the lit card and the lit label; none of it under
+/// `prefers-reduced-motion`, where the diagram is still.
+fn motion_style(
+    svg: &mut Sheet,
+    style: SignalStyle,
+    (light, dark, mode): (&Colors, &Colors, Mode),
+) {
     use crate::tokens::{
         SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, SIGNAL_LIT,
         SIGNAL_RING_OPACITY, SIGNAL_TINT, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
@@ -702,7 +742,55 @@ fn motion_style(svg: &mut Sheet, style: SignalStyle) {
             num(SIGNAL_LIT)
         ));
     }
+    lit_text_rules(svg, (light, dark, mode));
     svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit { display: none; } }");
+}
+
+/// An edge's label under its signal takes the signal's colour, or the text
+/// colour in a theme where the signal's hue would fall short of text
+/// contrast on the canvas: 4.5:1 (DESIGN.md, Colors).
+fn lit_text_rules(svg: &mut Sheet, (light, dark, mode): (&Colors, &Colors, Mode)) {
+    svg.line(".signal .lit-text { fill: currentColor; }");
+    let short = |c: &Colors| -> Vec<String> {
+        [
+            ("core", c.icon_core),
+            ("ai", c.icon_ai),
+            ("build", c.icon_build),
+            ("client", c.icon_client),
+        ]
+        .iter()
+        .filter(|(_, hue)| crate::color::contrast(*hue, c.canvas) < 4.5)
+        .map(|(name, _)| format!(".signal.{name} .lit-text {{ fill: var(--text); }}"))
+        .collect()
+    };
+    match mode {
+        Mode::Auto => {
+            let (l, d) = (short(light), short(dark));
+            for rule in &l {
+                svg.line(rule);
+            }
+            // The dark theme's rules replace the light theme's: a hue short
+            // in light but not in dark goes back to the signal's colour.
+            if l != d {
+                let back: Vec<String> = l
+                    .iter()
+                    .filter(|r| !d.contains(r))
+                    .map(|r| r.replace("var(--text)", "currentColor"))
+                    .collect();
+                let rules: Vec<&String> = back.iter().chain(&d).collect();
+                svg.line(&format!(
+                    "@media (prefers-color-scheme: dark) {{ {} }}",
+                    rules
+                        .iter()
+                        .map(|r| r.as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                ));
+            }
+        }
+        Mode::Light => short(light).iter().for_each(|r| svg.line(r)),
+        Mode::Dark => short(dark).iter().for_each(|r| svg.line(r)),
+    }
 }
 
 /// Each brand colour's rule, for the theme or themes the drawing carries.
