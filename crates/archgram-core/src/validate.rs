@@ -305,7 +305,29 @@ impl<'a> Validator<'a> {
             }
             self.flow_steps(i, f, ids);
             self.flow_moves(i, f, ids, &edges);
+            self.flow_stop(i, f, ids);
         }
+    }
+
+    /// A flow stops at a node, the single node of its last step.
+    fn flow_stop(&mut self, i: usize, f: &Flow, ids: &BTreeMap<&str, Named>) {
+        let Some(stop) = &f.stop else { return };
+        if let Some(message) = Self::reference(ids, stop, Named::Node) {
+            self.error(format!("/flows/{i}/stop"), message);
+            return;
+        }
+        let message = match f.steps.last().map(Step::nodes) {
+            Some([last]) if last == stop => return,
+            Some(nodes) if nodes.contains(stop) => format!(
+                "flow `{}` stops at `{stop}`, but its last step is a branch: a flow stops at a single node",
+                f.name
+            ),
+            _ => format!(
+                "flow `{}` stops at `{stop}`, which is not its last step: a flow stops at its last step",
+                f.name
+            ),
+        };
+        self.error(format!("/flows/{i}/stop"), message);
     }
 
     /// Each step lists nodes, each once.
