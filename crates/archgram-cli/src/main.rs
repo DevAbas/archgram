@@ -25,7 +25,9 @@ Usage:
   archgram --help              Print this help
 
 A spec is JSON (.json) or YAML (.yaml, .yml); YAML problems are shown at
-their line and column.
+their line and column. A spec named <name>.archgram.yaml (or .yml, .json)
+draws <name>.svg beside it. -o names another file, and creates its folder
+when it does not exist.
 
 Themes: auto (light, dark under the reader's dark mode; the default), light, dark.
 --split-themes writes <out>.light.svg and <out>.dark.svg from one layout, for a
@@ -274,7 +276,7 @@ fn build(
             );
         }
     }
-    let out = out.unwrap_or_else(|| Path::new(path).with_extension("svg"));
+    let out = out.unwrap_or_else(|| default_output(path));
     let files = if split {
         match archgram_core::draw_themes(&spec, options, &Icons::load()) {
             Ok((light, dark)) => vec![(themed(&out, "light"), light), (themed(&out, "dark"), dark)],
@@ -287,6 +289,15 @@ fn build(
         }
     };
     for (file, svg) in files {
+        if let Some(folder) = file.parent().filter(|f| !f.as_os_str().is_empty())
+            && let Err(e) = std::fs::create_dir_all(folder)
+        {
+            eprintln!(
+                "archgram: cannot create the folder {}: {e}",
+                folder.display()
+            );
+            return ExitCode::from(2);
+        }
         if let Err(e) = write_replacing(&file, &svg) {
             eprintln!("archgram: cannot write {}: {e}", file.display());
             return ExitCode::from(2);
@@ -321,6 +332,25 @@ fn write_replacing(path: &Path, contents: &str) -> std::io::Result<()> {
         let _ = std::fs::remove_file(&temporary);
     }
     renamed
+}
+
+/// Where a spec draws when `-o` names no file (docs/SPEC.md, Formats):
+/// `harness.archgram.yaml` draws `harness.svg` beside it, so the drawing
+/// keeps a plain name; any other spec draws its own name with `.svg`.
+fn default_output(spec: &str) -> PathBuf {
+    let path = Path::new(spec);
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default();
+    for suffix in [".archgram.yaml", ".archgram.yml", ".archgram.json"] {
+        if let Some(stem) = name.strip_suffix(suffix)
+            && !stem.is_empty()
+        {
+            return path.with_file_name(format!("{stem}.svg"));
+        }
+    }
+    path.with_extension("svg")
 }
 
 /// `diagram.svg` as `diagram.light.svg`, for one theme's file.

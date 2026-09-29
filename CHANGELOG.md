@@ -6,6 +6,13 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A spec named `<name>.archgram.yaml` (or `.yml`, `.json`) draws
+  `<name>.svg` beside it, so a project keeps each spec next to its
+  drawing under a plain name.
+- `-o` into a folder that does not exist creates the folder.
+
 ### Changed
 
 - A technology logo in a card's corner is larger, 18px instead of 14, so

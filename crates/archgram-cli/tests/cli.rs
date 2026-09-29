@@ -290,3 +290,61 @@ fn a_theme_reads_only_under_its_folder() {
         );
     }
 }
+
+/// A spec named `<name>.archgram.yaml` (or `.yml`, `.json`) draws
+/// `<name>.svg` beside it, and one theme per file as `<name>.light.svg`;
+/// any other spec draws its own name with `.svg` (docs/SPEC.md, Formats).
+#[test]
+fn an_archgram_spec_draws_its_plain_name() {
+    let dir = scratch("names");
+    let json = read(Path::new(&example("linkshort.json")));
+    let yaml =
+        "archgram: 1\ntitle: t\ndescription: d\nnodes:\n  - { id: a, kind: service, label: A }\n";
+    for (spec, text, drawn) in [
+        ("harness.archgram.yaml", yaml, "harness.svg"),
+        ("skills.archgram.yml", yaml, "skills.svg"),
+        ("shop.archgram.json", json.as_str(), "shop.svg"),
+        ("plain.yaml", yaml, "plain.svg"),
+    ] {
+        std::fs::write(dir.join(spec), text).unwrap();
+        let run = archgram(&["build", dir.join(spec).to_str().unwrap()]);
+        assert!(
+            run.status.success(),
+            "{spec}: {}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+        assert!(dir.join(drawn).is_file(), "{spec} should draw {drawn}");
+    }
+    let run = archgram(&[
+        "build",
+        dir.join("harness.archgram.yaml").to_str().unwrap(),
+        "--split-themes",
+    ]);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    for drawn in ["harness.light.svg", "harness.dark.svg"] {
+        assert!(dir.join(drawn).is_file(), "{drawn}");
+    }
+}
+
+/// `-o` into a folder that does not exist creates the folder.
+#[test]
+fn the_output_folder_is_created_when_missing() {
+    let dir = scratch("folder");
+    let out = dir.join("docs").join("diagrams").join("linkshort.svg");
+    let run = archgram(&[
+        "build",
+        &example("linkshort.json"),
+        "-o",
+        out.to_str().unwrap(),
+    ]);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    assert!(read(&out).starts_with("<svg"));
+}
