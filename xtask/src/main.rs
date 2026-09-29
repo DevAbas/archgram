@@ -10,9 +10,10 @@
 //! A licence outside the list or a known vulnerability fails the task. An
 //! informational advisory (unmaintained, unsound) is reported but does not.
 //!
-//! `icons <tag>` writes `crates/archgram-icons/data` from a pinned release
-//! of Simple Icons (ARCHITECTURE.md, Code map): a shallow clone of the tag
-//! under `target/`, its `data/simple-icons.json` for titles and licences,
+//! `icons <tag> <commit>` writes `crates/archgram-icons/data` from a pinned
+//! release of Simple Icons (ARCHITECTURE.md, Code map): a shallow clone of
+//! the tag under `target/`, refused unless the tag is at `commit`, since a
+//! tag can be moved and the commit cannot; its `data/simple-icons.json` for titles and licences,
 //! `slugs.md` for each title's slug, and `icons/<slug>.svg` for its path.
 //! An icon that carries a licence of its own other than CC0 is left out.
 //!
@@ -58,12 +59,12 @@ fn main() -> ExitCode {
         .as_slice()
     {
         ["deps"] => deps(),
-        ["icons", tag] => icons(tag),
+        ["icons", tag, commit] => icons(tag, commit),
         ["fonts"] => fonts(),
         ["npm", flags @ ..] => npm::npm(flags),
         _ => {
             eprintln!(
-                "usage: cargo xtask deps | cargo xtask icons <simple-icons tag> | cargo xtask fonts | cargo xtask npm [--all] [--smoke]"
+                "usage: cargo xtask deps | cargo xtask icons <simple-icons tag> <its commit> | cargo xtask fonts | cargo xtask npm [--all] [--smoke]"
             );
             ExitCode::from(2)
         }
@@ -105,8 +106,8 @@ fn fonts() -> ExitCode {
 
 const SIMPLE_ICONS: &str = "https://github.com/simple-icons/simple-icons";
 
-fn icons(tag: &str) -> ExitCode {
-    match write_icons(tag) {
+fn icons(tag: &str, commit: &str) -> ExitCode {
+    match write_icons(tag, commit) {
         Ok(report) => {
             println!("{report}");
             ExitCode::SUCCESS
@@ -118,9 +119,18 @@ fn icons(tag: &str) -> ExitCode {
     }
 }
 
-fn write_icons(tag: &str) -> Result<String, String> {
-    let root = workspace_root();
-    let dir = root.join("target").join(format!("simple-icons-{tag}"));
+/// A shallow clone of Simple Icons' `tag` under `target/`, and its commit,
+/// refused unless the tag is at `pinned`: a tag can be moved to another
+/// commit, the commit named with it cannot.
+fn pinned_clone(tag: &str, pinned: &str) -> Result<(PathBuf, String), String> {
+    if pinned.len() != 40 || !pinned.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(format!(
+            "`{pinned}` is not a full commit hash (40 hex digits)"
+        ));
+    }
+    let dir = workspace_root()
+        .join("target")
+        .join(format!("simple-icons-{tag}"));
     if !dir.join(".git").exists() {
         let status = Command::new("git")
             .args([
@@ -145,6 +155,17 @@ fn write_icons(tag: &str) -> Result<String, String> {
         .output()
         .map_err(|e| format!("cannot run git: {e}"))?;
     let commit = String::from_utf8_lossy(&commit.stdout).trim().to_owned();
+    if !commit.eq_ignore_ascii_case(pinned) {
+        return Err(format!(
+            "simple-icons {tag} is at {commit}, not {pinned}: the tag has moved, or the commit is wrong; check the release before pinning another commit"
+        ));
+    }
+    Ok((dir, commit))
+}
+
+fn write_icons(tag: &str, pinned: &str) -> Result<String, String> {
+    let root = workspace_root();
+    let (dir, commit) = pinned_clone(tag, pinned)?;
     let read = |p: &str| std::fs::read_to_string(dir.join(p)).map_err(|e| format!("{p}: {e}"));
 
     let slug_of = slug_table(&read("slugs.md")?);
