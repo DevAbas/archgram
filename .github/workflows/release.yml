@@ -113,7 +113,9 @@ jobs:
     needs: package
     if: startsWith(github.ref, 'refs/tags/v') && vars.NPM_TRUSTED_PUBLISHING == 'true'
     runs-on: ubuntu-24.04
-    environment: npm
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/archgram
     permissions:
       contents: read
       id-token: write

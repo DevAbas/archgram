@@ -1,0 +1,40 @@
+# A pull request is squashed into one commit on main, and its title becomes
+# that commit's subject (CONTRIBUTING.md, How changes land): the title must
+# be `type: subject`, a known type and a lowercase subject, as Turborepo
+# checks its own.
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title:
+    name: PR title
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            ci
+            build
+            chore
+            refactor
+            style
+            test
+            perf
+            design
+          # No scopes: the subject names what changed.
+          scopes: ""
+          subjectPattern: ^[a-z].*$
+          subjectPatternError: |
+            The subject "{subject}" in "{title}" should start with a lowercase letter, in the imperative: "fix: keep an edge label off its arrowhead".
