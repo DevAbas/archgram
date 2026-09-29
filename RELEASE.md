@@ -38,10 +38,9 @@ version goes in by a pull request and the tag follows the merge.
    packages: the six `@archgram/cli-*` first, `archgram` last, so the
    launcher never points at a version that is not public yet. Each approval
    asks for two-factor authentication.
-6. The workflow drafts the GitHub release: an archive of each platform's
-   binary and of the skill, their checksums, a signed record of the build
-   that made each archive, and the version's section of the changelog as
-   its notes. Read it, then publish it; published, an immutable release
+6. The workflow drafts the GitHub release: an archive of the skill, its
+   checksum, a signed record of the build that made it, and the version's
+   section of the changelog as its notes. Read it, then publish it; published, an immutable release
    keeps its tag and files as they are.
 
 ## The first release, once

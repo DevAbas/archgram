@@ -75,9 +75,8 @@ mkdir -p ~/.claude/skills && curl -sL https://github.com/DevAbas/archgram/releas
 or for one project, into its `.claude/skills/` instead. Then ask Claude to
 draw the architecture, or type `/archgram`.
 
-Every release's files, the skill and a binary for each platform, carry a
-signed record of the build that made them:
-`gh attestation verify <file> -R DevAbas/archgram`.
+The skill's archive carries a signed record of the build that made it:
+`gh attestation verify archgram-skill-0.4.0.tar.gz -R DevAbas/archgram`.
 
 ## Documentation
 
