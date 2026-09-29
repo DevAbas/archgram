@@ -94,7 +94,7 @@ pub fn scene(
     let drawn = drawn_edges(placement);
     let lengths: Vec<f64> = drawn.iter().map(edge::Drawn::length).collect();
     let timeline = crate::motion::timeline(spec, &lengths);
-    let brands = brands(spec, timeline.as_ref(), logos);
+    let brands = brands(spec, logos);
     let style = style(spec, options, logos, (timeline.as_ref(), &brands));
     let mut items = vec![
         Item::Canvas {
@@ -246,20 +246,20 @@ fn cards(
                 t.lit.iter().filter(|l| l.node == i).copied().collect();
             (!lit.is_empty()).then(|| signal::lit_animation(&lit, t.period))
         });
-        let brand = lighting.as_deref().map(|animation| card::Brand {
-            animation,
+        let brand = card::Brand {
+            animation: lighting.as_deref(),
             class: node
                 .tech
                 .as_deref()
                 .filter(|t| brands.contains_key(*t))
                 .map(brand_class),
-        });
+        };
         items.push(card::card(
             node,
             at,
             (spec.card, spec.logo),
             logos,
-            brand.as_ref(),
+            Some(&brand),
         ));
     }
 }
@@ -365,8 +365,9 @@ fn style(
         sheet.line(&format!("text {{ font-family: {FONT_SANS}; }}"));
     }
     sheet.rules(styles::shapes());
+    brand_rules(&mut sheet, brands, (&light, &dark, mode));
     if animated {
-        motion_style(&mut sheet, spec.signal, brands, (&light, &dark, mode));
+        motion_style(&mut sheet, spec.signal);
     }
     if spec.still == crate::spec::Still::Numbers && !spec.flows.is_empty() {
         sheet.rules(styles::steps());
@@ -582,21 +583,12 @@ fn overlaps(a: Rect, b: Rect, margin: f64) -> bool {
         && b.y < a.bottom() + margin
 }
 
-/// The brand colours the lit cards show: each technology's slug with its
-/// colour, for the technologies of cards a signal reaches whose logo set
-/// gives a colour.
-fn brands(
-    spec: &Spec,
-    timeline: Option<&Timeline>,
-    logos: &dyn crate::logos::Logos,
-) -> BTreeMap<String, Rgb> {
-    let Some(t) = timeline else {
-        return BTreeMap::new();
-    };
-    let reached: BTreeSet<usize> = t.lit.iter().map(|l| l.node).collect();
-    reached
+/// The brand colours the logos show: each technology's slug with its
+/// colour, for every card's technology whose logo set gives a colour.
+fn brands(spec: &Spec, logos: &dyn crate::logos::Logos) -> BTreeMap<String, Rgb> {
+    spec.nodes
         .iter()
-        .filter_map(|&n| spec.nodes[n].tech.as_deref())
+        .filter_map(|n| n.tech.as_deref())
         .filter(|slug| logos.path(slug).is_some())
         .filter_map(|slug| {
             let hex = logos.colour(slug)?;
@@ -631,14 +623,9 @@ fn brand_fill(brand: Rgb, card: Rgb) -> String {
     }
 }
 
-/// The signal, the lit card and the brand colours; none of it under
-/// `prefers-reduced-motion`, where the diagram is still.
-fn motion_style(
-    svg: &mut Sheet,
-    style: SignalStyle,
-    brands: &BTreeMap<String, Rgb>,
-    (light, dark, mode): (&Colors, &Colors, Mode),
-) {
+/// The signal and the lit card; neither under `prefers-reduced-motion`,
+/// where the diagram is still.
+fn motion_style(svg: &mut Sheet, style: SignalStyle) {
     use crate::tokens::{
         SIGNAL_BOLT_WIDTH, SIGNAL_DASH, SIGNAL_GLOW, SIGNAL_GLOW_OPACITY, SIGNAL_LIT,
         SIGNAL_RING_OPACITY, SIGNAL_TINT, SIGNAL_TRAIL_OPACITY, STROKE_ICON,
@@ -715,10 +702,7 @@ fn motion_style(
             num(SIGNAL_LIT)
         ));
     }
-    brand_rules(svg, brands, (light, dark, mode));
-    svg.line(
-        "@media (prefers-reduced-motion: reduce) { .signals, .lit, .brand { display: none; } }",
-    );
+    svg.line("@media (prefers-reduced-motion: reduce) { .signals, .lit { display: none; } }");
 }
 
 /// Each brand colour's rule, for the theme or themes the drawing carries.
@@ -731,10 +715,12 @@ fn brand_rules(
         brands
             .iter()
             .map(|(slug, hex)| {
+                // As strong as a logo's own rule, `.logo-icon.core` in the
+                // badge too, and after it, so the brand's colour stands.
                 format!(
-                    ".{} {{ fill: {}; }}",
-                    brand_class(slug),
-                    brand_fill(*hex, c.card)
+                    ".logo.{class}, .logo-icon.{class} {{ fill: {fill}; }}",
+                    class = brand_class(slug),
+                    fill = brand_fill(*hex, c.card)
                 )
             })
             .collect()

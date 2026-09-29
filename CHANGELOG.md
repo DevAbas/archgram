@@ -15,6 +15,9 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- A technology logo is always in its brand's own colour, not only while a
+  flow's signal lights its card. A brand colour that would not show on the
+  card in a theme is the text colour there.
 - A technology logo in a card's corner is larger, 18px instead of 14, so
   it reads at a glance.
 

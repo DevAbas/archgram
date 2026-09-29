@@ -189,3 +189,48 @@ fn every_still_shape_has_a_style_rule() {
         }
     }
 }
+
+/// Two logos for the brand tests: a blue one, and a near-black one that
+/// would not show on a dark card.
+struct TwoLogos;
+
+impl archgram_core::logos::Logos for TwoLogos {
+    fn path(&self, slug: &str) -> Option<&str> {
+        matches!(slug, "blue" | "ink").then_some("M0 0h24v24H0z")
+    }
+    fn slugs(&self) -> Vec<&str> {
+        vec!["blue", "ink"]
+    }
+    fn colour(&self, slug: &str) -> Option<&str> {
+        match slug {
+            "blue" => Some("2563EB"),
+            "ink" => Some("181717"),
+            _ => None,
+        }
+    }
+}
+
+/// A logo is always in its brand's colour, with or without flows; a brand
+/// colour that would not show on the card in a theme is the text colour
+/// there (DESIGN.md, Components: Technology logo).
+#[test]
+fn logos_are_in_their_brands_colours() {
+    let spec = archgram_core::parse_spec(
+        r#"{ "archgram": 1, "title": "t", "description": "d",
+        "nodes": [{ "id": "a", "kind": "service", "label": "A", "tech": "blue" },
+                  { "id": "b", "kind": "database", "label": "B", "tech": "ink" }],
+        "edges": [{ "from": "a", "to": "b" }] }"#,
+    )
+    .unwrap();
+    let svg = archgram_core::draw_with(&spec, Options::default(), &TwoLogos).unwrap();
+    assert!(svg.contains(r#"class="logo brand-blue""#), "{svg}");
+    assert!(svg.contains(".logo.brand-blue, .logo-icon.brand-blue { fill: #2563eb; }"));
+    assert!(svg.contains(".logo.brand-ink, .logo-icon.brand-ink { fill: #181717; }"));
+    assert!(svg.contains(
+        "@media (prefers-color-scheme: dark) { .logo.brand-ink, .logo-icon.brand-ink { fill: var(--text); } }"
+    ));
+    assert!(
+        !svg.contains(r#"class="brand "#),
+        "no copy only motion shows"
+    );
+}

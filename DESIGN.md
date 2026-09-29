@@ -152,14 +152,15 @@ The one palette today is `mono`: neutral greys and four muted hues.
 
 Rules:
 
-- Colour lives in icon lines only. Cards, badges, frames and connectors
-  stay neutral, whatever the category; a card turns its hue only while a
-  flow's signal lights it (Components: Signal).
-- Hues are muted. No neon and no fully saturated brand colours; the only
-  glow is a signal's, and only in the styles that have one.
+- Colour lives in icon lines and technology logos only. Cards, badges,
+  frames and connectors stay neutral, whatever the category; a card turns
+  its hue only while a flow's signal lights it (Components: Signal).
+- Hues are muted and there is no neon; a logo's brand colour is its
+  brand's own (Components: Technology logo). The only glow is a signal's,
+  and only in the styles that have one.
 - A flow's signal takes the icon hue of the node it leaves.
-- Technology logos are drawn in `color.text-muted`; a logo shows its
-  brand's colour only while a flow's signal lights its card.
+- Technology logos are drawn in their brands' own colours, always; a
+  logo whose brand gives none is in `color.text-muted`.
 - Contrast follows WCAG 2.1 AA in both themes: text 4.5:1 against what it
   sits on; icon lines, connectors and frame borders 3:1 against their
   background (1.4.11).
@@ -226,8 +227,8 @@ Motion:
   eased with `motion.ease`. It waits `motion.hop-gap` at each card before
   it leaves; `motion.rest` passes before the cycle repeats. A branch's
   signals leave together; signals that meet at a card arrive together.
-- Anything that appears or goes, a signal, a lit card or a brand colour,
-  fades over `motion.fade`.
+- Anything that appears or goes, a signal or a lit card, fades over
+  `motion.fade`.
 - Nothing moves for decoration: no ambient background, nothing moving
   where no flow goes.
 - Under `prefers-reduced-motion` the diagram is the still image, and the
@@ -307,16 +308,13 @@ one of four places, chosen per diagram:
 - **Icon** (`logo-icon`): in the badge, in place of the kind's icon, at
   the icon's size and in its category's hue, as the icon would be.
 
-In the first three the logo is `color.text-muted`: it says which
-technology, and the icon still says which kind of thing. In the fourth
-the logo says both, so it takes the icon's hue.
-
-While a flow's signal lights a card, its logo shows its brand's own
-colour (the logo's `hex` in Simple Icons); when the card goes dark, the
-logo returns to its usual colour. That is the only place a brand colour
-appears, and only for as long as the card is lit. A brand colour below
-3:1 against the card in a theme (a black logo on a dark card) shows as
-`color.text` in that theme instead.
+In every place the logo is in its brand's own colour (the logo's `hex` in
+Simple Icons), whether or not a flow's signal lights its card, so a reader
+knows the technology at a glance; the kind's icon still says which kind of
+thing, except in the fourth place, where the logo says both. A brand
+colour below 3:1 against the card in a theme (a black logo on a dark card)
+shows as `color.text` in that theme instead, and a logo whose brand gives
+no colour is in `color.text-muted`.
 
 ### Frame
 
@@ -372,9 +370,8 @@ stroke:
 
 A card is lit from the moment a signal reaches it until every signal it
 sends has arrived (`lit-card`): a border of `signal.lit` in its hue just
-outside its own edge, over a fill of that hue at `signal.tint`, and its
-technology logo in its brand's colour (Technology logo). The last card of
-a flow stays lit for `motion.hop-gap`.
+outside its own edge, over a fill of that hue at `signal.tint`. The last
+card of a flow stays lit for `motion.hop-gap`.
 
 Where nothing moves, the still image shows what the spec chooses: nothing
 more than the diagram; each flow in words under the legend, its steps'
@@ -406,9 +403,8 @@ variant.
   own, including managed services and third-party APIs.
 - Do name technologies with `tech`, so the logo appears. A logo takes the
   kind's icon's place only when the diagram asks for it (`logo: icon`).
-- Don't use brand colours, neon hues, gradients, shadows or glow; a
-  logo's brand colour shows only while a flow's signal lights its card,
-  and glow belongs to the signal styles that have it.
+- Don't use neon hues, gradients, shadows or glow; brand colours belong to
+  the technology logos alone, and glow to the signal styles that have it.
 - Don't animate for decoration; if the flow does not need it, the diagram
   is still.
 - Don't write a value in this file. A new value is a token first.
