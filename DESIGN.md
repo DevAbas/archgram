@@ -456,8 +456,8 @@ more than the diagram; each flow in words under the legend, its steps'
 labels joined by arrows and a branch's by commas, in the legend's type; or
 each step's number on the lines it takes (`step-number`): a pill
 `signal.number` high, edged like a line, just before the arrowhead where
-the step arrives, or as near as it fits clear of cards, labels and other
-numbers. Lines that meet before a card share their number there. Steps
+the step arrives, or as near as it fits clear of cards, labels, frames'
+names and other numbers. Lines that meet before a card share their number there. Steps
 are counted on from one flow to the next. A refused step keeps its ✕ and
 the refusing card its border in the refusal colour; the flow's words end
 with the step that refused it.

@@ -139,6 +139,7 @@ pub fn scene(
     if spec.still == crate::spec::Still::Numbers {
         let mut blocked: Vec<Rect> = placement.nodes.iter().map(|&r| at(r)).collect();
         blocked.extend(label_boxes.iter().flatten());
+        blocked.extend(placement.frame_labels.iter().flatten().map(|&r| at(r)));
         items.extend(step_numbers(spec, &drawn, &blocked));
     }
     cards(&mut items, spec, placement, logos, &brands);
@@ -541,7 +542,7 @@ pub fn step_label(numbers: &[u32]) -> String {
 /// Each step's number on the lines the flows take, for the still image
 /// (`still: numbers`): a badge where the step arrives, just before the
 /// arrowhead, or else as near to it along the line as clears every card,
-/// label and badge in `blocked`. Lines that meet before a card share their
+/// edge label, frame name and badge in `blocked`. Lines that meet before a card share their
 /// last stretch, and show their number there once.
 fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<Item> {
     use crate::tokens::{SIGNAL_NUMBER, TYPOGRAPHY_LEGEND};
