@@ -130,8 +130,8 @@ draw the architecture, or type `/archgram`.
 
 The skill's archive carries a signed record of the build that made it:
 `gh attestation verify archgram-skill-X.Y.Z.tar.gz -R byAbas/archgram`.
-0.5.0 and earlier were built before the account was renamed from
-`DevAbas`, and their records name `DevAbas/archgram`.
+0.5.0 and earlier were built before the account was renamed, and their
+records carry its earlier name.
 
 ## FAQ
 
