@@ -42,7 +42,7 @@ use crate::spec::{Direction, Spec, Variant};
 use crate::tokens::{
     ARROWHEAD_GAP, ARROWHEAD_LENGTH, CARD_MULTI_OFFSET, ROUNDED_CARD, ROUNDED_CONNECTOR,
     SPACING_EDGE_EDGE, SPACING_FRAME_LABEL, SPACING_FRAME_PADDING, SPACING_LAYER_LAYER,
-    SPACING_NODE_NODE,
+    SPACING_NODE_NODE, STROKE_CONNECTOR,
 };
 
 /// Where everything goes.
@@ -523,140 +523,281 @@ fn lay_out(spec: &Spec, sizes: &[Size]) -> Result<Placement, Vec<SpecError>> {
     // leave as one trunk and fork in the gap; edges entering a side merge
     // into one point. An edge with its label near the card, and an edge
     // drawn against the flow (its arrowhead would sit among lines leaving),
-    // keeps a port of its own.
-    let mut out_port = vec![0.0; hops.len()];
-    let mut in_port = vec![0.0; hops.len()];
-    let mut out_bundle: Vec<Option<usize>> = vec![None; hops.len()];
-    let mut in_bundle: Vec<Option<usize>> = vec![None; hops.len()];
-    for v in 0..total {
-        for (outgoing, ports_of) in [(true, &mut out_port), (false, &mut in_port)] {
-            let mine: Vec<usize> = (0..hops.len())
-                .filter(|&h| {
-                    if outgoing {
-                        hops[h].1 == v
-                    } else {
-                        hops[h].2 == v
+    // keeps a port of its own. So does a hop `split` from its bundle below,
+    // and then the bundle keeps the side's middle, so a straight hop in it
+    // stays straight.
+    let level_of = |out: &[f64], inn: &[f64], h: usize| (out[h] - inn[h]).abs() < 0.5;
+    // Two lines closer than a line's width read as one.
+    let on_one_line = |a: f64, b: f64| (a - b).abs() < STROKE_CONNECTOR;
+    let mut outs_of: Vec<Vec<usize>> = vec![Vec::new(); total];
+    let mut ins_of: Vec<Vec<usize>> = vec![Vec::new(); total];
+    for (h, &(_, a, b)) in hops.iter().enumerate() {
+        outs_of[a].push(h);
+        ins_of[b].push(h);
+    }
+    let assign_ports = |split_out: &[bool], split_in: &[bool]| {
+        let mut out_port = vec![0.0; hops.len()];
+        let mut in_port = vec![0.0; hops.len()];
+        let mut out_bundle: Vec<Option<usize>> = vec![None; hops.len()];
+        let mut in_bundle: Vec<Option<usize>> = vec![None; hops.len()];
+        for v in 0..total {
+            for (outgoing, ports_of) in [(true, &mut out_port), (false, &mut in_port)] {
+                let mine: &[usize] = if outgoing { &outs_of[v] } else { &ins_of[v] };
+                if v >= n {
+                    for &h in mine {
+                        ports_of[h] = cross[v];
                     }
-                })
-                .collect();
-            if v >= n {
-                for h in mine {
-                    ports_of[h] = cross[v];
+                    continue;
                 }
-                continue;
-            }
-            let other = |h: usize| {
-                if outgoing {
-                    cross[hops[h].2]
-                } else {
-                    cross[hops[h].1]
-                }
-            };
-            // A label on an edge between neighbouring layers sits just past
-            // the card it leaves, across its line: its port leaves it room.
-            let reach = |h: usize| {
-                let e = hops[h].0;
-                match label_extent[e] {
-                    Some((_, across)) if outgoing && chains[e].len() == 2 => across / 2.0,
-                    _ => 0.0,
-                }
-            };
-            let alone = |h: usize| reach(h) > 0.0 || reversed[hops[h].0];
-            // One entry per port: the bundle, then each hop on its own,
-            // ordered by where their other ends lie (a bundle by its middle).
-            let bundle: Vec<usize> = mine.iter().copied().filter(|&h| !alone(h)).collect();
-            let mut entries: Vec<(f64, Vec<usize>)> = mine
-                .iter()
-                .copied()
-                .filter(|&h| alone(h))
-                .map(|h| (other(h), vec![h]))
-                .collect();
-            if !bundle.is_empty() {
-                let lo = bundle
+                let other = |h: usize| {
+                    if outgoing {
+                        cross[hops[h].2]
+                    } else {
+                        cross[hops[h].1]
+                    }
+                };
+                // A label on an edge between neighbouring layers sits just past
+                // the card it leaves, across its line: its port leaves it room.
+                let reach = |h: usize| {
+                    let e = hops[h].0;
+                    match label_extent[e] {
+                        Some((_, across)) if outgoing && chains[e].len() == 2 => across / 2.0,
+                        _ => 0.0,
+                    }
+                };
+                let split = |h: usize| if outgoing { split_out[h] } else { split_in[h] };
+                let alone = |h: usize| reach(h) > 0.0 || reversed[hops[h].0] || split(h);
+                // One entry per port: the bundle, then each hop on its own,
+                // ordered by where their other ends lie (a bundle by its middle).
+                let bundle: Vec<usize> = mine.iter().copied().filter(|&h| !alone(h)).collect();
+                let mut entries: Vec<(f64, Vec<usize>)> = mine
                     .iter()
-                    .map(|&h| other(h))
-                    .fold(f64::INFINITY, f64::min);
-                let hi = bundle
-                    .iter()
-                    .map(|&h| other(h))
-                    .fold(f64::NEG_INFINITY, f64::max);
-                entries.push((f64::midpoint(lo, hi), bundle.clone()));
-                if bundle.len() > 1 {
-                    for &h in &bundle {
-                        if outgoing {
-                            out_bundle[h] = Some(v);
-                        } else {
-                            in_bundle[h] = Some(v);
+                    .copied()
+                    .filter(|&h| alone(h))
+                    .map(|h| (other(h), vec![h]))
+                    .collect();
+                if !bundle.is_empty() {
+                    let lo = bundle
+                        .iter()
+                        .map(|&h| other(h))
+                        .fold(f64::INFINITY, f64::min);
+                    let hi = bundle
+                        .iter()
+                        .map(|&h| other(h))
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    entries.push((f64::midpoint(lo, hi), bundle.clone()));
+                    if bundle.len() > 1 {
+                        for &h in &bundle {
+                            if outgoing {
+                                out_bundle[h] = Some(v);
+                            } else {
+                                in_bundle[h] = Some(v);
+                            }
                         }
                     }
                 }
-            }
-            entries.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1[0].cmp(&b.1[0])));
-            let reach: Vec<f64> = entries.iter().map(|(_, hs)| reach(hs[0])).collect();
-            // Ports stay on the front card's side, centred on its anchor.
-            let places = route::ports(
-                &reach,
-                cross[v],
-                2.0 * cross_lo[v].min(cross_hi[v]),
-                SPACING_EDGE_EDGE,
-                ROUNDED_CARD,
-            );
-            for ((_, hs), p) in entries.iter().zip(places) {
-                for &h in hs {
-                    ports_of[h] = p;
+                entries.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1[0].cmp(&b.1[0])));
+                let reach: Vec<f64> = entries.iter().map(|(_, hs)| reach(hs[0])).collect();
+                // Ports stay on the front card's side, centred on its anchor,
+                // or with the bundle on it when a hop was split from it.
+                let side = 2.0 * cross_lo[v].min(cross_hi[v]);
+                let anchor = entries
+                    .iter()
+                    .position(|(_, hs)| hs.iter().any(|&h| !alone(h)))
+                    .filter(|_| mine.iter().any(|&h| split(h)));
+                // A hop split while alone on its side stands a step from the
+                // middle, toward its other end: off the line it would share.
+                let lone = match entries.as_slice() {
+                    [(at, hs)] if split(hs[0]) && (at - cross[v]).abs() >= 0.5 => {
+                        let room = (side / 2.0 - ROUNDED_CARD).max(0.0);
+                        Some(cross[v] + SPACING_EDGE_EDGE.min(room).copysign(at - cross[v]))
+                    }
+                    _ => None,
+                };
+                let places = match (lone, anchor) {
+                    (Some(p), _) => vec![p],
+                    (None, anchor) => match anchor {
+                        // A split hop stands a bend's width from its bundle where
+                        // the side has room, so the line it crosses beside the
+                        // card is straight there, not turning.
+                        Some(a) => {
+                            let far = a.max(entries.len() - 1 - a).max(1);
+                            #[allow(clippy::cast_precision_loss)] // ports per side are few
+                            let room = (side / 2.0 - ROUNDED_CARD) / far as f64;
+                            // Beside a label the ports keep their usual spacing.
+                            let wanted = if reach.iter().any(|&r| r > 0.0) {
+                                SPACING_EDGE_EDGE
+                            } else {
+                                2.0 * ROUNDED_CONNECTOR
+                            };
+                            let step = wanted.min(room).max(SPACING_EDGE_EDGE);
+                            route::ports_around(&reach, a, cross[v], side, step, ROUNDED_CARD)
+                        }
+                        None => {
+                            route::ports(&reach, cross[v], side, SPACING_EDGE_EDGE, ROUNDED_CARD)
+                        }
+                    },
+                };
+                for ((_, hs), p) in entries.iter().zip(places) {
+                    for &h in hs {
+                        ports_of[h] = p;
+                    }
                 }
             }
         }
-    }
+        (out_port, in_port, out_bundle, in_bundle)
+    };
     // Tracks per gap; a gap with more tracks than its width holds is widened.
-    let level = |h: usize| (out_port[h] - in_port[h]).abs() < 0.5;
     let gaps = layers.len().saturating_sub(1);
-    let mut track = vec![0usize; hops.len()];
-    let mut track_count = vec![0usize; gaps];
-    for (g, count) in track_count.iter_mut().enumerate() {
-        // A bundle turns at one track, so its trunk forks, or its branches
-        // merge, in one place. A hop in both kinds follows the one leaving.
-        let mut units: Vec<Vec<usize>> = Vec::new();
-        let mut unit_of_bundle: std::collections::BTreeMap<(bool, usize), usize> =
-            std::collections::BTreeMap::new();
-        for h in (0..hops.len()).filter(|&h| vertex_layer[hops[h].1] == g && !level(h)) {
-            let key = match (out_bundle[h], in_bundle[h]) {
-                (Some(b), _) => Some((true, b)),
-                (None, Some(b)) => Some((false, b)),
-                (None, None) => None,
-            };
-            match key {
-                Some(b) => {
-                    let u = *unit_of_bundle.entry(b).or_insert_with(|| {
-                        units.push(Vec::new());
-                        units.len() - 1
-                    });
-                    units[u].push(h);
+    let assign_tracks = |out_port: &[f64],
+                         in_port: &[f64],
+                         out_bundle: &[Option<usize>],
+                         in_bundle: &[Option<usize>]| {
+        let mut track = vec![0usize; hops.len()];
+        let mut track_count = vec![0usize; gaps];
+        for (g, count) in track_count.iter_mut().enumerate() {
+            // A bundle turns at one track, so its trunk forks, or its branches
+            // merge, in one place. A hop in both kinds follows the one leaving.
+            let mut units: Vec<Vec<usize>> = Vec::new();
+            let mut unit_of_bundle: std::collections::BTreeMap<(bool, usize), usize> =
+                std::collections::BTreeMap::new();
+            for h in (0..hops.len())
+                .filter(|&h| vertex_layer[hops[h].1] == g && !level_of(out_port, in_port, h))
+            {
+                let key = match (out_bundle[h], in_bundle[h]) {
+                    (Some(b), _) => Some((true, b)),
+                    (None, Some(b)) => Some((false, b)),
+                    (None, None) => None,
+                };
+                match key {
+                    Some(b) => {
+                        let u = *unit_of_bundle.entry(b).or_insert_with(|| {
+                            units.push(Vec::new());
+                            units.len() - 1
+                        });
+                        units[u].push(h);
+                    }
+                    None => units.push(vec![h]),
                 }
-                None => units.push(vec![h]),
             }
-        }
-        let risers: Vec<route::Riser> = units
-            .iter()
-            .map(|hs| {
-                if hs.len() > 1 && out_bundle[hs[0]].is_none() {
-                    // Branches merging: the shared port is where they arrive.
-                    let starts: Vec<f64> = hs.iter().map(|&h| out_port[h]).collect();
-                    route::Riser::bundle(in_port[hs[0]], &starts)
-                } else {
-                    let ends: Vec<f64> = hs.iter().map(|&h| in_port[h]).collect();
-                    route::Riser::bundle(out_port[hs[0]], &ends)
+            let risers: Vec<route::Riser> = units
+                .iter()
+                .map(|hs| {
+                    if hs.len() > 1 && out_bundle[hs[0]].is_none() {
+                        // Branches merging: the shared port is where they arrive.
+                        let starts: Vec<f64> = hs.iter().map(|&h| out_port[h]).collect();
+                        route::Riser::bundle(in_port[hs[0]], &starts)
+                    } else {
+                        let ends: Vec<f64> = hs.iter().map(|&h| in_port[h]).collect();
+                        route::Riser::bundle(out_port[hs[0]], &ends)
+                    }
+                })
+                .collect();
+            // A unit leaving along the line another arrives on turns first.
+            let mut first = std::collections::BTreeSet::new();
+            for (a, ua) in units.iter().enumerate() {
+                for (b, ub) in units.iter().enumerate() {
+                    if a != b
+                        && ua
+                            .iter()
+                            .any(|&h| ub.iter().any(|&k| on_one_line(out_port[h], in_port[k])))
+                    {
+                        first.insert((a, b));
+                    }
                 }
-            })
-            .collect();
-        let (t, c) = route::tracks(&risers, SPACING_EDGE_EDGE);
-        for (hs, t) in units.iter().zip(t) {
-            for &h in hs {
-                track[h] = t;
             }
+            let (t, c) = route::tracks(&risers, SPACING_EDGE_EDGE, &first);
+            for (hs, t) in units.iter().zip(t) {
+                for &h in hs {
+                    track[h] = t;
+                }
+            }
+            *count = c;
         }
-        *count = c;
+        (track, track_count)
+    };
+    // A trunk's line and a merge's line may lie on one line across a gap:
+    // when two cards each lead to the same two, one card's trunk runs on
+    // where another card's branch has already joined the line into their
+    // target, and the reader cannot tell which goes where. Such a hop
+    // leaving is split from its trunk onto a port of its own, and the ports
+    // and tracks are found again, until no two lines share a stretch.
+    let labelled: Vec<bool> = (0..total)
+        .map(|v| {
+            hops.iter()
+                .any(|&(e, a, _)| a == v && chains[e].len() == 2 && label_extent[e].is_some())
+        })
+        .collect();
+    let mut split_out = vec![false; hops.len()];
+    let mut split_in = vec![false; hops.len()];
+    let (mut out_port, mut in_port, mut out_bundle, mut in_bundle) =
+        assign_ports(&split_out, &split_in);
+    let (mut track, mut track_count) = assign_tracks(&out_port, &in_port, &out_bundle, &in_bundle);
+    let mut in_gap: Vec<Vec<usize>> = vec![Vec::new(); gaps];
+    for (h, hop) in hops.iter().enumerate() {
+        in_gap[vertex_layer[hop.1]].push(h);
     }
+    for _ in 0..hops.len() {
+        let mut changed = false;
+        for (h1, h2) in in_gap.iter().flat_map(|hs| {
+            hs.iter()
+                .flat_map(move |&a| hs.iter().map(move |&b| (a, b)))
+        }) {
+            {
+                if h1 == h2
+                    || level_of(&out_port, &in_port, h1)
+                    || level_of(&out_port, &in_port, h2)
+                    || !on_one_line(out_port[h1], in_port[h2])
+                    || track[h2] > track[h1]
+                {
+                    continue;
+                }
+                // h1 leaves along the line h2 has already joined: h1 leaves
+                // its trunk, or else h2 its merge; when neither is in one,
+                // the other end of one of them leaves its bundle, which
+                // lets the tracks take the order the line asks for.
+                // As a last resort a card's lone port moves off the line.
+                // A side carrying a label keeps its ports, and so the room
+                // the layout left for the label.
+                let card = |leaving: bool, h: usize| {
+                    if leaving {
+                        hops[h].1 < n && !labelled[hops[h].1]
+                    } else {
+                        hops[h].2 < n
+                    }
+                };
+                let tries = [(true, h1), (false, h2), (true, h2), (false, h1)];
+                let choice = tries
+                    .iter()
+                    .find(|&&(leaving, h)| {
+                        let bundled = if leaving { out_bundle[h] } else { in_bundle[h] }.is_some();
+                        let split = if leaving { split_out[h] } else { split_in[h] };
+                        bundled && !split && (!leaving || !labelled[hops[h].1])
+                    })
+                    .copied()
+                    .or_else(|| {
+                        [(false, h2), (true, h1)].into_iter().find(|&(leaving, h)| {
+                            let split = if leaving { split_out[h] } else { split_in[h] };
+                            card(leaving, h) && !split
+                        })
+                    });
+                if let Some((leaving, h)) = choice {
+                    if leaving {
+                        split_out[h] = true;
+                    } else {
+                        split_in[h] = true;
+                    }
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+        (out_port, in_port, out_bundle, in_bundle) = assign_ports(&split_out, &split_in);
+        (track, track_count) = assign_tracks(&out_port, &in_port, &out_bundle, &in_bundle);
+    }
+    let level = |h: usize| level_of(&out_port, &in_port, h);
     // Room for the labels of edges between neighbouring layers, at the start
     // of the gap the edge leaves into, clear of the card and of the tracks.
     let mut lead = vec![0.0f64; gaps];

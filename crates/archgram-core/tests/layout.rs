@@ -1,9 +1,10 @@
 //! The layout's invariants (ARCHITECTURE.md, Invariants) on specs from a
 //! seeded generator: no two cards overlap, every edge spans layers, every
 //! edge is orthogonal, starts and ends on its cards and passes through no
-//! card, every label sits on its edge and clear of every card, cards in one
-//! layer share its depth, and the same spec lays out the same way. The generator is a fixed xorshift, so a
-//! failing seed reproduces.
+//! card, no two edges between four different cards share a stretch, every
+//! label sits on its edge and clear of every card, cards in one layer
+//! share its depth, and the same spec lays out the same way. The generator
+//! is a fixed xorshift, so a failing seed reproduces.
 
 use archgram_core::layout::place;
 use archgram_core::measure::card_sizes;
@@ -347,6 +348,7 @@ fn check_random(seeds: u64, direction: &str) {
             }
         }
         check_labels(seed, &spec, &p);
+        check_shared_stretches(seed, &spec, &p);
         check_units(seed, &spec, &p);
         check_frames(seed, &spec, &p);
         check_legend(seed, &p);
@@ -355,6 +357,50 @@ fn check_random(seeds: u64, direction: &str) {
             p,
             "seed {seed}: not deterministic"
         );
+    }
+}
+
+/// Two edges share a stretch of line only as a trunk (they leave the same
+/// card) or a merge (they enter the same card): two edges between four
+/// different ends never run along each other, or the reader could not tell
+/// which goes where.
+fn check_shared_stretches(
+    seed: u64,
+    spec: &archgram_core::spec::Spec,
+    p: &archgram_core::layout::Placement,
+) {
+    let segments = |path: &[archgram_core::geometry::Point]| -> Vec<(bool, f64, f64, f64)> {
+        path.windows(2)
+            .filter_map(|w| {
+                let (a, b) = (w[0], w[1]);
+                if (a.y - b.y).abs() < 1e-6 && (a.x - b.x).abs() > 1e-6 {
+                    Some((true, a.y, a.x.min(b.x), a.x.max(b.x)))
+                } else if (a.x - b.x).abs() < 1e-6 && (a.y - b.y).abs() > 1e-6 {
+                    Some((false, a.x, a.y.min(b.y), a.y.max(b.y)))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    };
+    for (i, (ei, pi)) in spec.edges.iter().zip(&p.edges).enumerate() {
+        for (j, (ej, pj)) in spec.edges.iter().zip(&p.edges).enumerate().skip(i + 1) {
+            if ei.from == ej.from || ei.to == ej.to || ei.from == ej.to || ei.to == ej.from {
+                continue;
+            }
+            for &(hi, ci, lo_i, hi_i) in &segments(pi) {
+                for &(hj, cj, lo_j, hi_j) in &segments(pj) {
+                    assert!(
+                        hi != hj || (ci - cj).abs() > 0.5 || lo_i.max(lo_j) >= hi_i.min(hi_j) - 1.0,
+                        "seed {seed}: edges {i} ({} -> {}) and {j} ({} -> {}) share a stretch",
+                        ei.from,
+                        ei.to,
+                        ej.from,
+                        ej.to
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -716,5 +762,31 @@ fn the_credit_sits_below_everything_at_the_right() {
         let q = place(&without, &card_sizes(&without)).unwrap();
         assert!(q.credit.is_none());
         assert!(q.size.h < p.size.h, "{name}: the credit's line is gone");
+    }
+}
+
+#[test]
+fn two_cards_leading_to_the_same_two_share_no_stretch() {
+    for direction in ["right", "down"] {
+        let json = format!(
+            r#"{{ "archgram": 1, "title": "t", "description": "d", "direction": "{direction}",
+              "nodes": [
+                {{ "id": "setup", "kind": "script", "label": "setup" }},
+                {{ "id": "fix", "kind": "script", "label": "fix" }},
+                {{ "id": "css", "kind": "file", "label": "Generated CSS" }},
+                {{ "id": "src", "kind": "file", "label": "Design sources" }}
+              ],
+              "edges": [
+                {{ "from": "setup", "to": "css" }}, {{ "from": "setup", "to": "src" }},
+                {{ "from": "fix", "to": "css" }}, {{ "from": "fix", "to": "src" }}
+              ] }}"#
+        );
+        let spec = parse_spec(&json).unwrap();
+        let p = place(&spec, &card_sizes(&spec)).unwrap();
+        check_shared_stretches(0, &spec, &p);
+        // Each straight edge stays straight: its bundle keeps the side's middle.
+        for k in [0, 3] {
+            assert_eq!(p.edges[k].len(), 2, "{direction}: edge {k} is not straight");
+        }
     }
 }

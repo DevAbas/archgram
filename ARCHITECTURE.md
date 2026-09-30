@@ -209,8 +209,21 @@ does) rather than a general search:
   then touch a neighbouring edge from the same card.
 - Vertical segments that overlap in a gap get separate tracks. For each
   overlapping pair, the order that crosses fewer of the other hop's
-  horizontal segments wins; each segment then takes the lowest track clear
-  of those it overlaps. Tracks keep clear of the cards on both sides: a
+  horizontal segments wins, unless one leaves along the line the other
+  arrives on: that one turns first, or it would run along the other; a
+  cycle of these is broken at a riser none of them holds back. Each
+  segment then takes the lowest track clear of those it overlaps.
+- Two hops between four different ends never share a stretch of line.
+  When one hop leaves along a line that another has already joined
+  (two cards each leading to the same two make such a cycle), the hop
+  leaves its trunk for a port of its own, or else the other leaves its
+  merge; a card's lone port as a last resort steps off the line. The
+  bundle left behind keeps the side's middle, so a straight hop in it
+  stays straight, and the split port stands twice `rounded.connector`
+  from it where the side has room, so the crossing falls on straight
+  stretches. Ports and tracks are then found again, until no two lines
+  share a stretch. A side carrying a label keeps its ports, and with them
+  the room the layout left for the label. Tracks keep clear of the cards on both sides: a
   bend's radius (or a label's room) after the card an edge leaves, and
   before the card it points at a bend's radius, twice the arrowhead's
   length and its gap, so the last bend is whole and the arrowhead sits on
@@ -319,6 +332,7 @@ These hold for every output and are checked by tests on every change.
 - The same spec gives byte-identical output on every platform.
 - No two boxes overlap; no edge passes through a box it does not touch.
 - Every edge is orthogonal.
+- Two edges between four different cards never share a stretch of line.
 - A frame holds its nodes and child frames with its padding around them;
   nothing else reaches into it, and frames that do not nest stay apart.
 - Every text pair meets WCAG 2.1 AA in both themes, imported ones too.

@@ -88,7 +88,15 @@ fn crossings_if_before(a: &Riser, b: &Riser) -> u8 {
 /// A track for each riser in one gap (0 is nearest the gap's start), and how
 /// many tracks the gap needs. `clearance` is the least distance between two
 /// risers' spans that still lets them share a track.
-pub fn tracks(risers: &[Riser], clearance: f64) -> (Vec<usize>, usize) {
+///
+/// `first` holds pairs `(a, b)` where `a` must turn before `b`: `a` leaves
+/// along the line `b` arrives on, so turning later it would run along `b`.
+/// A pair that contradicts another is left to the crossings.
+pub fn tracks(
+    risers: &[Riser],
+    clearance: f64,
+    first: &BTreeSet<(usize, usize)>,
+) -> (Vec<usize>, usize) {
     let n = risers.len();
     // Preferences between overlapping risers: an edge a -> b means "a before b".
     let mut before: Vec<BTreeSet<usize>> = vec![BTreeSet::new(); n];
@@ -101,18 +109,30 @@ pub fn tracks(risers: &[Riser], clearance: f64) -> (Vec<usize>, usize) {
                 crossings_if_before(&risers[a], &risers[b]),
                 crossings_if_before(&risers[b], &risers[a]),
             );
-            if ab <= ba {
+            let (must_ab, must_ba) = (first.contains(&(a, b)), first.contains(&(b, a)));
+            if must_ab != must_ba {
+                if must_ab {
+                    before[a].insert(b);
+                } else {
+                    before[b].insert(a);
+                }
+            } else if ab <= ba {
                 before[a].insert(b);
             } else {
                 before[b].insert(a);
             }
         }
     }
-    // An order that follows the preferences; a cycle is broken at its lowest riser.
+    // An order that follows the preferences; a cycle is broken at its lowest
+    // riser that no pair in `first` still holds back.
     let mut indeg = vec![0usize; n];
-    for set in &before {
+    let mut held = vec![0usize; n];
+    for (a, set) in before.iter().enumerate() {
         for &b in set {
             indeg[b] += 1;
+            if first.contains(&(a, b)) {
+                held[b] += 1;
+            }
         }
     }
     let mut done = vec![false; n];
@@ -120,12 +140,16 @@ pub fn tracks(risers: &[Riser], clearance: f64) -> (Vec<usize>, usize) {
     while order.len() < n {
         let next = (0..n)
             .find(|&i| !done[i] && indeg[i] == 0)
+            .or_else(|| (0..n).find(|&i| !done[i] && held[i] == 0))
             .or_else(|| (0..n).find(|&i| !done[i]))
             .expect("a riser remains");
         done[next] = true;
         order.push(next);
         for &b in &before[next] {
             indeg[b] = indeg[b].saturating_sub(1);
+            if first.contains(&(next, b)) {
+                held[b] = held[b].saturating_sub(1);
+            }
         }
     }
     // Lowest track above every earlier riser it overlaps.
@@ -176,6 +200,33 @@ pub fn ports(reach: &[f64], centre: f64, side: f64, step: f64, margin: f64) -> V
     out
 }
 
+/// Ports as [`ports`] places them, moved along the side so that entry
+/// `anchor` sits at `centre`: a bundle keeps the side's middle while hops
+/// split from it stand beside it. They stay `margin` clear of the side's
+/// ends, even if the anchor then leaves the middle.
+pub fn ports_around(
+    reach: &[f64],
+    anchor: usize,
+    centre: f64,
+    side: f64,
+    step: f64,
+    margin: f64,
+) -> Vec<f64> {
+    let placed = ports(reach, centre, side, step, margin);
+    let (Some(&first), Some(&last)) = (placed.first(), placed.last()) else {
+        return placed;
+    };
+    let (lo, hi) = (centre - side / 2.0 + margin, centre + side / 2.0 - margin);
+    let mut shift = centre - placed[anchor];
+    if first + shift < lo {
+        shift = lo - first;
+    }
+    if last + shift > hi {
+        shift = (hi - last).max(lo - first);
+    }
+    placed.iter().map(|p| p + shift).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,13 +234,13 @@ mod tests {
     #[test]
     fn risers_that_do_not_overlap_share_a_track() {
         let r = [Riser::new(0.0, 10.0), Riser::new(40.0, 60.0)];
-        assert_eq!(tracks(&r, 12.0), (vec![0, 0], 1));
+        assert_eq!(tracks(&r, 12.0, &BTreeSet::new()), (vec![0, 0], 1));
     }
 
     #[test]
     fn overlapping_risers_get_their_own_tracks() {
         let r = [Riser::new(0.0, 50.0), Riser::new(20.0, 70.0)];
-        let (t, count) = tracks(&r, 12.0);
+        let (t, count) = tracks(&r, 12.0, &BTreeSet::new());
         assert_eq!(count, 2);
         assert_ne!(t[0], t[1]);
     }
@@ -205,7 +256,7 @@ mod tests {
         let r = [Riser::new(0.0, 50.0), Riser::new(20.0, 70.0)];
         assert_eq!(crossings_if_before(&r[0], &r[1]), 2);
         assert_eq!(crossings_if_before(&r[1], &r[0]), 0);
-        let (t, _) = tracks(&r, 12.0);
+        let (t, _) = tracks(&r, 12.0, &BTreeSet::new());
         assert!(t[1] < t[0]);
     }
 
@@ -227,5 +278,35 @@ mod tests {
         // line is 30 + 6 away, not 12.
         let p = ports(&[30.0, 0.0], 100.0, 200.0, 12.0, 10.0);
         assert_eq!(p, vec![82.0, 118.0]);
+    }
+
+    #[test]
+    fn a_riser_leaving_along_another_ones_line_turns_first() {
+        // a leaves along 50, where b arrives: turning after b, a would run
+        // along b's last stretch. The crossings alone put b first (b's
+        // incoming horizontal at 20 would cross a's riser, 0..50).
+        let r = [Riser::new(50.0, 0.0), Riser::new(20.0, 50.0)];
+        let (free, _) = tracks(&r, 12.0, &BTreeSet::new());
+        assert!(free[1] < free[0]);
+        let (held, _) = tracks(&r, 12.0, &BTreeSet::from([(0, 1)]));
+        assert!(held[0] < held[1]);
+        // Two pairs that contradict each other are left to the crossings.
+        let (both, _) = tracks(&r, 12.0, &BTreeSet::from([(0, 1), (1, 0)]));
+        assert_eq!(both, free);
+    }
+
+    #[test]
+    fn ports_around_keep_the_anchor_in_the_middle() {
+        assert_eq!(
+            ports_around(&[0.0; 2], 0, 100.0, 200.0, 32.0, 10.0),
+            vec![100.0, 132.0]
+        );
+        assert_eq!(
+            ports_around(&[0.0; 2], 1, 100.0, 200.0, 32.0, 10.0),
+            vec![68.0, 100.0]
+        );
+        // A side too short for the shift keeps its ports inside the margins.
+        let p = ports_around(&[0.0; 2], 0, 28.0, 56.0, 32.0, 10.0);
+        assert!(p[0] >= 10.0 - 1e-9 && p[1] <= 46.0 + 1e-9, "{p:?}");
     }
 }
