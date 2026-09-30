@@ -370,8 +370,13 @@ arrival, or until a refusal leaves from it. Edges leaving one
 side of a card leave from its middle as one trunk and fork in the gap;
 edges entering one side merge into one point. An edge with a label near
 the card, or one drawn against the flow, keeps a port of its own,
-`spacing.edge-edge` or more from the trunk. It never passes through a
-card. Where it must change level between two layers it turns twice in the
+`spacing.edge-edge` or more from the trunk. Two edges between four
+different cards never run along one line: where one card's trunk would
+run on along a line another card's branch has already joined (two cards
+each leading to the same two), the edge leaves its trunk for a port of
+its own beside it, twice `rounded.connector` away where the side has room,
+so the two lines cross once, square, on straight stretches. It never
+passes through a card. Where it must change level between two layers it turns twice in the
 gap between them, a symmetric step, never a slant; a step shorter than two
 radii is one S curve instead, so it never kinks. An edge label, when
 there is one, uses `typography.subtitle` on a straight stretch of the line,
