@@ -1,19 +1,19 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/DevAbas/archgram/main/docs/images/logo-dark.svg">
-    <img src="https://raw.githubusercontent.com/DevAbas/archgram/main/docs/images/logo.svg" alt="" height="96">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/logo-dark.svg">
+    <img src="https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/logo.svg" alt="" height="96">
   </picture>
   <h1 align="center">archgram</h1>
 </p>
 
 <p align="center">
   <a aria-label="npm version" href="https://www.npmjs.com/package/archgram"><img alt="npm version" src="https://img.shields.io/npm/v/archgram.svg?style=for-the-badge&labelColor=000000"></a>
-  <a aria-label="License" href="https://github.com/DevAbas/archgram/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&labelColor=000000"></a>
+  <a aria-label="License" href="https://github.com/byAbas/archgram/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&labelColor=000000"></a>
 </p>
 
 Clean, minimal architecture diagrams from a spec. Animated flows, light and dark.
 
-![A visitor's request goes to the API, which reads the URL cache in Redis, falls back to Postgres on a miss and adds the click to a Redis stream; a worker drains the stream into Postgres. The animation follows the visit.](https://raw.githubusercontent.com/DevAbas/archgram/main/docs/images/linkshort.svg)
+![A visitor's request goes to the API, which reads the URL cache in Redis, falls back to Postgres on a miss and adds the click to a Redis stream; a worker drains the stream into Postgres. The animation follows the visit.](https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/linkshort.svg)
 
 You describe the system: its nodes, what connects them and the paths a
 request takes. archgram lays it out, routes the lines around the boxes and
@@ -122,14 +122,16 @@ own colours, and lists each part it drew with the file behind it. Install
 it for every project:
 
 ```sh
-mkdir -p ~/.claude/skills && curl -sL https://github.com/DevAbas/archgram/releases/download/v0.5.0/archgram-skill-0.5.0.tar.gz | tar -xz -C ~/.claude/skills
+mkdir -p ~/.claude/skills && curl -sL https://github.com/byAbas/archgram/releases/download/v0.5.0/archgram-skill-0.5.0.tar.gz | tar -xz -C ~/.claude/skills
 ```
 
 or for one project, into its `.claude/skills/` instead. Then ask Claude to
 draw the architecture, or type `/archgram`.
 
 The skill's archive carries a signed record of the build that made it:
-`gh attestation verify archgram-skill-0.5.0.tar.gz -R DevAbas/archgram`.
+`gh attestation verify archgram-skill-X.Y.Z.tar.gz -R byAbas/archgram`.
+0.5.0 and earlier were built before the account was renamed from
+`DevAbas`, and their records name `DevAbas/archgram`.
 
 ## FAQ
 
@@ -162,7 +164,7 @@ and lists both.
 Yes: `--theme-file` maps archgram's colour roles to your design tokens
 (W3C Design Tokens), and refuses colours that fall short of contrast
 ([docs/SPEC.md, Theme
-file](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md)).
+file](https://github.com/byAbas/archgram/blob/main/docs/SPEC.md)).
 
 ### Will the same spec give the same file tomorrow?
 
@@ -171,12 +173,12 @@ when the system does.
 
 ## Documentation
 
-- [docs/SPEC.md](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md): the spec, every field and rule, with examples.
-- [DESIGN.md](https://github.com/DevAbas/archgram/blob/main/DESIGN.md): the visual rules.
-- [ARCHITECTURE.md](https://github.com/DevAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside.
-- [examples/](https://github.com/DevAbas/archgram/tree/main/examples): complete specs.
+- [docs/SPEC.md](https://github.com/byAbas/archgram/blob/main/docs/SPEC.md): the spec, every field and rule, with examples.
+- [DESIGN.md](https://github.com/byAbas/archgram/blob/main/DESIGN.md): the visual rules.
+- [ARCHITECTURE.md](https://github.com/byAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside.
+- [examples/](https://github.com/byAbas/archgram/tree/main/examples): complete specs.
 
 ## License
 
-[MIT](https://github.com/DevAbas/archgram/blob/main/LICENSE). The embedded font, Geist, is under the SIL Open Font
+[MIT](https://github.com/byAbas/archgram/blob/main/LICENSE). The embedded font, Geist, is under the SIL Open Font
 License; technology logos come from Simple Icons, CC0.

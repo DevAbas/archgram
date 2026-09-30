@@ -8,14 +8,14 @@
 
 ## Docs
 
-- [README](https://github.com/DevAbas/archgram/blob/main/README.md): what archgram does, install, commands, the skill, FAQ
-- [Spec format](https://github.com/DevAbas/archgram/blob/main/docs/SPEC.md): every field, node kind, flow and rule, with examples
-- [Visual rules](https://github.com/DevAbas/archgram/blob/main/DESIGN.md): how a diagram looks and why
-- [Architecture](https://github.com/DevAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside
-- [Examples](https://github.com/DevAbas/archgram/tree/main/examples): complete specs
+- [README](https://github.com/byAbas/archgram/blob/main/README.md): what archgram does, install, commands, the skill, FAQ
+- [Spec format](https://github.com/byAbas/archgram/blob/main/docs/SPEC.md): every field, node kind, flow and rule, with examples
+- [Visual rules](https://github.com/byAbas/archgram/blob/main/DESIGN.md): how a diagram looks and why
+- [Architecture](https://github.com/byAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside
+- [Examples](https://github.com/byAbas/archgram/tree/main/examples): complete specs
 
 ## Optional
 
-- [The archgram skill](https://github.com/DevAbas/archgram/tree/main/skills/archgram): the agent skill that draws a project's architecture from its code
-- [Changelog](https://github.com/DevAbas/archgram/blob/main/CHANGELOG.md)
+- [The archgram skill](https://github.com/byAbas/archgram/tree/main/skills/archgram): the agent skill that draws a project's architecture from its code
+- [Changelog](https://github.com/byAbas/archgram/blob/main/CHANGELOG.md)
 - [npm package](https://www.npmjs.com/package/archgram)

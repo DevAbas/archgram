@@ -47,7 +47,7 @@ version goes in by a pull request and the tag follows the merge.
    ```sh
    npm view archgram@X.Y.Z version
    npm view @archgram/cli-linux-x64@X.Y.Z version
-   gh attestation verify archgram-skill-X.Y.Z.tar.gz -R DevAbas/archgram
+   gh attestation verify archgram-skill-X.Y.Z.tar.gz -R byAbas/archgram
    ```
 
 ## When a release fails
@@ -87,7 +87,7 @@ the workflow built. Nothing is built on your machine.
 
 5. On npmjs.com, for each of the seven packages, open **Settings**, then
    **Trusted Publisher**, choose **GitHub Actions** and enter: organization
-   or user `DevAbas`, repository `archgram`, workflow `release.yml`,
+   or user `byAbas`, repository `archgram`, workflow `release.yml`,
    environment `npm`. Leave **Allow npm publish** unticked: the publisher
    may only stage, as npm recommends (docs.npmjs.com, Trusted publishing).
 6. On each package's **Settings**, under **Publishing access**, choose
