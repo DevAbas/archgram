@@ -52,7 +52,7 @@ fn main() -> ExitCode {
     std::panic::set_hook(Box::new(|info| {
         eprintln!(
             "archgram {}: an internal error, a bug in archgram: {info}\n\
-             Please report it, with the spec, at https://github.com/DevAbas/archgram/issues",
+             Please report it, with the spec, at https://github.com/byAbas/archgram/issues",
             env!("CARGO_PKG_VERSION")
         );
     }));
