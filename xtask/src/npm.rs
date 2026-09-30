@@ -41,7 +41,7 @@ const AUTHOR: &str = "Abas Turabli (https://abasturabli.com)";
 
 /// Where the packages are built from; trusted publishing and provenance
 /// check it against the workflow's repository, character for character.
-const REPOSITORY: &str = "git+https://github.com/DevAbas/archgram.git";
+const REPOSITORY: &str = "git+https://github.com/byAbas/archgram.git";
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -147,8 +147,8 @@ fn assemble(all: bool) -> Result<Vec<&'static str>, String> {
                 // The binary carries Geist (OFL) and Simple Icons' data (CC0).
                 "license": "MIT AND OFL-1.1 AND CC0-1.0",
                 "repository": { "type": "git", "url": REPOSITORY },
-                "homepage": "https://github.com/DevAbas/archgram#readme",
-                "bugs": { "url": "https://github.com/DevAbas/archgram/issues" },
+                "homepage": "https://github.com/byAbas/archgram#readme",
+                "bugs": { "url": "https://github.com/byAbas/archgram/issues" },
                 "os": [os],
                 "cpu": [cpu],
                 "files": ["bin", "THIRD-PARTY-LICENSES"],

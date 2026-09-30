@@ -24,12 +24,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DevAbas/archgram.git",
+    "url": "git+https://github.com/byAbas/archgram.git",
     "directory": "packages/archgram"
   },
-  "homepage": "https://github.com/DevAbas/archgram#readme",
+  "homepage": "https://github.com/byAbas/archgram#readme",
   "bugs": {
-    "url": "https://github.com/DevAbas/archgram/issues"
+    "url": "https://github.com/byAbas/archgram/issues"
   },
   "bin": {
     "archgram": "bin/archgram.js"
