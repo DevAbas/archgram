@@ -1,7 +1,8 @@
 ---
 name: archgram
 description: Draws a project's software architecture as an animated SVG with archgram, for its README and docs, from the code and documentation. Writes a spec to docs/diagrams/<name>.archgram.yaml, checks and draws it with the archgram command, in the project's own colours, then opens the drawing and lists each part with the file behind it. Use it whenever the user wants an architecture, system, data-flow, pipeline or "how it works" diagram, a diagram for a README, or an existing archgram diagram updated after the code changed, even if they only say "draw how this works".
-argument-hint: "[what to draw, such as: the request flow, top to bottom]"
+license: MIT
+compatibility: Requires Node 22 or later, with npx.
 allowed-tools: Bash(npx --yes archgram *)
 ---
 
@@ -10,7 +11,8 @@ allowed-tools: Bash(npx --yes archgram *)
 archgram lays out the boxes, routes the lines, animates the flows and
 draws light and dark in one SVG. Your work is what it cannot do: decide
 what the reader must learn, find the facts in the code, and write them as
-a spec. The user may have said what to draw: $ARGUMENTS
+a spec. If the user said what to draw (a flow, a part of the system, a
+direction), draw that.
 
 Every command below runs archgram through npx, so it needs Node 22 or
 later: the project's own archgram when its `package.json` has one, pinned by

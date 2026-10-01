@@ -148,8 +148,8 @@ jobs:
           done
           npm stage publish ./dist/archgram-[0-9]*.tgz
 
-  # The GitHub release, as a draft a person reads and publishes: the Claude
-  # Code skill as an archive, its checksum, and a signed record of the build
+  # The GitHub release, as a draft a person reads and publishes: the agent
+  # skill as an archive, its checksum, and a signed record of the build
   # that made it (build provenance, SLSA Build Level 2; `gh attestation
   # verify <file> -R byAbas/archgram`), with the version's section of the
   # changelog as its notes. The command itself ships on npm, with npm's own

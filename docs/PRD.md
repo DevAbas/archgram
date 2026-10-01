@@ -2,8 +2,8 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.17       |
-| Date    | 2026-09-29 |
+| Version | 0.18       |
+| Date    | 2026-10-01 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
 
@@ -175,18 +175,25 @@ same file every time.
 - A library, usable from Rust and, later through WASM, from the browser
   (§5).
 - PNG, one file per theme, through the optional module (later, §5).
-- A skill for Claude Code, `archgram`, in the repository's `skills/`
-  folder: one folder the user copies into a skills directory, their own or
-  a project's (§6.6).
+- A skill, `archgram`, in the repository's `skills/` folder, for any
+  coding agent that reads the open Agent Skills format (a folder with a
+  `SKILL.md`), Claude Code among them. It is installed with the `skills`
+  command (`npx skills add byabas/archgram`), which puts it in the folder
+  each agent reads, for a project or for every project; archgram carries no
+  installer of its own (§6.6).
 
 ### 6.6 The `archgram` skill
 - It draws a project's architecture for its README and docs, from the
   code and the documentation, so the agent writes the spec and archgram
   does the drawing. It replaces the `drawing-architecture-diagrams`
   skill.
-- The user calls it (`/archgram`, with instructions such as which
-  flow or which direction), or Claude chooses it when asked for an
+- The user asks for it in words, with instructions such as which flow or
+  which direction, or calls it by name where the agent offers that
+  (`/archgram` in Claude Code); the agent also chooses it when asked for an
   architecture diagram. It never runs by itself.
+- It is written to the Agent Skills format alone: its frontmatter keeps the
+  format's fields, and its steps name no one agent's tools, so every agent
+  that reads skills follows the same steps.
 - A part is drawn only when a file in the project backs it, and the skill
   notes that file; an edge only where a line of code makes it, and the
   skill notes that line. It finds the parts by walking from the project's
@@ -305,3 +312,4 @@ None.
 | 0.15    | 2026-09-29 | 0.5: a flow stops at a refusing step and the refusal travels back to where the flow began; a lit card's border is drawn from its arrowhead in a passing or a refusal colour, in one of four styles (spark by default), with no fill and the icon and text unchanged; an arrowhead takes its signal's colour; only a signal glows, faintly, and more softly in dark, unless the spec turns it off; both colours hold 3:1 against the card (§5, §6.3, §6.4). The samples that chose this are in `docs/samples/stop/`. |
 | 0.16    | 2026-09-29 | The skill backs every edge with the line of code that makes it, walks from the entry points at one level of detail, names each part after the file that decides, draws no wider than 1,300 px, and never starts a browser (§6.6). |
 | 0.17    | 2026-09-29 | The skill recognises the system's style of architecture, merges parts with the same relations into one node, and keeps a drawing to about ten nodes and twelve edges; its evaluations cover a pipeline, ports and adapters, and a plugin host (§6.6). |
+| 0.18    | 2026-10-01 | The skill is for any coding agent that reads the Agent Skills format, not Claude Code alone: written to the format's fields, asked for in words, and installed with the `skills` command into each agent's folder; archgram needs no installer of its own (§6.5, §6.6). |
