@@ -315,7 +315,10 @@ hidden, and each refusal's ✕ and the refusing card's border are shown
 still. What the still image shows of the flows is the spec's: the
 flows in words, laid out under the legend (`layout::legend`), or each
 step's number on its lines, placed by the render stage clear of cards
-and labels.
+and labels, and drawn above the signals. A signal lights each number it
+passes, its pill traced like a lit card's border from the moment the
+eased signal reaches it (`motion::reached`); the light is one of the
+borders, so it is hidden with them.
 
 ### Rasterise
 

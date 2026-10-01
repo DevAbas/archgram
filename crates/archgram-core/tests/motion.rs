@@ -304,6 +304,55 @@ fn the_still_image_lists_or_numbers_the_flows() {
     assert!(plain.contains("fan: A \u{2192} B, C.</desc>"));
 }
 
+/// A step's number sits above the signals, so a line passes under it, and
+/// its pill lights as each signal reaches it, both ways round from where
+/// the line enters (DESIGN.md, Components: Signal); under reduced motion
+/// its light goes with the borders, leaving the plain pill.
+#[test]
+fn a_step_number_sits_above_its_signal_and_lights_as_it_passes() {
+    let spec = r#"{ "archgram": 1, "title": "t", "description": "d", "still": "numbers",
+        "nodes": [{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "service", "label": "B" }, { "id": "c", "kind": "database", "label": "C" }],
+        "edges": [{ "from": "a", "to": "b" }, { "from": "b", "to": "c" }],
+        "flows": [{ "name": "f", "steps": ["a", "b", "c"] }, { "name": "g", "steps": ["b", "c"] }] }"#;
+    let svg = build(spec, Options::default()).unwrap();
+    let at = |s: &str| svg.find(s).unwrap_or_else(|| panic!("{s}"));
+    let lights = svg.rfind(r#"<g class="borders">"#).unwrap();
+    assert!(at(r#"<g class="signals">"#) < at(r#"<g class="steps">"#));
+    assert!(at(r#"<g class="steps">"#) < lights);
+    // One light for each signal that passes a pill: b to c is taken twice.
+    let lit = &svg[lights..];
+    let lit = &lit[..lit.find("\n  </g>").unwrap_or(lit.len())];
+    assert_eq!(lit.matches(r#"<g opacity="0">"#).count(), 3, "{lit}");
+    assert_eq!(lit.matches(r#"<path class="border pass""#).count(), 6);
+    assert!(svg.contains(".signals, .borders { display: none; }"));
+    let plain = build(&spec.replace("numbers", "none"), Options::default()).unwrap();
+    assert_eq!(plain.matches(r#"<g class="borders">"#).count(), 1);
+}
+
+/// On a line a flow stops on, the step's number sits behind the ✕, so
+/// both stay readable, still and moving (DESIGN.md, Components: Signal).
+#[test]
+fn a_step_number_keeps_clear_of_a_refusals_mark() {
+    let spec = r#"{ "archgram": 1, "title": "t", "description": "d", "still": "numbers",
+        "nodes": [{ "id": "a", "kind": "service", "label": "Gateway" }, { "id": "b", "kind": "service", "label": "Auth" }],
+        "edges": [{ "from": "a", "to": "b" }],
+        "flows": [{ "name": "denied", "steps": ["a", "b"], "stop": "b" }] }"#;
+    let svg = build(spec, Options::default()).unwrap();
+    let number = |key: &str, after: &str| -> f64 {
+        let rest = &svg[svg.find(after).unwrap()..];
+        let rest = &rest[rest.find(key).unwrap() + key.len()..];
+        rest[..rest
+            .find(|c: char| c != '.' && !c.is_ascii_digit())
+            .unwrap()]
+            .parse()
+            .unwrap()
+    };
+    let pill_right =
+        number(r#" x=""#, r#"<rect class="step""#) + number(r#"width=""#, r#"<rect class="step""#);
+    let cross_left = number(r#"d="M"#, r#"<path class="patch""#);
+    assert!(pill_right < cross_left - 3.0, "{pill_right} {cross_left}");
+}
+
 const LABELLED: &str = r#"{ "archgram": 1, "title": "t", "description": "d",
     "nodes": [{ "id": "a", "kind": "service", "label": "A" }, { "id": "b", "kind": "database", "label": "B" }],
     "edges": [{ "from": "a", "to": "b", "label": "reads" }],

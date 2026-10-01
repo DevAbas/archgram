@@ -102,14 +102,39 @@ impl Drawn {
         let mut at = self.start;
         let mut total = 0.0;
         for piece in &self.pieces {
-            total += match *piece {
-                Piece::Line(to) => distance(at, to),
-                Piece::Arc { r, .. } => std::f64::consts::FRAC_PI_2 * r,
-                Piece::Cubic { c1, c2, to } => cubic_length(at, c1, c2, to),
-            };
+            total += piece_length(at, *piece);
             at = end(*piece);
         }
         total
+    }
+
+    /// How far along the path `point` is, on the first straight piece that
+    /// passes through it (within half a pixel), with that piece's direction
+    /// as a unit vector. `None` when no straight piece does.
+    #[must_use]
+    pub fn along(&self, point: Point) -> Option<(f64, Point)> {
+        let mut at = self.start;
+        let mut total = 0.0;
+        for piece in &self.pieces {
+            if let Piece::Line(to) = *piece {
+                let l = distance(at, to);
+                if l > f64::EPSILON {
+                    let u = Point {
+                        x: (to.x - at.x) / l,
+                        y: (to.y - at.y) / l,
+                    };
+                    // Its distance along the piece, and off it.
+                    let s = (point.x - at.x) * u.x + (point.y - at.y) * u.y;
+                    let off = (point.x - at.x) * u.y - (point.y - at.y) * u.x;
+                    if off.abs() <= 0.5 && s >= -0.5 && s <= l + 0.5 {
+                        return Some((total + s.max(0.0).min(l), u));
+                    }
+                }
+            }
+            total += piece_length(at, *piece);
+            at = end(*piece);
+        }
+        None
     }
 
     /// The straight pieces, each from its start to its end, in order.
@@ -181,6 +206,15 @@ impl Drawn {
 fn end(piece: Piece) -> Point {
     match piece {
         Piece::Line(to) | Piece::Arc { to, .. } | Piece::Cubic { to, .. } => to,
+    }
+}
+
+/// One piece's length, from `at`, as [`Drawn::length`] measures it.
+fn piece_length(at: Point, piece: Piece) -> f64 {
+    match piece {
+        Piece::Line(to) => distance(at, to),
+        Piece::Arc { r, .. } => std::f64::consts::FRAC_PI_2 * r,
+        Piece::Cubic { c1, c2, to } => cubic_length(at, c1, c2, to),
     }
 }
 
@@ -382,5 +416,19 @@ mod tests {
         // The jog's S: longer than its chord, shorter than its control polygon.
         let s = cubic_length(pt(4.0, 0.0), pt(20.0, 0.0), pt(20.0, 6.0), pt(36.0, 6.0));
         assert!(s > 32.56 && s < 38.0, "{s}");
+    }
+
+    #[test]
+    fn along_finds_a_point_on_a_straight_and_counts_the_bends_before_it() {
+        let step = drawn(&[pt(0.0, 0.0), pt(20.0, 0.0), pt(20.0, 40.0), pt(60.0, 40.0)]);
+        // On the first straight, 5 in, heading right.
+        assert_eq!(step.along(pt(5.0, 0.0)), Some((5.0, pt(1.0, 0.0))));
+        // On the last straight, after 10, a quarter of 10, 14 and a quarter of 16.
+        let (at, u) = step.along(pt(50.0, 40.0)).unwrap();
+        let want = 24.0 + std::f64::consts::FRAC_PI_2 * 26.0 + 14.0;
+        assert!((at - want).abs() < 1e-9, "{at}");
+        assert_eq!(u, pt(1.0, 0.0));
+        // Off the line.
+        assert_eq!(step.along(pt(5.0, 3.0)), None);
     }
 }
