@@ -196,19 +196,31 @@ pub fn scene(
 
 /// The glow's blur, over the whole canvas `size` large: measured against a
 /// line's own box, a straight line's zero height would leave it no room at
-/// all. One for each theme the drawing carries, the dark one softer.
+/// all. The halo has its own, around the head it rides with: the head is
+/// moved along its edge, so the canvas measured from the head would start
+/// at its centre and cut its glow to one quarter. One of each for each
+/// theme the drawing carries, the dark one softer.
 fn glow_filters(mode: Mode, (w, h): (f64, f64)) -> Item {
-    let filter = |id: &str, blur: f64| {
+    use crate::tokens::{SIGNAL_BLUR, SIGNAL_BLUR_DARK, SIGNAL_HALO};
+    let filter = |id: &str, blur: f64, (x, y, w, h): (f64, f64, f64, f64)| {
         format!(
-            r#"<filter id="{id}" filterUnits="userSpaceOnUse" x="0" y="0" width="{}" height="{}"><feGaussianBlur stdDeviation="{}"/></filter>"#,
+            r#"<filter id="{id}" filterUnits="userSpaceOnUse" x="{}" y="{}" width="{}" height="{}"><feGaussianBlur stdDeviation="{}"/></filter>"#,
+            num(x),
+            num(y),
             num(w),
             num(h),
             num(blur)
         )
     };
+    // A blur reaches three times its deviation.
+    let halo = |id: &str, blur: f64| {
+        let r = SIGNAL_HALO + 3.0 * blur;
+        filter(id, blur, (-r, -r, 2.0 * r, 2.0 * r))
+    };
     let (light, dark) = (
-        filter("glow", crate::tokens::SIGNAL_BLUR),
-        filter("glow-dark", crate::tokens::SIGNAL_BLUR_DARK),
+        filter("glow", SIGNAL_BLUR, (0.0, 0.0, w, h)) + &halo("halo-glow", SIGNAL_BLUR),
+        filter("glow-dark", SIGNAL_BLUR_DARK, (0.0, 0.0, w, h))
+            + &halo("halo-glow-dark", SIGNAL_BLUR_DARK),
     );
     let filters = match mode {
         Mode::Light => light,
@@ -848,7 +860,7 @@ fn glow_style(svg: &mut Sheet, style: SignalStyle, mode: Mode) {
         }
         if matches!(style, SignalStyle::Spark | SignalStyle::Arc) {
             out.push(format!(
-                ".signal .halo {{ fill: currentColor; filter: url(#{filter}); }}"
+                ".signal .halo {{ fill: currentColor; filter: url(#halo-{filter}); }}"
             ));
         }
         out.join(" ")
