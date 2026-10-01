@@ -153,6 +153,21 @@ No. archgram is one native binary, and the SVG is self-contained: no
 script, no external file, no web font, so it shows the same wherever it is
 opened.
 
+### How is it different from Mermaid?
+
+Mermaid draws many kinds of diagram from text and is rendered by the page
+that shows it; GitHub renders it in Markdown. archgram draws one kind, the
+architecture of a system, into an SVG file ahead of time: it routes the
+lines around the cards, animates the flows and embeds its font, so the file
+looks the same everywhere. For a sequence diagram or a chart, Mermaid is
+the better tool.
+
+### How is it different from draw.io or Excalidraw?
+
+Those are canvases you arrange by hand, which suits a sketch. archgram
+places everything from the spec, so the diagram lives in git beside the
+code and changes in a diff when the system does.
+
 ### Can a coding agent draw my architecture from the code?
 
 Yes, with the `archgram` skill (above): it reads the code, draws a part
