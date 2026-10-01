@@ -4,6 +4,35 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-10-01
+
+### Added
+
+- A step's number lights as a signal passes it: its pill's edge is drawn
+  in green from where the line enters, both ways round, and then fades
+  as an arrowhead does. The still image keeps the plain number.
+- The `archgram` skill works with any coding agent that reads the Agent
+  Skills format, not Claude Code alone: Codex, Cursor, GitHub Copilot,
+  Gemini CLI and others. Install it with `npx skills add byabas/archgram`.
+
+### Changed
+
+- With `still: numbers`, the numbers sit above the signals, so a line
+  passes under them and the digits stay readable.
+- The skill leaves `still` out unless asked, or unless the drawing is
+  meant to be seen still; then it numbers one or two flows and lists
+  more under the legend.
+
+### Fixed
+
+- Two cards that each lead to the same two cards no longer run along one
+  line: their lines no longer cross in an X of bends or share a stretch.
+- The halo of a `spark` or `arc` signal glows round on every side, not
+  in a hard-edged quarter beside the dot.
+- With `still: numbers`, lines that meet before a card show their
+  numbers in one badge (`1,5`) instead of one above the other, and a
+  number keeps clear of a frame's name and of a refusal's ✕.
+
 ## [0.5.0] - 2026-09-29
 
 ### Added
@@ -136,6 +165,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
+[0.6.0]: https://github.com/byAbas/archgram/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/byAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/byAbas/archgram/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/byAbas/archgram/compare/v0.2.0...v0.3.0
