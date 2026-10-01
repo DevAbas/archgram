@@ -54,7 +54,7 @@
   </style>
   <rect class="canvas" width="1231" height="309.4" rx="16"/>
   <defs><marker id="arrow" viewBox="0 0 7 12" refX="7" refY="6" markerWidth="7" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse" overflow="visible"><path class="arrowhead" d="M0 0L7 6L0 12"/></marker></defs>
-  <defs><filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="1231" height="309.4"><feGaussianBlur stdDeviation="2.5"/></filter><filter id="glow-dark" filterUnits="userSpaceOnUse" x="0" y="0" width="1231" height="309.4"><feGaussianBlur stdDeviation="2"/></filter></defs>
+  <defs><filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="1231" height="309.4"><feGaussianBlur stdDeviation="2.5"/></filter><filter id="halo-glow" filterUnits="userSpaceOnUse" x="-15.5" y="-15.5" width="31" height="31"><feGaussianBlur stdDeviation="2.5"/></filter><filter id="glow-dark" filterUnits="userSpaceOnUse" x="0" y="0" width="1231" height="309.4"><feGaussianBlur stdDeviation="2"/></filter><filter id="halo-glow-dark" filterUnits="userSpaceOnUse" x="-14" y="-14" width="28" height="28"><feGaussianBlur stdDeviation="2"/></filter></defs>
   <g class="frames">
     <rect class="frame" x="510.5" y="43.5" width="228" height="200" rx="14"/>
   </g>
