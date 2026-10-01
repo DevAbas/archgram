@@ -4,7 +4,11 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
-## [0.6.0] - 2026-10-01
+## [0.6.1] - 2026-10-01
+
+0.6.0 was tagged but never reached npm: its packages were staged and
+rejected, and npm does not stage a rejected version again. 0.6.1 is the
+same release.
 
 ### Added
 
@@ -165,7 +169,7 @@ follow [Semantic Versioning](https://semver.org/).
   subset of Geist.
 - `archgram build` and `archgram check`.
 
-[0.6.0]: https://github.com/byAbas/archgram/compare/v0.5.0...v0.6.0
+[0.6.1]: https://github.com/byAbas/archgram/compare/v0.5.0...v0.6.1
 [0.5.0]: https://github.com/byAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/byAbas/archgram/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/byAbas/archgram/compare/v0.2.0...v0.3.0
