@@ -22,8 +22,8 @@ use std::collections::BTreeMap;
 
 use crate::spec::Spec;
 use crate::tokens::{
-    MOTION_FADE_MS, MOTION_HOP_GAP_MS, MOTION_HOP_MAX_MS, MOTION_HOP_MIN_MS, MOTION_REFUSAL_HOP_MS,
-    MOTION_REST_MS, MOTION_SPEED,
+    MOTION_EASE, MOTION_FADE_MS, MOTION_HOP_GAP_MS, MOTION_HOP_MAX_MS, MOTION_HOP_MIN_MS,
+    MOTION_REFUSAL_HOP_MS, MOTION_REST_MS, MOTION_SPEED,
 };
 
 /// One signal's move along one edge.
@@ -119,6 +119,13 @@ pub fn fade() -> u32 {
     ms(MOTION_FADE_MS)
 }
 
+/// `motion.hop-gap`, in whole milliseconds: how long a signal waits at its
+/// node, and how long what it reaches stays in its colour.
+#[must_use]
+pub fn hop_gap() -> u32 {
+    ms(MOTION_HOP_GAP_MS)
+}
+
 /// `motion.hop-min`, in whole milliseconds: how long a lit card's border
 /// takes to close, so it never moves faster than a signal.
 #[must_use]
@@ -130,6 +137,33 @@ pub fn trace() -> u32 {
 #[must_use]
 pub fn hop_duration(length: f64) -> u32 {
     ms((1000.0 * length / MOTION_SPEED).clamp(MOTION_HOP_MIN_MS, MOTION_HOP_MAX_MS))
+}
+
+/// When a hop's signal is `fraction` of the way along its edge, in whole
+/// milliseconds: its progress is eased by `motion.ease`, a cubic Bézier
+/// from time to distance, as SMIL's `keySplines` draw it. The curve is
+/// solved by halving, with only `+ - * /`, so the moment is the same on
+/// every machine.
+#[must_use]
+pub fn reached(hop: &Hop, fraction: f64) -> u32 {
+    let [x1, y1, x2, y2] = MOTION_EASE;
+    let bezier = |a: f64, b: f64, s: f64| {
+        let u = 1.0 - s;
+        3.0 * u * u * s * a + 3.0 * u * s * s * b + s * s * s
+    };
+    let want = fraction.clamp(0.0, 1.0);
+    // Distance never falls back as time goes on: halve toward the want.
+    let (mut lo, mut hi) = (0.0, 1.0);
+    for _ in 0..60 {
+        let mid = f64::midpoint(lo, hi);
+        if bezier(y1, y2, mid) < want {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    let time = bezier(x1, x2, f64::midpoint(lo, hi));
+    hop.start + ms(time * f64::from(hop.end - hop.start)).min(hop.end - hop.start)
 }
 
 /// The timing of a validated spec's flows, with `lengths` each edge's drawn
@@ -606,6 +640,23 @@ mod tests {
             step_numbers(&spec),
             [vec![1, 4], vec![1], vec![2], vec![2], vec![3]]
         );
+    }
+
+    #[test]
+    fn a_signal_reaches_a_point_on_its_eased_way() {
+        let hop = Hop {
+            edge: 0,
+            from: 0,
+            start: 1000,
+            end: 2000,
+        };
+        assert_eq!(reached(&hop, 0.0), 1000);
+        assert_eq!(reached(&hop, 1.0), 2000);
+        // The easing is symmetric: halfway along at half the time.
+        assert_eq!(reached(&hop, 0.5), 1500);
+        // Slow to start, so the first tenth takes longer than a tenth.
+        assert!(reached(&hop, 0.1) > 1100);
+        assert!(reached(&hop, 0.9) < 1900);
     }
 
     #[test]

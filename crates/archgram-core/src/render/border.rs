@@ -11,7 +11,7 @@
 use std::fmt::Write as _;
 
 use crate::geometry::{Point, Rect};
-use crate::motion::{Entry, Lit, State, Timeline, fade};
+use crate::motion::{Entry, Lit, State, Timeline, fade, hop_gap, trace};
 use crate::render::edge::Drawn;
 use crate::render::scene::{GroupOf, Item};
 use crate::render::signal::KeyTrack;
@@ -40,6 +40,57 @@ pub fn borders(
             ))
         })
         .collect();
+    Item::Group {
+        of: GroupOf::Class("borders"),
+        items,
+    }
+}
+
+/// Each step number's pill lit as the signals pass it (DESIGN.md,
+/// Components: Signal), above the pills: its edge traced in the pass
+/// colour from where its line enters it, both ways round, over
+/// `motion.hop-min`, held for `motion.hop-gap` and faded over
+/// `motion.fade`, as an arrowhead is. `pills` holds each pill's outline,
+/// where its line enters it, and each moment a signal reaches it; a signal
+/// that comes while the pill is still lit keeps it lit.
+pub fn step_lights(pills: &[(Rect, Point, Vec<u32>)], period: u32) -> Item {
+    let mut items = Vec::new();
+    for (pill, entry, reached) in pills {
+        let mut reached = reached.clone();
+        reached.sort_unstable();
+        let mut times: Vec<Times> = Vec::new();
+        for t0 in reached {
+            let t1 = (t0 + trace()).min(period);
+            let hold = (t1 + hop_gap()).min(period);
+            match times.last_mut() {
+                Some(last) if t0 < last.gone => {
+                    last.hold = last.hold.max(hold);
+                    last.gone = (last.hold + fade()).min(period);
+                }
+                _ => times.push(Times {
+                    t0,
+                    t1,
+                    hold,
+                    gone: (hold + fade()).min(period),
+                    period,
+                }),
+            }
+        }
+        let outline = Outline::of(*pill);
+        let from = outline.at(*entry);
+        let to = outline.opposite(from);
+        let halves = [outline.walk(from, to), outline.walk_back(from, to)];
+        for t in &times {
+            let lines: String = halves
+                .iter()
+                .map(|d| line(state_class(State::Pass), d, &t.draw_in()))
+                .collect();
+            let shown = t.seen(&[(t.t0, "1"), (t.hold, "1"), (t.gone, "0")]);
+            items.push(Item::Motion(format!(
+                r#"<g opacity="0">{shown}{lines}</g>"#
+            )));
+        }
+    }
     Item::Group {
         of: GroupOf::Class("borders"),
         items,

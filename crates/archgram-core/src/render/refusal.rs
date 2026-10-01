@@ -9,7 +9,9 @@ use crate::render::edge::Drawn;
 use crate::render::scene::{GroupOf, Item};
 use crate::render::signal::KeyTrack;
 use crate::render::svg::num;
-use crate::tokens::{ARROWHEAD_LENGTH, REFUSAL_MARK, REFUSAL_MARK_GAP, ROUNDED_CARD};
+use crate::tokens::{
+    ARROWHEAD_LENGTH, REFUSAL_MARK, REFUSAL_MARK_GAP, ROUNDED_CARD, STROKE_CONNECTOR,
+};
 
 /// Every refusal's marks and way back, for the moving picture. On an edge
 /// `labelled` says has a label, the way back fades out round it as a
@@ -108,6 +110,30 @@ pub fn still(timeline: &Timeline, drawn: &[Drawn], cards: &[Rect]) -> Option<Ite
 /// The ✕ of `refusal.mark` on the line `d`, `refusal.mark-gap` clear of
 /// the arrowhead's base, over a patch of the canvas's colour so the line
 /// does not cross it.
+/// How far the ✕'s patch of canvas reaches beyond the mark: a stroke's
+/// width and a half (`.refusal .patch`).
+const PATCH: f64 = 1.5 * STROKE_CONNECTOR;
+
+/// How far back from the tip the ✕ on a line reaches, its patch included.
+#[must_use]
+pub fn mark_reach() -> f64 {
+    ARROWHEAD_LENGTH + REFUSAL_MARK_GAP + REFUSAL_MARK + PATCH
+}
+
+/// The box the ✕ on `d` covers, its patch of canvas included.
+#[must_use]
+pub fn mark_box(d: &Drawn) -> Rect {
+    let h = REFUSAL_MARK / 2.0;
+    let c = d.behind_tip(ARROWHEAD_LENGTH + REFUSAL_MARK_GAP + h);
+    let reach = h + PATCH;
+    Rect {
+        x: c.x - reach,
+        y: c.y - reach,
+        w: 2.0 * reach,
+        h: 2.0 * reach,
+    }
+}
+
 fn cross(d: &Drawn) -> String {
     let h = REFUSAL_MARK / 2.0;
     let c = d.behind_tip(ARROWHEAD_LENGTH + REFUSAL_MARK_GAP + h);

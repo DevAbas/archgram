@@ -95,6 +95,9 @@ components:
     textColor: "{color.text}"
     typography: "{typography.legend}"
     size: "{signal.number}"
+  lit-step-number:
+    textColor: "{color.signal-pass}"
+    size: "{stroke.card}"
 ---
 
 # archgram: Design System
@@ -461,11 +464,20 @@ more than the diagram; each flow in words under the legend, its steps'
 labels joined by arrows and a branch's by commas, in the legend's type; or
 each step's number on the lines it takes (`step-number`): a pill
 `signal.number` high, edged like a line, just before the arrowhead where
-the step arrives, or as near as it fits clear of cards, labels, frames'
-names and other numbers. Lines that meet before a card share their number there. Steps
+the step arrives (behind the ✕ where a flow stops), or as near as it fits
+clear of cards, labels, frames' names, a refusal's ✕ and other numbers. Lines that meet before a card share their number there. Steps
 are counted on from one flow to the next. A refused step keeps its ✕ and
 the refusing card its border in the refusal colour; the flow's words end
 with the step that refused it.
+
+The numbers sit above the signals, so a line passes under its pill and
+the number stays readable. While the flows play, a signal that reaches a
+pill lights it (`lit-step-number`): its edge, at its own width
+(`stroke.card`), turns `color.signal-pass`, traced as a lit card's border
+is, from where the line enters, both ways round, over `motion.hop-min`;
+it holds for `motion.hop-gap`, then fades over `motion.fade`, as an
+arrowhead does. A signal that comes while it is lit keeps it lit. The
+still image keeps the plain pill.
 
 ### Legend
 

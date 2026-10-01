@@ -2,7 +2,7 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.18       |
+| Version | 0.19       |
 | Date    | 2026-10-01 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
@@ -153,6 +153,12 @@ same file every time.
 - An edge's label is lit while its signal travels the edge: it takes the
   signal's colour, or the theme's text colour where the signal's colour
   would fall short of text contrast.
+- Where the still image numbers the steps, the numbers sit above the
+  signals, so a line passes under them. While the flows play, a number
+  lights as its signal reaches it: its edge takes the passing colour,
+  drawn from where the line enters, both ways round, and then fades as an
+  arrowhead does. The still image keeps the plain number. A number keeps
+  clear of a refusal's ✕, so both stay readable.
 - archgram computes the timeline: branches start together, converging
   paths arrive together, the last node of a flow lights last.
 - Native SMIL only; every animation stops under
@@ -313,3 +319,4 @@ None.
 | 0.16    | 2026-09-29 | The skill backs every edge with the line of code that makes it, walks from the entry points at one level of detail, names each part after the file that decides, draws no wider than 1,300 px, and never starts a browser (§6.6). |
 | 0.17    | 2026-09-29 | The skill recognises the system's style of architecture, merges parts with the same relations into one node, and keeps a drawing to about ten nodes and twelve edges; its evaluations cover a pipeline, ports and adapters, and a plugin host (§6.6). |
 | 0.18    | 2026-10-01 | The skill is for any coding agent that reads the Agent Skills format, not Claude Code alone: written to the format's fields, asked for in words, and installed with the `skills` command into each agent's folder; archgram needs no installer of its own (§6.5, §6.6). |
+| 0.19    | 2026-10-01 | A step's number sits above the signals and lights as a signal reaches it, traced in the passing colour from where the line enters; the still image keeps the plain number; a number keeps clear of a refusal's ✕ (§6.4). |

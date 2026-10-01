@@ -136,12 +136,12 @@ pub fn scene(
             items.extend(frame::name(&spec.frames[f].label, at(label)));
         }
     }
-    if spec.still == crate::spec::Still::Numbers {
-        let mut blocked: Vec<Rect> = placement.nodes.iter().map(|&r| at(r)).collect();
-        blocked.extend(label_boxes.iter().flatten());
-        blocked.extend(placement.frame_labels.iter().flatten().map(|&r| at(r)));
-        items.extend(step_numbers(spec, &drawn, &blocked));
-    }
+    // The step numbers go above the signals, so a line passes under them.
+    let clear_of = || numbers_clear_of(placement, &label_boxes);
+    let (steps, badges) = (spec.still == crate::spec::Still::Numbers)
+        .then(|| step_numbers(spec, &drawn, &clear_of(), timeline.as_ref()))
+        .flatten()
+        .unzip();
     cards(&mut items, spec, placement, logos, &brands);
     if let Some(t) = &timeline {
         // Each node's front card on the canvas, whose border a flow draws.
@@ -178,7 +178,11 @@ pub fn scene(
             hue,
             refusal::refusals(t, &drawn, &labelled),
         ));
+        items.extend(steps);
+        items.extend(badges.map(|b| step_lights(t, &drawn, &b)));
         items.extend(refusal::still(t, &drawn, &fronts));
+    } else {
+        items.extend(steps);
     }
     items.extend(placed_legend(placement, at));
     if let Some(c) = placement.credit {
@@ -553,37 +557,54 @@ pub fn step_label(numbers: &[u32]) -> String {
 
 /// Each step's number on the lines the flows take, for the still image
 /// (`still: numbers`): a badge where the step arrives, just before the
-/// arrowhead, or else as near to it along the line as clears every card,
-/// edge label, frame name and badge in `blocked`. Lines that meet before a
+/// arrowhead (and behind the ✕ on a line a flow stops on), or else as near
+/// to it along the line as clears every card, edge label, frame name and
+/// badge in `blocked`, and every ✕ in `timeline`. Lines that meet before a
 /// card share their last stretch, and show all their numbers there in one
-/// badge.
-fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<Item> {
+/// badge. With the badges, each as drawn with the edges whose lines it
+/// sits on.
+fn step_numbers(
+    spec: &Spec,
+    drawn: &[edge::Drawn],
+    blocked: &[Rect],
+    timeline: Option<&crate::motion::Timeline>,
+) -> Option<(Item, Vec<Badge>)> {
     use crate::tokens::{SIGNAL_NUMBER, TYPOGRAPHY_LEGEND};
     let numbers = crate::motion::step_numbers(spec);
     if numbers.iter().all(Vec::is_empty) {
         return None;
     }
+    // The lines flows stop on, whose ✕ the numbers keep clear of.
+    let refused: Vec<usize> = timeline
+        .iter()
+        .flat_map(|t| &t.refusals)
+        .map(|r| r.edge)
+        .collect();
+    let mut blocked = blocked.to_vec();
+    blocked.extend(refused.iter().map(|&e| refusal::mark_box(&drawn[e])));
     // Lines ending at one point share their last stretch: one badge on the
     // first of them carries every number, in order.
-    let mut groups: Vec<(usize, Vec<u32>)> = Vec::new();
+    let mut groups: Vec<(usize, Vec<u32>, Vec<usize>)> = Vec::new();
     for (e, list) in numbers.iter().enumerate().filter(|(_, n)| !n.is_empty()) {
         let tip = drawn[e].tip();
         let meets = |g: usize| {
             let t = drawn[g].tip();
             (t.x - tip.x).abs() < 0.5 && (t.y - tip.y).abs() < 0.5
         };
-        match groups.iter_mut().find(|(g, _)| meets(*g)) {
-            Some((_, all)) => {
+        match groups.iter_mut().find(|(g, _, _)| meets(*g)) {
+            Some((_, all, edges)) => {
                 all.extend(list);
                 all.sort_unstable();
                 all.dedup();
+                edges.push(e);
             }
-            None => groups.push((e, list.clone())),
+            None => groups.push((e, list.clone(), vec![e])),
         }
     }
     let mut placed: Vec<(Rect, String)> = Vec::new();
+    let mut badges: Vec<Badge> = Vec::new();
     let mut items = Vec::new();
-    for (e, list) in &groups {
+    for (e, list, edges) in &groups {
         let (e, text) = (*e, step_label(list));
         let h = SIGNAL_NUMBER;
         // As wide as the text and the room either side a single digit has.
@@ -595,12 +616,15 @@ fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<
             w,
             h,
         };
-        let spots = badge_spots(&drawn[e], w);
-        if spots.first().is_some_and(|&c| {
+        let stops = edges.iter().any(|g| refused.contains(g));
+        let spots = badge_spots(&drawn[e], w, stops);
+        // The same numbers already there: that badge is this line's too.
+        if let Some(i) = spots.first().and_then(|&c| {
             placed
                 .iter()
-                .any(|(r, t)| *t == text && overlaps(badge(c), *r, 0.0))
+                .position(|(r, t)| *t == text && overlaps(badge(c), *r, 0.0))
         }) {
+            badges[i].edges.extend(edges);
             continue;
         }
         let clear = |c: crate::geometry::Point| {
@@ -615,13 +639,24 @@ fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<
         };
         let b = badge(centre);
         // Its outline on half pixels, so the one-pixel edge is sharp.
-        items.push(Item::Rect {
-            class: "step".into(),
+        let outline = Rect {
             x: b.x + HALF_PIXEL,
             y: b.y + HALF_PIXEL,
             w: b.w - 1.0,
             h: b.h - 1.0,
+        };
+        items.push(Item::Rect {
+            class: "step".into(),
+            x: outline.x,
+            y: outline.y,
+            w: outline.w,
+            h: outline.h,
             rx: Some((h - 1.0) / 2.0),
+        });
+        badges.push(Badge {
+            outline,
+            centre,
+            edges: edges.clone(),
         });
         let line = TYPOGRAPHY_LEGEND.size * TYPOGRAPHY_LEGEND.line_height;
         items.push(Item::Text {
@@ -633,18 +668,83 @@ fn step_numbers(spec: &Spec, drawn: &[edge::Drawn], blocked: &[Rect]) -> Option<
         });
         placed.push((b, text));
     }
-    Some(Item::Group {
-        of: GroupOf::Class("steps"),
-        items,
-    })
+    Some((
+        Item::Group {
+            of: GroupOf::Class("steps"),
+            items,
+        },
+        badges,
+    ))
+}
+
+/// A step number's badge as drawn: its outline, its centre on the line,
+/// and the edges whose lines it sits on.
+struct Badge {
+    outline: Rect,
+    centre: crate::geometry::Point,
+    edges: Vec<usize>,
+}
+
+/// What a step's number keeps clear of: every card, edge label and
+/// frame's name, on the canvas.
+fn numbers_clear_of(placement: &Placement, label_boxes: &[Option<Rect>]) -> Vec<Rect> {
+    let at = |r: Rect| Rect {
+        x: r.x + OFFSET,
+        y: r.y + OFFSET,
+        ..r
+    };
+    let mut blocked: Vec<Rect> = placement.nodes.iter().map(|&r| at(r)).collect();
+    blocked.extend(label_boxes.iter().flatten());
+    blocked.extend(placement.frame_labels.iter().flatten().map(|&r| at(r)));
+    blocked
+}
+
+/// The badges lit as the signals pass them (`border::step_lights`): each
+/// badge's outline, where its line enters it, and each moment a signal
+/// reaches it there, from the hops along its edges, each where its own
+/// line passes the badge.
+fn step_lights(
+    timeline: &crate::motion::Timeline,
+    drawn: &[edge::Drawn],
+    badges: &[Badge],
+) -> Item {
+    let mut out = Vec::new();
+    for b in badges {
+        let mut entry = None;
+        let mut reached = Vec::new();
+        for &e in &b.edges {
+            let Some((centre, u)) = drawn[e].along(b.centre) else {
+                continue;
+            };
+            // From the centre back to the badge's edge, along the line.
+            let half = u.x.abs() * b.outline.w / 2.0 + u.y.abs() * b.outline.h / 2.0;
+            entry.get_or_insert(crate::geometry::Point {
+                x: b.centre.x - u.x * half,
+                y: b.centre.y - u.y * half,
+            });
+            let fraction = (centre - half).max(0.0) / drawn[e].length().max(1.0);
+            reached.extend(
+                timeline
+                    .hops
+                    .iter()
+                    .filter(|h| h.edge == e)
+                    .map(|h| crate::motion::reached(h, fraction)),
+            );
+        }
+        if let Some(entry) = entry.filter(|_| !reached.is_empty()) {
+            out.push((b.outline, entry, reached));
+        }
+    }
+    border::step_lights(&out, timeline.period)
 }
 
 /// Where a badge `width` wide may sit on a line, best first: on each
 /// straight stretch from the last back to the first, near its end (past the
-/// arrowhead on the last one), then at its middle, `arrowhead.gap` clear of
-/// the bends; last, should no stretch have that room, the middle of the
-/// longest, so a number is never lost.
-fn badge_spots(drawn: &edge::Drawn, width: f64) -> Vec<crate::geometry::Point> {
+/// arrowhead on the last one, and past the ✕ too on a line a flow `stops`
+/// on), then at its middle, `arrowhead.gap` clear of the bends; last,
+/// should no stretch have that room, the middle of the longest, so a number
+/// is never lost.
+fn badge_spots(drawn: &edge::Drawn, width: f64, stops: bool) -> Vec<crate::geometry::Point> {
     use crate::tokens::{ARROWHEAD_GAP, ARROWHEAD_LENGTH};
     let straights = drawn.straights();
     let span = |a: crate::geometry::Point, b: crate::geometry::Point| {
@@ -653,10 +753,10 @@ fn badge_spots(drawn: &edge::Drawn, width: f64) -> Vec<crate::geometry::Point> {
     let mut spots = Vec::new();
     for (k, &(a, b)) in straights.iter().enumerate().rev() {
         let length = span(a, b);
-        let tip = if k + 1 == straights.len() {
-            ARROWHEAD_LENGTH
-        } else {
-            0.0
+        let tip = match (k + 1 == straights.len(), stops) {
+            (true, true) => refusal::mark_reach(),
+            (true, false) => ARROWHEAD_LENGTH,
+            (false, _) => 0.0,
         };
         if length < tip + width + 2.0 * ARROWHEAD_GAP {
             continue;
