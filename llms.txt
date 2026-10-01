@@ -1,6 +1,6 @@
 # archgram
 
-> archgram draws software architecture diagrams from a JSON or YAML spec: it lays out the nodes, routes the edges around the boxes and writes one self-contained SVG, in light and dark, with the flows the spec names animated. It runs as a native command (`npx archgram`), and its `archgram` skill lets a coding agent draw a project's architecture from its code.
+> Aesthetic architecture diagrams, straight from the code. archgram is an open-source CLI tool for software architecture diagrams. Write a YAML or JSON spec, or let Claude Code, Codex, Cursor or Gemini CLI draw one from your code. It writes one self-contained SVG that follows light and dark mode and animates the path a request takes. The file drops into a GitHub README or any docs page, and the animation plays wherever an image shows.
 
 - Install: `npm install --save-dev archgram`; draw: `npx archgram build <spec>`; check: `npx archgram check <spec>`; print the spec format: `npx archgram spec`.
 - The output needs no script, server or web font, and the same spec gives the same bytes on every machine.
