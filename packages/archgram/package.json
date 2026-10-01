@@ -27,7 +27,7 @@
     "url": "git+https://github.com/byAbas/archgram.git",
     "directory": "packages/archgram"
   },
-  "homepage": "https://github.com/byAbas/archgram#readme",
+  "homepage": "https://archgram.dev",
   "bugs": {
     "url": "https://github.com/byAbas/archgram/issues"
   },

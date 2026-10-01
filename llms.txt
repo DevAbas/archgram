@@ -8,6 +8,7 @@
 
 ## Docs
 
+- [archgram.dev](https://archgram.dev): what archgram does, with drawings it made, the install and the FAQ
 - [README](https://github.com/byAbas/archgram/blob/main/README.md): what archgram does, install, commands, the skill, FAQ
 - [Spec format](https://github.com/byAbas/archgram/blob/main/docs/SPEC.md): every field, node kind, flow and rule, with examples
 - [Visual rules](https://github.com/byAbas/archgram/blob/main/DESIGN.md): how a diagram looks and why

@@ -147,7 +147,7 @@ fn assemble(all: bool) -> Result<Vec<&'static str>, String> {
                 // The binary carries Geist (OFL) and Simple Icons' data (CC0).
                 "license": "MIT AND OFL-1.1 AND CC0-1.0",
                 "repository": { "type": "git", "url": REPOSITORY },
-                "homepage": "https://github.com/byAbas/archgram#readme",
+                "homepage": "https://archgram.dev",
                 "bugs": { "url": "https://github.com/byAbas/archgram/issues" },
                 "os": [os],
                 "cpu": [cpu],

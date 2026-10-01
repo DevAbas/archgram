@@ -9,6 +9,7 @@
 <p align="center">
   <a aria-label="npm version" href="https://www.npmjs.com/package/archgram"><img alt="npm version" src="https://img.shields.io/npm/v/archgram.svg?style=for-the-badge&labelColor=000000"></a>
   <a aria-label="License" href="https://github.com/byAbas/archgram/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&labelColor=000000"></a>
+  <a aria-label="Website" href="https://archgram.dev"><img alt="Website: archgram.dev" src="https://img.shields.io/badge/website-archgram.dev-000000.svg?style=for-the-badge&labelColor=000000"></a>
 </p>
 
 Aesthetic architecture diagrams, straight from the code. Animated flows,
@@ -231,6 +232,7 @@ when the system does.
 
 ## Documentation
 
+- [archgram.dev](https://archgram.dev): what archgram does, with drawings it made.
 - [docs/SPEC.md](https://github.com/byAbas/archgram/blob/main/docs/SPEC.md): the spec, every field and rule, with examples.
 - [DESIGN.md](https://github.com/byAbas/archgram/blob/main/DESIGN.md): the visual rules.
 - [ARCHITECTURE.md](https://github.com/byAbas/archgram/blob/main/ARCHITECTURE.md): how archgram works inside.
