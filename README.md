@@ -11,7 +11,8 @@
   <a aria-label="License" href="https://github.com/byAbas/archgram/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&labelColor=000000"></a>
 </p>
 
-Clean, minimal architecture diagrams from a spec. Animated flows, light and dark.
+Aesthetic architecture diagrams, straight from the code. Animated flows,
+light and dark.
 
 ![A visitor's request goes to the API, which reads the URL cache in Redis, falls back to Postgres on a miss and adds the click to a Redis stream; a worker drains the stream into Postgres. The animation follows the visit.](https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/linkshort.svg)
 
