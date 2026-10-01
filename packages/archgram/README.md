@@ -11,7 +11,8 @@
   <a aria-label="License" href="https://github.com/byAbas/archgram/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&labelColor=000000"></a>
 </p>
 
-Clean, minimal architecture diagrams from a spec. Animated flows, light and dark.
+Aesthetic architecture diagrams, straight from the code. Animated flows,
+light and dark.
 
 ![A visitor's request goes to the API, which reads the URL cache in Redis, falls back to Postgres on a miss and adds the click to a Redis stream; a worker drains the stream into Postgres. The animation follows the visit.](https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/linkshort.svg)
 
@@ -152,6 +153,21 @@ two files in a `<picture>` with `prefers-color-scheme`.
 No. archgram is one native binary, and the SVG is self-contained: no
 script, no external file, no web font, so it shows the same wherever it is
 opened.
+
+### How is it different from Mermaid?
+
+Mermaid draws many kinds of diagram from text and is rendered by the page
+that shows it; GitHub renders it in Markdown. archgram draws one kind, the
+architecture of a system, into an SVG file ahead of time: it routes the
+lines around the cards, animates the flows and embeds its font, so the file
+looks the same everywhere. For a sequence diagram or a chart, Mermaid is
+the better tool.
+
+### How is it different from draw.io or Excalidraw?
+
+Those are canvases you arrange by hand, which suits a sketch. archgram
+places everything from the spec, so the diagram lives in git beside the
+code and changes in a diff when the system does.
 
 ### Can a coding agent draw my architecture from the code?
 
