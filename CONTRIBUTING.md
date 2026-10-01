@@ -8,7 +8,9 @@ anything larger than a fix, open an issue first and describe the problem.
 
 You need Rust, through [rustup](https://rustup.rs): the toolchain is pinned
 in `rust-toolchain.toml` and installs itself on the first `cargo` command.
-Node 22 or later is needed only for the npm launcher's tests.
+Node is needed only for the npm launcher's tests. Work on Node 24, pinned
+in `.nvmrc`, the version the release builds with; the launcher itself still
+supports Node 22 or later, which CI checks.
 
 ## Build and try a change
 
