@@ -14,6 +14,13 @@
 Aesthetic architecture diagrams, straight from the code. Animated flows,
 light and dark.
 
+archgram is an open-source CLI tool for software architecture diagrams.
+Write a YAML or JSON spec, or let Claude Code, Codex, Cursor or Gemini CLI
+draw one from your code. It writes one self-contained SVG that follows
+light and dark mode and animates the path a request takes. The file drops
+into a GitHub README or any docs page, and the animation plays wherever an
+image shows.
+
 ![A visitor's request goes to the API, which reads the URL cache in Redis, falls back to Postgres on a miss and adds the click to a Redis stream; a worker drains the stream into Postgres. The animation follows the visit.](https://raw.githubusercontent.com/byAbas/archgram/main/docs/images/linkshort.svg)
 
 You describe the system: its nodes, what connects them and the paths a
@@ -136,11 +143,11 @@ records carry its earlier name.
 
 ## FAQ
 
-### Does the animation play in a GitHub README?
+### Does the animation play in a README or a docs page?
 
 Yes. The flows are animated with SMIL inside the SVG, which needs no
-script, so the drawing moves in an `<img>`: on GitHub, on npm and in any
-page.
+script, so the drawing moves in an `<img>`: in a GitHub README, on npm and
+in any docs page.
 
 ### Does it follow dark mode?
 
@@ -165,15 +172,38 @@ the better tool.
 
 ### How is it different from draw.io or Excalidraw?
 
-Those are canvases you arrange by hand, which suits a sketch. archgram
-places everything from the spec, so the diagram lives in git beside the
-code and changes in a diff when the system does.
+draw.io and Excalidraw are canvases you arrange by hand, which suits a
+sketch. archgram places everything from the spec, so the diagram lives in
+git beside the code and changes in a diff when the system does.
+
+### How is it different from D2 or PlantUML?
+
+D2 is a language for many kinds of diagram, and PlantUML draws UML from
+text, such as sequence, class and deployment diagrams. archgram draws one
+kind, the architecture of a system, from a spec in plain YAML or JSON that
+an agent can write from the code; it routes the lines, animates the flows
+inside the SVG and gives the same file on every machine. For UML, PlantUML
+is the better tool; for a diagram in many shapes, D2 is.
+
+### How is it different from Structurizr and the C4 model?
+
+Structurizr models a system once in its DSL and draws several C4 views
+from that model; it is the C4 model's reference implementation. archgram
+draws one diagram per spec, the parts and the path a request takes, as an
+animated SVG for a README or a docs page. To keep several C4 views in
+step, Structurizr is the better tool.
 
 ### Can a coding agent draw my architecture from the code?
 
 Yes, with the `archgram` skill (above): it reads the code, draws a part
 only where a file backs it and an edge only where a line of code makes it,
 and lists both.
+
+### How do I keep architecture diagrams in sync with the code?
+
+Keep the spec in git beside the code. archgram redraws the diagram from
+it, and its agent skill can write the spec again from the code, so the
+diagram changes in the same pull request as the system.
 
 ### Can it use my design system's colours?
 
