@@ -1,7 +1,8 @@
 # Evaluations of the archgram skill
 
 Seven cases for `skills/archgram`, in the format of Anthropic's
-[skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator):
+[skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator),
+the one the Agent Skills format's own guide to evaluating skills uses:
 `evals.json` holds each prompt and what a good run produces, and `files/`
 the small projects the prompts run in.
 

@@ -121,20 +121,32 @@ npx archgram theme check archgram.theme.json
 
 Print the version, or every command and option.
 
-## Draw with Claude Code
+## Draw with your coding agent
 
-The `archgram` skill lets Claude Code draw a project's architecture from
+The `archgram` skill lets a coding agent draw a project's architecture from
 its code: it reads the code and the docs, writes the spec in
 `docs/diagrams/`, checks and draws it with `npx archgram`, in the project's
-own colours, and lists each part it drew with the file behind it. Install
-it for every project:
+own colours, and lists each part it drew with the file behind it. It is
+written to the open [Agent Skills](https://agentskills.io) format, so any
+agent that reads skills can use it: Claude Code, Codex, Cursor, GitHub
+Copilot, Gemini CLI and others. Install it with the
+[`skills`](https://github.com/vercel-labs/skills) command, which puts it
+where each of your agents looks:
 
 ```sh
-mkdir -p ~/.claude/skills && curl -sL https://github.com/byAbas/archgram/releases/download/v0.5.0/archgram-skill-0.5.0.tar.gz | tar -xz -C ~/.claude/skills
+npx skills add byabas/archgram
 ```
 
-or for one project, into its `.claude/skills/` instead. Then ask Claude to
-draw the architecture, or type `/archgram`.
+It asks which agents to install it for; add `-g` to install it for every
+project rather than this one. Then ask your agent to draw the architecture,
+or, in Claude Code, type `/archgram`.
+
+Or take it from the release, into your agent's skills folder
+(`~/.agents/skills`, or `~/.claude/skills` for Claude Code):
+
+```sh
+mkdir -p ~/.agents/skills && curl -sL https://github.com/byAbas/archgram/releases/download/v0.5.0/archgram-skill-0.5.0.tar.gz | tar -xz -C ~/.agents/skills
+```
 
 The skill's archive carries a signed record of the build that made it:
 `gh attestation verify archgram-skill-X.Y.Z.tar.gz -R byAbas/archgram`.
