@@ -56,8 +56,11 @@ What to do depends on whether anything has reached users.
 
 - **Nothing is public yet** (a job failed, or packages are staged but not
   approved): reject any staged package on npm, delete the draft GitHub
-  release and the tag, fix the cause through a pull request, and tag the
-  new `main` with the same version.
+  release and the tag, and fix the cause through a pull request. If no
+  package was staged, tag the new `main` with the same version. If any
+  was, release the next patch version: npm keeps a staged version even
+  once it is rejected, and will not stage it again ("Cannot stage
+  previously published version", 0.6.0).
 - **Some packages are public:** an npm version can never be published
   again. If the public packages are sound, approve the rest; if not, fix
   through a pull request and release the next patch version.
