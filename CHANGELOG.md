@@ -13,6 +13,8 @@ follow [Semantic Versioning](https://semver.org/).
   `#`. `archgram check` fails, and `archgram build` warns, when that code
   is not there, so a diagram cannot drift from the code unnoticed.
   Sources are never drawn.
+- The `archgram` skill writes a source for every part and edge it draws,
+  and starts an update from what `archgram check` says has lost its code.
 
 ## [0.6.1] - 2026-10-01
 

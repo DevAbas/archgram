@@ -1,6 +1,6 @@
 # Evaluations of the archgram skill
 
-Seven cases for `skills/archgram`, in the format of Anthropic's
+Eight cases for `skills/archgram`, in the format of Anthropic's
 [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator),
 the one the Agent Skills format's own guide to evaluating skills uses:
 `evals.json` holds each prompt and what a good run produces, and `files/`
@@ -15,6 +15,10 @@ the small projects the prompts run in.
 | `draws-a-pipeline` | It recognises a data pipeline and follows one day's rows from their sources to the warehouse, with where bad rows go |
 | `draws-ports-and-adapters` | It recognises ports and adapters and shows the rules depending on nothing outside their ports |
 | `merges-parts-with-the-same-relations` | It merges parts no question tells apart and keeps a crowded system within about 10 nodes and 12 edges |
+| `repairs-what-lost-its-code` | It starts from what `archgram check` says has lost its code, removes only that, and keeps every source the check found |
+
+Every case that draws expects a source on each node and edge, so it needs
+an archgram that reads them (0.7 or later; docs/features/sources.md).
 
 Each case runs with the skill and without it, as skill-creator does. The
 runs call a model and cost money, so they run on request, not in CI; the

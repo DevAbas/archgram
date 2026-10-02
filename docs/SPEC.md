@@ -215,9 +215,14 @@ words to look for; `archgram build` warns of the same and still draws.
 Only a regular file is read, and nothing of it is printed. A spec
 without sources reads no file.
 
-In YAML, quote a source whose words hold ` #` or `: `: unquoted, YAML
-reads the first as the start of a comment, dropping the rest of the
-words, and the second as a key.
+A writer that reads the code, a person or an agent such as the
+`archgram` skill, gives every node and every edge a source: the file
+behind a node (the files, for a node that stands for several parts), and
+for an edge the file with a few words copied exactly from the line that
+makes it. From `docs/diagrams/`, the paths start with `../../`.
+
+In YAML, quote every source that holds a `#`: unquoted, ` #` starts a
+comment, which drops the rest of the words, and `: ` starts a key.
 
 ## Validation
 

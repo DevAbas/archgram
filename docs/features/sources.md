@@ -51,12 +51,14 @@ stays true.
   - the skill writes a source for every part and edge, so its
     `archgram check` holds them to the code as it draws; on a later call,
     what the check names is what the skill updates.
+- How to write a source is in the format (`docs/SPEC.md`, Sources), which
+  `archgram spec` prints, not in the skill. The skill is installed apart
+  from archgram and may be newer or older than the archgram it runs; from
+  the format, it writes sources exactly when that archgram reads them,
+  with no version check in the skill and no change to it for this field.
 - It reads files only: no git, no network, no clock, so CI can run it on
   every pull request and the same files always give the same answer. It
   says whether a path and its words are there, never what a file holds.
-
-The format and the check come first; the skill's side follows in its own
-change, in the same release.
 
 ## Limit
 
@@ -78,10 +80,11 @@ skill's work when it runs again.
   is made.
 - On the skill's evaluation projects, after a change that deletes a part
   or the call behind a line, `archgram check` names each one affected,
-  and after a change that keeps them, names none.
+  and after a change that keeps them, names none
+  (`evals/archgram`, `repairs-what-lost-its-code`).
 
 ## Changelog
 
 | Version | Date       | Change |
 |---------|------------|--------|
-| 0.1     | 2026-10-02 | First draft, from #46: a source on a node and an edge, a path with the words of its line after `#`; checked by `check` (fails) and `build` (warns), never drawn; the limit, and the criteria. |
+| 0.1     | 2026-10-02 | First draft, from #46: a source on a node and an edge, a path with the words of its line after `#`; checked by `check` (fails) and `build` (warns), never drawn; the skill writes them and starts an update from what the check names; the limit, and the criteria. |
