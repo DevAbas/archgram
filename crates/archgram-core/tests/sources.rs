@@ -25,12 +25,16 @@ fn spec(api: &str, db: &str, edge: &str) -> String {
     )
 }
 
-/// A project with `src/api.ts`, holding one call, and the folder `src/db`.
-fn project(path: &str) -> Found {
+/// A project with `src/api.ts`, holding one call, and the folder `src/db`;
+/// a file's text only when asked for.
+fn project(path: &str, words: bool) -> Found {
     match path {
-        "src/api.ts" => Found::File("export const save = () => db.insert(order);\n".into()),
+        "src/api.ts" => {
+            Found::File(words.then(|| Ok("export const save = () => db.insert(order);\n".into())))
+        }
         "src/db" => Found::Folder,
         "src/lock" => Found::Unreadable("permission denied".into()),
+        "src/big.bin" => Found::File(words.then(|| Err("it is larger than 4 MiB".into()))),
         _ => Found::Nothing,
     }
 }
@@ -56,13 +60,51 @@ fn a_source_is_a_path_from_the_spec_folder_with_one_line_of_text() {
     );
     let errors = parse_spec(&spec("[]", r#""src/db""#, r#""src/api.ts""#)).expect_err("empty");
     assert!(errors[0].message.contains("names no source"), "{errors:?}");
+    // Every problem with a source names whose it is.
+    for e in &errors {
+        assert!(e.message.starts_with("node api: "), "{e:?}");
+    }
+}
+
+#[test]
+fn a_source_that_says_nothing_about_the_code_is_refused() {
+    for (source, says) in [
+        (r#"".""#, "spec's folder or one above it"),
+        (r#""../..""#, "spec's folder or one above it"),
+        (r#""../../.git/config""#, "inside `.git`"),
+        (r#""src/api.ts#db""#, "too little after `#`"),
+    ] {
+        let errors = parse_spec(&spec(source, r#""src/db""#, r#""src/api.ts""#)).expect_err(source);
+        assert!(errors[0].message.contains(says), "{source}: {errors:?}");
+    }
+}
+
+#[test]
+fn a_source_that_is_not_text_says_what_a_source_is() {
+    let errors = parse_spec(&spec("42", r#""src/db""#, r#""src/api.ts""#)).expect_err("a number");
+    assert!(
+        errors[0]
+            .message
+            .contains("expected a path, or a list of paths"),
+        "{errors:?}"
+    );
+}
+
+#[test]
+fn a_text_read_as_a_spec_is_not_printed_back() {
+    let errors = parse_spec(r#""token=SECRET""#).expect_err("not a spec");
+    assert!(!errors[0].message.contains("SECRET"), "{errors:?}");
+    assert!(
+        errors[0].message.contains("invalid type: text"),
+        "{errors:?}"
+    );
 }
 
 #[test]
 fn every_source_the_code_lacks_is_named_where_it_is() {
     let s = parse_spec(&spec(
         r#""src/gone.ts""#,
-        r#"["src/db", "src/lock", "src/db#orders"]"#,
+        r#"["src/db", "src/lock", "src/db#orders", "src/big.bin"]"#,
         r#""src/api.ts#db.delete(""#,
     ))
     .unwrap();
@@ -103,19 +145,26 @@ fn code_that_is_there_passes_each_path_looked_up_once() {
     ))
     .unwrap();
     let asked = RefCell::new(Vec::new());
-    let find = |path: &str| {
-        asked.borrow_mut().push(path.to_owned());
-        project(path)
+    let find = |path: &str, words: bool| {
+        asked.borrow_mut().push((path.to_owned(), words));
+        project(path, words)
     };
     assert_eq!(check(&s, &find), []);
-    assert_eq!(*asked.borrow(), ["src/api.ts", "src/db"]);
+    // A file's text is asked for only when a source wants its words.
+    assert_eq!(
+        *asked.borrow(),
+        [
+            ("src/api.ts".to_owned(), true),
+            ("src/db".to_owned(), false)
+        ]
+    );
     assert_eq!(count(&s), 3);
 }
 
 #[test]
 fn a_spec_without_sources_asks_for_nothing() {
     let s = parse_spec(&example("linkshort.json")).unwrap();
-    let find = |path: &str| -> Found { panic!("looked up {path}") };
+    let find = |path: &str, _: bool| -> Found { panic!("looked up {path}") };
     assert_eq!(check(&s, &find), []);
     assert_eq!(count(&s), 0);
 }

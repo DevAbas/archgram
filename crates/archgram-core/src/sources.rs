@@ -8,17 +8,23 @@ use std::collections::BTreeMap;
 use crate::error::SpecError;
 use crate::spec::{Sources, Spec};
 
+/// The fewest characters, other than spaces, a source's words may have: fewer
+/// are found in almost any file, and say nothing about the code.
+pub const FEWEST_WORDS: usize = 3;
+
 /// What the caller found at a source's path.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Found {
-    /// A file, with its text.
-    File(String),
+    /// A file; when the caller was asked for its text, that text, or why it
+    /// could not be read (a source that wants no words still finds the file).
+    File(Option<Result<String, String>>),
     /// A folder.
     Folder,
     /// Nothing at that path.
     Nothing,
-    /// Something that is neither a file nor a folder, or cannot be read;
-    /// with the reason.
+    /// A path the caller does not read, with the reason: outside the folder
+    /// it may read, through a symbolic link, too large, or neither a file
+    /// nor a folder.
     Unreadable(String),
 }
 
@@ -52,23 +58,37 @@ pub(crate) fn form(source: &str) -> Option<String> {
             "`{path}` is an absolute path; a source is a path from the spec's folder, so it holds on every machine"
         ));
     }
+    let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
+    if parts.iter().all(|p| *p == "." || *p == "..") {
+        return Some(format!(
+            "`{path}` names only the spec's folder or one above it, which says nothing about the code; name the file or folder behind the part"
+        ));
+    }
+    if parts.iter().any(|p| p.eq_ignore_ascii_case(".git")) {
+        return Some(format!(
+            "`{path}` is inside `.git`, which archgram never reads: it is git's own, not the project's code"
+        ));
+    }
     match text {
-        Some(text) if text.trim().is_empty() => Some(format!(
-            "`{source}` has nothing after `#`; leave out the `#`, or copy a few words from the line of code"
-        )),
         Some(text) if text.contains(['\n', '\r']) => Some(
             "the text after `#` spans several lines; copy a few words from one line of code".into(),
         ),
+        Some(text) if text.chars().filter(|c| !c.is_whitespace()).count() < FEWEST_WORDS => {
+            Some(format!(
+                "`{source}` has too little after `#`; copy at least {FEWEST_WORDS} characters from the line of code, so they are not found by chance"
+            ))
+        }
         _ => None,
     }
 }
 
 /// Every source the code does not have, located in the spec: a path with
 /// nothing there, or a text its file does not hold. `find` looks a path up
-/// as written, from the spec's folder, and is asked once per path. The spec
-/// must have passed validation.
+/// as written, from the spec's folder, and is asked once per path, with
+/// whether any source wants that file's text: a path cited without words
+/// need not be read at all. The spec must have passed validation.
 #[must_use]
-pub fn check(spec: &Spec, find: &dyn Fn(&str) -> Found) -> Vec<SpecError> {
+pub fn check(spec: &Spec, find: &dyn Fn(&str, bool) -> Found) -> Vec<SpecError> {
     let nodes = spec.nodes.iter().enumerate().map(|(i, n)| {
         (
             format!("/nodes/{i}/source"),
@@ -83,21 +103,40 @@ pub fn check(spec: &Spec, find: &dyn Fn(&str) -> Found) -> Vec<SpecError> {
             &e.source,
         )
     });
-    let mut found: BTreeMap<&str, Found> = BTreeMap::new();
+    let owned: Vec<_> = nodes.chain(edges).collect();
+    // Whether each path's text is wanted, before any is looked up.
+    let mut wants: BTreeMap<&str, bool> = BTreeMap::new();
+    for (_, _, sources) in &owned {
+        for source in sources.iter().flat_map(Sources::all) {
+            let (path, text) = split(source);
+            *wants.entry(path).or_default() |= text.is_some();
+        }
+    }
+    let found: BTreeMap<&str, Found> = wants
+        .iter()
+        .map(|(&path, &words)| (path, find(path, words)))
+        .collect();
     let mut errors = Vec::new();
-    for (pointer, owner, sources) in nodes.chain(edges) {
+    for (pointer, owner, sources) in &owned {
         let Some(sources) = sources else { continue };
         for (j, source) in sources.all().iter().enumerate() {
             let (path, text) = split(source);
-            let problem = match (found.entry(path).or_insert_with(|| find(path)), text) {
+            let problem = match (&found[path], text) {
                 (Found::Nothing, _) => Some(format!("`{path}` does not exist")),
                 (Found::Unreadable(why), _) => Some(format!("`{path}` cannot be read: {why}")),
                 (Found::Folder, Some(_)) => Some(format!(
                     "`{path}` is a folder; the text after `#` is looked for in a file"
                 )),
-                (Found::File(body), Some(text)) if !body.contains(text) => {
+                (Found::File(Some(Ok(body))), Some(text)) if !body.contains(text) => {
                     Some(format!("`{path}` does not hold `{text}`"))
                 }
+                (Found::File(Some(Err(why))), Some(_)) => {
+                    Some(format!("`{path}` cannot be searched: {why}"))
+                }
+                (Found::File(None), Some(_)) => Some(format!(
+                    "`{path}` was not read, so `{}` could not be looked for",
+                    text.unwrap_or_default()
+                )),
                 _ => None,
             };
             if let Some(problem) = problem {
@@ -132,7 +171,15 @@ mod tests {
 
     #[test]
     fn a_source_is_a_relative_path_with_one_line_of_text() {
-        for good in ["src/a.rs", "../../src/a.rs", "src", "a.rs#links.insert("] {
+        for good in [
+            "src/a.rs",
+            "../../src/a.rs",
+            "src",
+            "./src",
+            "a.rs#links.insert(",
+            "a.rs#a bc",
+            ".github/workflows/ci.yml",
+        ] {
             assert_eq!(form(good), None, "{good}");
         }
         for bad in [
@@ -141,8 +188,16 @@ mod tests {
             "src\\a.rs",
             "/src/a.rs",
             "C:/src/a.rs",
+            ".",
+            "..",
+            "../..",
+            "./../",
+            ".git/config",
+            "../../.GIT/config",
             "a.rs#",
             "a.rs#  ",
+            "a.rs#m",
+            "a.rs# a b ",
             "a.rs#one\ntwo",
         ] {
             assert!(form(bad).is_some(), "{bad:?}");

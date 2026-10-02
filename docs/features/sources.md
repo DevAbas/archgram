@@ -57,14 +57,25 @@ stays true.
   the format, it writes sources exactly when that archgram reads them,
   with no version check in the skill and no change to it for this field.
 - It reads files only: no git, no network, no clock, so CI can run it on
-  every pull request and the same files always give the same answer. It
-  says whether a path and its words are there, never what a file holds.
+  every pull request and the same files always give the same answer, on
+  every system (a name must have its capitals on disk).
+- A spec may come from someone else, such as a pull request, so a source
+  is looked up only under the folder archgram runs in, through no
+  symbolic link, and a file is read only for a source's words, at most
+  4 MiB of it (SECURITY.md, What archgram reads). The words are the spec
+  author's own: the check says whether a file under the project holds
+  them, and prints nothing of it.
 
 ## Limit
 
 The check finds what the code lost, not what it gained: a new part or a
 new call is in no spec, so nothing points at it. Finding those is the
 skill's work when it runs again.
+
+It finds words wherever they are in the file, in a comment or dead code
+too, and cannot tell what the code does with them; only a parser of each
+language could, and archgram keeps to text. A folder passes while it
+exists, whatever it holds.
 
 ## Not in this
 
@@ -75,9 +86,9 @@ skill's work when it runs again.
 
 ## Success criteria
 
-- In each spec the skill writes, every node and every edge carries a
-  source (100 %), and `archgram check` confirms each one when the drawing
-  is made.
+- In each spec the skill writes, every node a file backs and every edge
+  carries a source (100 %), and `archgram check` confirms each one when
+  the drawing is made.
 - On the skill's evaluation projects, after a change that deletes a part
   or the call behind a line, `archgram check` names each one affected,
   and after a change that keeps them, names none

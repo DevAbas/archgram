@@ -80,11 +80,14 @@ the core and a line and column through `archgram-yaml`.
 
 A node's or an edge's `source` (docs/SPEC.md, Sources) is checked here
 for its form only. Whether the code is there is `sources::check`, which
-reads no file either: the caller looks each path up, once, and hands back
-what is there (a file's text, a folder, nothing). The CLI looks from the
-spec's folder, reads only a regular file and prints nothing of it, and
-runs the check in `check`, as problems, and in `build`, as warnings. The
-drawing never sees a source, so the SVG is the same with or without them.
+reads no file either: the caller looks each path up, once, told whether
+any source wants that file's words, and hands back what is there (a
+file, with its text when asked; a folder; nothing; or why it is not
+read). The CLI's `files` module is the one place the command reads a
+file, a spec, a theme or a source, under the rules in SECURITY.md (What
+archgram reads); the check runs in `check`, as problems, and in `build`,
+as warnings. The drawing never sees a source, so the SVG is the same
+with or without them.
 
 `archgram-yaml` reads `saphyr-parser`'s events (YAML 1.2) into its own
 tree, each value with its line and column, writes the tree as JSON, one

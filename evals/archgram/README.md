@@ -17,8 +17,9 @@ the small projects the prompts run in.
 | `merges-parts-with-the-same-relations` | It merges parts no question tells apart and keeps a crowded system within about 10 nodes and 12 edges |
 | `repairs-what-lost-its-code` | It starts from what `archgram check` says has lost its code, removes only that, and keeps every source the check found |
 
-Every case that draws expects a source on each node and edge, so it needs
-an archgram that reads them (0.7 or later; docs/features/sources.md).
+Every case that draws expects a source on each node a file backs and on
+each edge, so it needs an archgram that reads them (0.7 or later;
+docs/features/sources.md).
 
 Each case runs with the skill and without it, as skill-creator does. The
 runs call a model and cost money, so they run on request, not in CI; the

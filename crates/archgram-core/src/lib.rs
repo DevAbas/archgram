@@ -35,12 +35,9 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
                 line: e.line(),
                 column: e.column(),
             },
-            message: e
-                .to_string()
-                .split(" at line ")
-                .next()
-                .unwrap_or_default()
-                .to_owned(),
+            message: without_quoted_text(
+                e.to_string().split(" at line ").next().unwrap_or_default(),
+            ),
         }]
     })?;
     let errors = validate(&spec);
@@ -49,6 +46,23 @@ pub fn parse_spec(json: &str) -> Result<Spec, Vec<SpecError>> {
     } else {
         Err(errors)
     }
+}
+
+/// serde's message without a text it quotes from the input: `invalid type:
+/// string "…"` names the kind of value, not the value, so a file read as a
+/// spec by mistake is never printed back (SECURITY.md).
+fn without_quoted_text(message: &str) -> String {
+    const LEAD: &str = "invalid type: string \"";
+    if let (Some(start), Some(end)) = (message.find(LEAD), message.rfind("\", expected"))
+        && end + 1 >= start + LEAD.len()
+    {
+        return format!(
+            "{}invalid type: text{}",
+            &message[..start],
+            &message[end + 1..]
+        );
+    }
+    message.to_owned()
 }
 
 /// Reads, checks and draws a JSON spec: the whole pipeline.

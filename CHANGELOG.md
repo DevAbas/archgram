@@ -11,10 +11,24 @@ follow [Semantic Versioning](https://semver.org/).
 - A node or an edge may name the code behind it, `source`: a path from
   the spec's folder, with a few words of the line that makes it after
   `#`. `archgram check` fails, and `archgram build` warns, when that code
-  is not there, so a diagram cannot drift from the code unnoticed.
-  Sources are never drawn.
+  is not there, so a part or a line whose code was removed does not go
+  unnoticed. Sources are looked up only under the folder archgram runs
+  in, and are never drawn.
 - The `archgram` skill writes a source for every part and edge it draws,
   and starts an update from what `archgram check` says has lost its code.
+
+### Security
+
+- archgram reads a spec, a theme file and the files a theme names only if
+  each is a regular file of at most 4 MiB, reached through no symbolic
+  link that may have come with it; a FIFO or a device is never opened.
+  Before, a spec in a pull request that CI checks could make archgram
+  read a file outside the project, or wait or use memory without end.
+- A problem with a spec no longer quotes a text from it: a file read as
+  a spec by mistake is not printed back.
+- A theme's path that leads out of its folder is refused by its text,
+  whether a file is there or not, so a theme cannot learn which files
+  exist outside its project.
 
 ## [0.6.1] - 2026-10-01
 

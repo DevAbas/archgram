@@ -102,10 +102,9 @@ same file every time.
   location, never ignored.
 - The spec holds no coordinates. It may carry layout hints: direction,
   which nodes share a column or a row, and the order of nodes within one.
-- A node or an edge may name the code behind it. `archgram check` fails
-  and `archgram build` warns when that code is not there; it is never
-  drawn. It finds what the code lost, not what it gained
-  ([docs/features/sources.md](features/sources.md), Limit).
+- A node or an edge may name the code behind it, and archgram says when
+  that code is not there; it is never drawn. It finds what the code lost,
+  not what it gained ([docs/features/sources.md](features/sources.md)).
 
 ### 6.2 Layout and routing
 - Edges flow in one main direction, left to right or top to bottom.

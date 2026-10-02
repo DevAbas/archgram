@@ -2,7 +2,10 @@
 //! from JSON with unknown fields refused, so a misspelt field is an error
 //! instead of a silent default.
 
+use std::fmt;
+
 use serde::Deserialize;
+use serde::de::{self, Deserializer, SeqAccess, Visitor};
 
 /// A whole diagram.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -300,11 +303,35 @@ pub struct Edge {
 
 /// The code behind a node or an edge: one source, or several for a node
 /// that stands for several parts (docs/SPEC.md, Sources).
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sources {
     One(String),
     Many(Vec<String>),
+}
+
+/// Read by hand rather than as an untagged enum, whose error names neither
+/// what a source may be nor anything a spec's author wrote.
+impl<'de> Deserialize<'de> for Sources {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Either;
+        impl<'de> Visitor<'de> for Either {
+            type Value = Sources;
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a path, or a list of paths")
+            }
+            fn visit_str<E: de::Error>(self, source: &str) -> Result<Sources, E> {
+                Ok(Sources::One(source.to_owned()))
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Sources, A::Error> {
+                let mut list = Vec::new();
+                while let Some(source) = seq.next_element::<String>()? {
+                    list.push(source);
+                }
+                Ok(Sources::Many(list))
+            }
+        }
+        deserializer.deserialize_any(Either)
+    }
 }
 
 impl Sources {

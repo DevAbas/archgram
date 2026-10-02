@@ -288,32 +288,36 @@ impl<'a> Validator<'a> {
     /// code is there is for the caller, who can read it (`sources::check`).
     fn sources(&mut self) {
         let s = self.spec;
-        let nodes = s
-            .nodes
-            .iter()
-            .enumerate()
-            .map(|(i, n)| (format!("/nodes/{i}/source"), &n.source));
-        let edges = s
-            .edges
-            .iter()
-            .enumerate()
-            .map(|(i, e)| (format!("/edges/{i}/source"), &e.source));
-        for (pointer, sources) in nodes.chain(edges) {
+        let nodes = s.nodes.iter().enumerate().map(|(i, n)| {
+            (
+                format!("/nodes/{i}/source"),
+                format!("node {}", n.id),
+                &n.source,
+            )
+        });
+        let edges = s.edges.iter().enumerate().map(|(i, e)| {
+            (
+                format!("/edges/{i}/source"),
+                format!("edge {} \u{2192} {}", e.from, e.to),
+                &e.source,
+            )
+        });
+        for (pointer, owner, sources) in nodes.chain(edges) {
             match sources {
                 None => {}
                 Some(Sources::One(source)) => {
                     if let Some(message) = crate::sources::form(source) {
-                        self.error(pointer, message);
+                        self.error(pointer, format!("{owner}: {message}"));
                     }
                 }
                 Some(Sources::Many(list)) if list.is_empty() => self.error(
                     pointer,
-                    "the list names no source; leave `source` out instead".into(),
+                    format!("{owner}: the list names no source; leave `source` out instead"),
                 ),
                 Some(Sources::Many(list)) => {
                     for (j, source) in list.iter().enumerate() {
                         if let Some(message) = crate::sources::form(source) {
-                            self.error(format!("{pointer}/{j}"), message);
+                            self.error(format!("{pointer}/{j}"), format!("{owner}: {message}"));
                         }
                     }
                 }
