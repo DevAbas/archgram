@@ -12,19 +12,24 @@ use crate::spec::{Sources, Spec};
 /// are found in almost any file, and say nothing about the code.
 pub const FEWEST_WORDS: usize = 3;
 
+/// The most sources one spec may name: far more than a drawing a reader
+/// takes in (about ten nodes and twelve edges), and few enough that looking
+/// them all up stays quick whatever the spec asks.
+pub const MOST_SOURCES: usize = 1000;
+
 /// What the caller found at a source's path.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Found {
-    /// A file; when the caller was asked for its text, that text, or why it
-    /// could not be read (a source that wants no words still finds the file).
-    File(Option<Result<String, String>>),
+    /// A file: for each of the words asked about, in the order asked,
+    /// whether the file holds them; or why it could not be searched. Asked
+    /// about no words, the file need not be read at all.
+    File(Result<Vec<bool>, String>),
     /// A folder.
     Folder,
     /// Nothing at that path.
     Nothing,
-    /// A path the caller does not read, with the reason: outside the folder
-    /// it may read, through a symbolic link, too large, or neither a file
-    /// nor a folder.
+    /// A path the caller does not read, with the reason: outside the
+    /// project, through a symbolic link, or neither a file nor a folder.
     Unreadable(String),
 }
 
@@ -35,6 +40,61 @@ pub fn split(source: &str) -> (&str, Option<&str>) {
         Some((path, text)) => (path, Some(text)),
         None => (source, None),
     }
+}
+
+/// Names archgram never reads, in a source or a theme: git's own folder,
+/// and files and folders that commonly hold secrets rather than code. With
+/// the reason, when `path` (`/`-separated) has one of them.
+#[must_use]
+pub fn private_part(path: &str) -> Option<String> {
+    for part in path.split('/') {
+        let name = part.to_ascii_lowercase();
+        if name == ".git" {
+            return Some(format!(
+                "`{path}` is inside `.git`, which archgram never reads: it is git's own, not the project's code"
+            ));
+        }
+        let secret = matches!(
+            name.as_str(),
+            ".env"
+                | ".npmrc"
+                | ".pypirc"
+                | ".netrc"
+                | ".git-credentials"
+                | ".ssh"
+                | ".aws"
+                | ".gnupg"
+                | ".docker"
+                | "id_rsa"
+                | "id_dsa"
+                | "id_ecdsa"
+                | "id_ed25519"
+        ) || name.starts_with(".env.")
+            || [".pem", ".key", ".p12", ".pfx"]
+                .iter()
+                .any(|end| name.ends_with(end));
+        if secret {
+            return Some(format!(
+                "`{path}` names `{part}`, which commonly holds secrets rather than code, and archgram never reads it"
+            ));
+        }
+    }
+    None
+}
+
+/// A source's path in one spelling: no `.`, no empty part, `..` only at its
+/// start. Two spellings of one file give the same, so it is looked up once.
+/// None when a `..` follows a name, which `form` refuses.
+fn plain(path: &str) -> Option<String> {
+    let mut parts: Vec<&str> = Vec::new();
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." if parts.iter().any(|p| *p != "..") => return None,
+            other => parts.push(other),
+        }
+    }
+    Some(parts.join("/"))
 }
 
 /// What is wrong with a source's form, if anything.
@@ -58,16 +118,18 @@ pub(crate) fn form(source: &str) -> Option<String> {
             "`{path}` is an absolute path; a source is a path from the spec's folder, so it holds on every machine"
         ));
     }
-    let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
-    if parts.iter().all(|p| *p == "." || *p == "..") {
+    let Some(plain) = plain(path) else {
+        return Some(format!(
+            "`{path}` goes into a folder and back out with `..`; write the path without the detour"
+        ));
+    };
+    if plain.is_empty() || plain.split('/').all(|p| p == "..") {
         return Some(format!(
             "`{path}` names only the spec's folder or one above it, which says nothing about the code; name the file or folder behind the part"
         ));
     }
-    if parts.iter().any(|p| p.eq_ignore_ascii_case(".git")) {
-        return Some(format!(
-            "`{path}` is inside `.git`, which archgram never reads: it is git's own, not the project's code"
-        ));
+    if let Some(why) = private_part(&plain) {
+        return Some(why);
     }
     match text {
         Some(text) if text.contains(['\n', '\r']) => Some(
@@ -83,12 +145,13 @@ pub(crate) fn form(source: &str) -> Option<String> {
 }
 
 /// Every source the code does not have, located in the spec: a path with
-/// nothing there, or a text its file does not hold. `find` looks a path up
-/// as written, from the spec's folder, and is asked once per path, with
-/// whether any source wants that file's text: a path cited without words
-/// need not be read at all. The spec must have passed validation.
+/// nothing there, or words its file does not hold. `find` is asked once
+/// per file, however its path is spelt, with the path in one spelling (`..`
+/// only at its start, from the spec's folder) and every distinct set of
+/// words any source wants from it; a file asked about no words need not be
+/// read. The spec must have passed validation.
 #[must_use]
-pub fn check(spec: &Spec, find: &dyn Fn(&str, bool) -> Found) -> Vec<SpecError> {
+pub fn check(spec: &Spec, find: &dyn Fn(&str, &[&str]) -> Found) -> Vec<SpecError> {
     let nodes = spec.nodes.iter().enumerate().map(|(i, n)| {
         (
             format!("/nodes/{i}/source"),
@@ -104,39 +167,44 @@ pub fn check(spec: &Spec, find: &dyn Fn(&str, bool) -> Found) -> Vec<SpecError> 
         )
     });
     let owned: Vec<_> = nodes.chain(edges).collect();
-    // Whether each path's text is wanted, before any is looked up.
-    let mut wants: BTreeMap<&str, bool> = BTreeMap::new();
+    // Each file in one spelling, with the words wanted from it, before any
+    // is looked up.
+    let mut wants: BTreeMap<String, Vec<&str>> = BTreeMap::new();
     for (_, _, sources) in &owned {
         for source in sources.iter().flat_map(Sources::all) {
             let (path, text) = split(source);
-            *wants.entry(path).or_default() |= text.is_some();
+            let words = wants.entry(plain(path).unwrap_or_default()).or_default();
+            if let Some(text) = text
+                && !words.contains(&text)
+            {
+                words.push(text);
+            }
         }
     }
     let found: BTreeMap<&str, Found> = wants
         .iter()
-        .map(|(&path, &words)| (path, find(path, words)))
+        .map(|(path, words)| (path.as_str(), find(path, words)))
         .collect();
     let mut errors = Vec::new();
     for (pointer, owner, sources) in &owned {
         let Some(sources) = sources else { continue };
         for (j, source) in sources.all().iter().enumerate() {
             let (path, text) = split(source);
-            let problem = match (&found[path], text) {
+            let key = plain(path).unwrap_or_default();
+            let problem = match (&found[key.as_str()], text) {
                 (Found::Nothing, _) => Some(format!("`{path}` does not exist")),
                 (Found::Unreadable(why), _) => Some(format!("`{path}` cannot be read: {why}")),
                 (Found::Folder, Some(_)) => Some(format!(
                     "`{path}` is a folder; the text after `#` is looked for in a file"
                 )),
-                (Found::File(Some(Ok(body))), Some(text)) if !body.contains(text) => {
-                    Some(format!("`{path}` does not hold `{text}`"))
-                }
-                (Found::File(Some(Err(why))), Some(_)) => {
+                (Found::File(Err(why)), Some(_)) => {
                     Some(format!("`{path}` cannot be searched: {why}"))
                 }
-                (Found::File(None), Some(_)) => Some(format!(
-                    "`{path}` was not read, so `{}` could not be looked for",
-                    text.unwrap_or_default()
-                )),
+                (Found::File(Ok(held)), Some(text)) => {
+                    let at = wants[&key].iter().position(|w| *w == text);
+                    let holds = at.and_then(|i| held.get(i)).copied().unwrap_or(false);
+                    (!holds).then(|| format!("`{path}` does not hold `{text}`"))
+                }
                 _ => None,
             };
             if let Some(problem) = problem {
@@ -179,6 +247,9 @@ mod tests {
             "a.rs#links.insert(",
             "a.rs#a bc",
             ".github/workflows/ci.yml",
+            "../../src/./a.rs",
+            "src//a.rs",
+            "config/environment.ts",
         ] {
             assert_eq!(form(good), None, "{good}");
         }
@@ -194,6 +265,12 @@ mod tests {
             "./../",
             ".git/config",
             "../../.GIT/config",
+            "../../docs/..",
+            "src/x/../a.rs",
+            "../../.env",
+            "../../.env.production",
+            "keys/server.pem",
+            "../../.ssh/id_ed25519",
             "a.rs#",
             "a.rs#  ",
             "a.rs#m",
@@ -202,5 +279,12 @@ mod tests {
         ] {
             assert!(form(bad).is_some(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn spellings_of_one_path_are_one() {
+        assert_eq!(plain("./src//a.rs").as_deref(), Some("src/a.rs"));
+        assert_eq!(plain("../../src/./a.rs").as_deref(), Some("../../src/a.rs"));
+        assert_eq!(plain("src/x/../a.rs"), None);
     }
 }

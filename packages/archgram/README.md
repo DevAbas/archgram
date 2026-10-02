@@ -96,8 +96,8 @@ npx archgram build docs/diagrams/linkshort.archgram.yaml
 Checks a spec without drawing it, and lists every problem at its line and
 column, with the nearest id or logo when one is misspelt. When a node or
 an edge names the code behind it (`source`), it also says which of that
-code is gone, so a part or a line whose code was removed does not go
-unnoticed; `archgram build` warns of the same and still draws.
+code is gone: a part or a line whose code was removed is reported, and
+`archgram build` warns of the same and still draws.
 
 ```sh
 npx archgram check docs/diagrams/linkshort.archgram.yaml

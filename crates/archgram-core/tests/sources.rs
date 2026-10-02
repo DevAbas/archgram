@@ -26,15 +26,15 @@ fn spec(api: &str, db: &str, edge: &str) -> String {
 }
 
 /// A project with `src/api.ts`, holding one call, and the folder `src/db`;
-/// a file's text only when asked for.
-fn project(path: &str, words: bool) -> Found {
+/// a file says, for each of the words asked about, whether it holds them.
+fn project(path: &str, words: &[&str]) -> Found {
+    let text = "export const save = () => db.insert(order);\n";
     match path {
-        "src/api.ts" => {
-            Found::File(words.then(|| Ok("export const save = () => db.insert(order);\n".into())))
-        }
+        "src/api.ts" => Found::File(Ok(words.iter().map(|w| text.contains(w)).collect())),
         "src/db" => Found::Folder,
         "src/lock" => Found::Unreadable("permission denied".into()),
-        "src/big.bin" => Found::File(words.then(|| Err("it is larger than 4 MiB".into()))),
+        "src/big.bin" if words.is_empty() => Found::File(Ok(Vec::new())),
+        "src/big.bin" => Found::File(Err("it is larger than 4 MiB".into())),
         _ => Found::Nothing,
     }
 }
@@ -145,26 +145,60 @@ fn code_that_is_there_passes_each_path_looked_up_once() {
     ))
     .unwrap();
     let asked = RefCell::new(Vec::new());
-    let find = |path: &str, words: bool| {
-        asked.borrow_mut().push((path.to_owned(), words));
+    let find = |path: &str, words: &[&str]| {
+        asked.borrow_mut().push((path.to_owned(), words.join("|")));
         project(path, words)
     };
     assert_eq!(check(&s, &find), []);
-    // A file's text is asked for only when a source wants its words.
+    // Each file once, with only the words some source wants from it.
     assert_eq!(
         *asked.borrow(),
         [
-            ("src/api.ts".to_owned(), true),
-            ("src/db".to_owned(), false)
+            ("src/api.ts".to_owned(), "db.insert(".to_owned()),
+            ("src/db".to_owned(), String::new())
         ]
     );
     assert_eq!(count(&s), 3);
 }
 
+/// However a path is spelt, its file is looked up once: a spec cannot make
+/// one file read again and again by spelling it many ways.
+#[test]
+fn one_file_spelt_many_ways_is_looked_up_once() {
+    let s = parse_spec(&spec(
+        r#"["src/api.ts", "./src/api.ts", "src//api.ts", "./src/./api.ts#db.insert("]"#,
+        r#""src/db""#,
+        r#""src/api.ts#db.insert(""#,
+    ))
+    .unwrap();
+    let asked = RefCell::new(Vec::new());
+    let find = |path: &str, words: &[&str]| {
+        asked.borrow_mut().push((path.to_owned(), words.len()));
+        project(path, words)
+    };
+    assert_eq!(check(&s, &find), []);
+    assert_eq!(
+        *asked.borrow(),
+        [("src/api.ts".to_owned(), 1), ("src/db".to_owned(), 0)]
+    );
+}
+
+#[test]
+fn a_spec_names_a_bounded_number_of_sources() {
+    let many = vec![r#""src/api.ts""#; archgram_core::sources::MOST_SOURCES + 1].join(", ");
+    let errors = parse_spec(&spec(
+        &format!("[{many}]"),
+        r#""src/db""#,
+        r#""src/api.ts""#,
+    ))
+    .expect_err("too many");
+    assert!(errors[0].message.contains("at most"), "{errors:?}");
+}
+
 #[test]
 fn a_spec_without_sources_asks_for_nothing() {
     let s = parse_spec(&example("linkshort.json")).unwrap();
-    let find = |path: &str, _: bool| -> Found { panic!("looked up {path}") };
+    let find = |path: &str, _: &[&str]| -> Found { panic!("looked up {path}") };
     assert_eq!(check(&s, &find), []);
     assert_eq!(count(&s), 0);
 }

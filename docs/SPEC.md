@@ -204,24 +204,30 @@ edges:
 A source is a path to a file or a folder, from the folder the spec is in,
 with its folders separated by `/` on every system and each name with the
 capitals it has on disk; it is never absolute, never only `.` and `..`,
-and never inside `.git`. After the first `#` (so a path cannot hold one),
-it may carry a few words copied from one line of that file: the line
-that makes the edge, or that defines the part, at least 3 characters
-other than spaces. The words are looked for as written, anywhere in the
+has `..` only at its start, and never names `.git` or a file that
+commonly holds secrets rather than code (`.env`, `.env.*`, `.npmrc`,
+`.pypirc`, `.netrc`, `.git-credentials`, `*.pem`, `*.key`, `*.p12`,
+`*.pfx`, `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`, or anything in
+`.ssh`, `.aws`, `.gnupg` or `.docker`). After the first `#` (so a path
+cannot hold one), it may carry a few words copied from one line of that
+file: the line that makes the edge, or that defines the part, at least 3
+characters other than spaces. The words are looked for as written, anywhere in the
 file, so the source holds while the file changes around them; they are
 found in a comment too, so pick words from the code itself. `source` is
-one source or a list of them, never an empty list.
+one source or a list of them, never an empty list, and a spec names at
+most 1000 sources.
 
 `archgram check` reports, as problems, each path with nothing there,
 each file that does not hold its source's words, and each folder given
 words to look for; `archgram build` warns of the same and still draws.
-Sources are looked up only under the folder archgram runs in, so run it
-from the project's folder: a path that leads outside it is refused by
+Sources are looked up only under the project's folder: the nearest
+folder above the spec that holds `.git`, else the folder archgram runs
+in, and never a disk's root. A path that leads outside it is refused by
 its text alone, before anything on the disk is looked at. A symbolic
 link on the way is not followed. A file is read only to look for a
-source's words, and only a regular file of at most 4 MiB; nothing of it
-is printed. A spec without sources looks nothing up (SECURITY.md, What
-archgram reads).
+source's words, once however many sources name it, and only a regular
+file of at most 4 MiB; nothing of it is printed or kept. A spec without
+sources looks nothing up (SECURITY.md, What archgram reads).
 
 A writer that reads the code, a person or an agent such as the
 `archgram` skill, gives a source to every node a file backs (not to the
@@ -260,9 +266,11 @@ its JSON pointer (or its line and column in YAML), when:
   its last step is a branch;
 - `tech` names a logo archgram does not carry (the error suggests the
   nearest slugs);
-- a `source` is empty, absolute, only `.` and `..`, inside `.git`, holds
-  `\`, has fewer than 3 characters after its `#` or more than one line
-  there, or is an empty list.
+- a `source` is empty, absolute, only `.` and `..`, has a `..` after a
+  name, names `.git` or a file that commonly holds secrets (Sources),
+  holds `\`, has fewer than 3 characters after its `#` or more than one
+  line there, or is an empty list; or the spec names more than 1000
+  sources.
 
 `archgram check` then holds each source to the code (Sources).
 

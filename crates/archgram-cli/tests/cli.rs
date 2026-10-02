@@ -567,3 +567,91 @@ fn a_theme_in_the_current_folder_learns_nothing_outside_it() {
     assert!(there.contains("the mapping file's folder"), "{there}");
     assert_eq!(there, answer("../nothing.json"));
 }
+
+/// The project's folder is the nearest above the spec that holds `.git`, so
+/// `check` answers alike from any folder (docs/SPEC.md, Sources).
+#[test]
+fn sources_are_found_from_any_folder_of_a_project() {
+    let dir = project_with_sources("sources-anywhere", "");
+    std::fs::create_dir_all(dir.join(".git")).unwrap();
+    for (from, spec) in [
+        (dir.clone(), SPEC.to_owned()),
+        (dir.join("docs"), "diagrams/clicks.archgram.yaml".to_owned()),
+        (dir.join("docs/diagrams"), "clicks.archgram.yaml".to_owned()),
+    ] {
+        let run = archgram_in(&from, &["check", &spec]);
+        assert!(run.status.success(), "{}: {}", from.display(), stderr(&run));
+    }
+    let run = archgram(&["check", dir.join(SPEC).to_str().unwrap()]);
+    assert!(run.status.success(), "{}", stderr(&run));
+}
+
+/// With no `.git` above the spec, the project is the folder archgram runs
+/// in, but never a disk's root, which would make the whole system the
+/// project.
+#[test]
+fn the_whole_disk_is_never_the_project() {
+    let dir = project_with_sources("sources-disk", "");
+    let root = Path::new("/");
+    let run = archgram_in(root, &["check", dir.join(SPEC).to_str().unwrap()]);
+    assert_eq!(run.status.code(), Some(1), "{}", stderr(&run));
+    assert!(stderr(&run).contains("the whole disk"), "{}", stderr(&run));
+}
+
+/// Files that commonly hold secrets, and `.git`, are never read: not as a
+/// source, not as a theme's file.
+#[test]
+fn private_files_are_never_read() {
+    let dir = project_with_sources(
+        "sources-private",
+        "  - { from: links, to: worker, source: \"../../.env#TOKEN=abc\" }\n",
+    );
+    std::fs::write(dir.join(".env"), "TOKEN=abc").unwrap();
+    let run = archgram_in(&dir, &["check", SPEC]);
+    assert_eq!(run.status.code(), Some(1));
+    assert!(
+        stderr(&run).contains("commonly holds secrets"),
+        "{}",
+        stderr(&run)
+    );
+
+    let theme = dir.join("archgram.theme.json");
+    std::fs::create_dir_all(dir.join(".git")).unwrap();
+    std::fs::write(dir.join(".git/config"), "[core]").unwrap();
+    std::fs::write(
+        &theme,
+        r#"{"version":1,"resolver":".git/config","themes":{"light":{"inputs":{}},"dark":{"inputs":{}}}}"#,
+    )
+    .unwrap();
+    let run = archgram_in(&dir, &["theme", "check", "archgram.theme.json"]);
+    assert_eq!(run.status.code(), Some(1));
+    assert!(stderr(&run).contains("inside `.git`"), "{}", stderr(&run));
+}
+
+/// A link in the middle of a source's path, or above a spec under the
+/// folder archgram runs in, is not followed either.
+#[cfg(unix)]
+#[test]
+fn links_on_the_way_are_refused() {
+    use std::os::unix::fs::symlink;
+    let dir = project_with_sources(
+        "sources-midlink",
+        "  - { from: links, to: worker, source: \"../../linked/worker.rs#links.insert(\" }\n",
+    );
+    symlink(dir.join("src"), dir.join("linked")).unwrap();
+    let run = archgram_in(&dir, &["check", SPEC]);
+    assert!(
+        stderr(&run).contains("`linked` is a symbolic link"),
+        "{}",
+        stderr(&run)
+    );
+
+    symlink(dir.join("docs"), dir.join("pages")).unwrap();
+    let run = archgram_in(&dir, &["check", "pages/diagrams/clicks.archgram.yaml"]);
+    assert_eq!(run.status.code(), Some(2));
+    assert!(
+        stderr(&run).contains("is a symbolic link"),
+        "{}",
+        stderr(&run)
+    );
+}

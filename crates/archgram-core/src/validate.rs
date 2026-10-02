@@ -288,6 +288,16 @@ impl<'a> Validator<'a> {
     /// code is there is for the caller, who can read it (`sources::check`).
     fn sources(&mut self) {
         let s = self.spec;
+        let named = crate::sources::count(s);
+        if named > crate::sources::MOST_SOURCES {
+            self.error(
+                String::new(),
+                format!(
+                    "the spec names {named} sources; a spec names at most {}",
+                    crate::sources::MOST_SOURCES
+                ),
+            );
+        }
         let nodes = s.nodes.iter().enumerate().map(|(i, n)| {
             (
                 format!("/nodes/{i}/source"),

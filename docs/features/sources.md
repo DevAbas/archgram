@@ -48,7 +48,8 @@ stays true.
   - `archgram check` reports each source the code lacks as a problem, at
     its line and column, and fails;
   - `archgram build` still draws, and warns of each one;
-  - the skill writes a source for every part and edge, so its
+  - the skill writes a source for every node a file backs and every
+    edge, so its
     `archgram check` holds them to the code as it draws; on a later call,
     what the check names is what the skill updates.
 - How to write a source is in the format (`docs/SPEC.md`, Sources), which
@@ -59,12 +60,16 @@ stays true.
 - It reads files only: no git, no network, no clock, so CI can run it on
   every pull request and the same files always give the same answer, on
   every system (a name must have its capitals on disk).
+- The check answers alike from any folder of the project: sources are
+  looked up under the project's folder, the nearest above the spec that
+  holds `.git`.
 - A spec may come from someone else, such as a pull request, so a source
-  is looked up only under the folder archgram runs in, through no
-  symbolic link, and a file is read only for a source's words, at most
-  4 MiB of it (SECURITY.md, What archgram reads). The words are the spec
-  author's own: the check says whether a file under the project holds
-  them, and prints nothing of it.
+  is looked up only under the project's folder, through no symbolic
+  link, never `.git` or a file that commonly holds secrets, and a file
+  is read only for a source's words, once, at most 4 MiB of it
+  (SECURITY.md, What archgram reads). The words are the spec author's
+  own: the check says whether a file under the project holds them, and
+  prints nothing of it.
 
 ## Limit
 

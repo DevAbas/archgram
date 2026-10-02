@@ -11,11 +11,18 @@ follow [Semantic Versioning](https://semver.org/).
 - A node or an edge may name the code behind it, `source`: a path from
   the spec's folder, with a few words of the line that makes it after
   `#`. `archgram check` fails, and `archgram build` warns, when that code
-  is not there, so a part or a line whose code was removed does not go
-  unnoticed. Sources are looked up only under the folder archgram runs
-  in, and are never drawn.
-- The `archgram` skill writes a source for every part and edge it draws,
-  and starts an update from what `archgram check` says has lost its code.
+  is not there: a part or a line whose code was removed is reported.
+  Sources are looked up only under the project's folder (the nearest
+  above the spec that holds `.git`), and are never drawn.
+- The `archgram` skill writes a source for every node a file backs and
+  every edge it draws, and starts an update from what `archgram check`
+  says has lost its code.
+
+### Changed
+
+- A spec or theme file reached through a symbolic link under the folder
+  archgram runs in is refused, where before it was followed: give
+  archgram the file the link leads to.
 
 ### Security
 
@@ -28,7 +35,8 @@ follow [Semantic Versioning](https://semver.org/).
   a spec by mistake is not printed back.
 - A theme's path that leads out of its folder is refused by its text,
   whether a file is there or not, so a theme cannot learn which files
-  exist outside its project.
+  exist outside its project; nor does a theme read `.git` or a file that
+  commonly holds secrets.
 
 ## [0.6.1] - 2026-10-01
 

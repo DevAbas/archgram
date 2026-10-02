@@ -80,12 +80,14 @@ the core and a line and column through `archgram-yaml`.
 
 A node's or an edge's `source` (docs/SPEC.md, Sources) is checked here
 for its form only. Whether the code is there is `sources::check`, which
-reads no file either: the caller looks each path up, once, told whether
-any source wants that file's words, and hands back what is there (a
-file, with its text when asked; a folder; nothing; or why it is not
-read). The CLI's `files` module is the one place the command reads a
-file, a spec, a theme or a source, under the rules in SECURITY.md (What
-archgram reads); the check runs in `check`, as problems, and in `build`,
+reads no file either: the caller looks each file up once, by its path in
+one spelling, with every word any source wants from it, and hands back
+what is there (a file, with whether it holds each word; a folder;
+nothing; or why it is not read). The CLI's `files` module is the one
+place the command reads a file, a spec, a theme or a source, under the
+rules in SECURITY.md (What archgram reads): it finds the project's
+folder, lists each folder once, reads a file only for its words and
+keeps no text. The check runs in `check`, as problems, and in `build`,
 as warnings. The drawing never sees a source, so the SVG is the same
 with or without them.
 

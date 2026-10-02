@@ -43,19 +43,31 @@ same way:
 - at most 4 MiB of it;
 - never through a symbolic link that may have come with it: a spec or
   theme file that is a link, or is reached through one under the folder
-  archgram runs in, is refused, and so is a source on the way to which
-  there is one;
+  archgram runs in, is refused, and so is a source or a theme's file on
+  the way to which there is one;
 - a theme's token files only under the theme file's folder, and a
-  spec's sources only under the folder archgram runs in, judged by the
-  path's text before the disk is looked at, so a spec cannot learn
-  whether a file outside the project exists;
-- never inside `.git`.
+  spec's sources only under the project's folder (the nearest above the
+  spec that holds `.git`, else the folder archgram runs in, never a
+  disk's root), judged by the path's text before the disk is looked at,
+  so a spec cannot learn whether a file outside the project exists;
+- never `.git`, nor a file that commonly holds secrets rather than code
+  (docs/SPEC.md, Sources, lists them), as a source or a theme's file;
+- each file once per run, keeping only whether it holds a source's
+  words, and at most 1000 sources per spec, so a spec cannot make a run
+  slow or large.
 
-A problem names where it is in the spec, never a text it quotes from a
-file read as a spec by mistake.
+When a file that is not a spec is read as one, a problem does not quote
+a text value from it; like a problem with any spec, it may still name a
+key or a short word it did not expect.
 
 A source's words are the spec author's own, and `archgram check` says
-whether a file under the project holds them. In CI, run it before a step
-writes a secret into the project's folder (a `.env` file, a token in
-`.git/config`; `actions/checkout` with `persist-credentials: false`
-keeps it out).
+whether a file under the project holds them. The names above keep the
+usual secret files out, but no list holds every name: in CI, run it
+before a step writes a secret into the project's folder
+(`actions/checkout` with `persist-credentials: false` keeps the token
+out of `.git/config`).
+
+archgram looks a path up, then opens it, as two steps. Another process
+changing the files between them could slip a link in; CI and a person
+checking a spec run nothing that does, so archgram does not guard
+against it.

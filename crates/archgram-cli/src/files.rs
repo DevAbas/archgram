@@ -3,10 +3,13 @@
 //! someone else, such as a pull request that CI checks, so each file is a
 //! regular file, opened only once its type is known, read up to [`LIMIT`]
 //! bytes, and never reached through a symbolic link that file's author
-//! could have placed. A source is read only from under the folder archgram
-//! runs in, judged by its path's text before the disk is touched, so a
-//! spec cannot learn even whether a file outside it exists.
+//! could have placed. A source is read only from under the project's
+//! folder, judged by its path's text before the disk is touched, so a spec
+//! cannot learn even whether a file outside it exists.
 
+use std::cell::RefCell;
+use std::collections::{BTreeMap, BTreeSet};
+use std::ffi::{OsStr, OsString};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
@@ -87,68 +90,136 @@ pub fn link_to(root: &Path, path: &Path) -> Option<PathBuf> {
     }
 }
 
-/// What is at a source's `path`, written from `folder` (the spec's), when
-/// archgram runs in `root`: only under `root`, through no symbolic link,
-/// each name with the capitals it has on disk; and the file's text only
-/// when `words` asks for it (docs/SPEC.md, Sources).
-pub fn find_source(root: &Path, folder: &Path, path: &str, words: bool) -> Found {
-    let at = lexical(&folder.join(path));
-    let Ok(below) = at.strip_prefix(root) else {
-        return Found::Unreadable(format!(
-            "it is outside {}, the folder archgram runs in, and archgram reads sources only under it; run archgram from the project's folder",
+/// The project's folder, under which a spec's sources are looked up: the
+/// nearest folder above the spec's (`folder`) that holds `.git`, else the
+/// folder archgram runs in (`cwd`); never a disk's root, which would make
+/// the whole system the project. A pull request cannot add a `.git`, which
+/// git never tracks, so it cannot move the project's edge.
+pub fn project(folder: &Path, cwd: &Path) -> Result<PathBuf, String> {
+    let marked = folder
+        .ancestors()
+        .find(|dir| std::fs::symlink_metadata(dir.join(".git")).is_ok());
+    let root = marked.unwrap_or(cwd);
+    if root.parent().is_none() {
+        return Err(format!(
+            "the project's folder would be {}, the whole disk; run archgram in the project, or give it a `.git`",
             root.display()
         ));
-    };
-    let mut here = root.to_path_buf();
-    for part in below.components() {
-        let name = part.as_os_str();
-        // The folder's own names, so a system that ignores capitals (macOS,
-        // Windows) answers as one that does not.
-        let names: Vec<_> = match std::fs::read_dir(&here) {
-            Ok(entries) => entries.flatten().map(|e| e.file_name()).collect(),
-            Err(e)
-                if matches!(
-                    e.kind(),
-                    std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
-                ) =>
-            {
-                return Found::Nothing;
-            }
-            Err(e) => return Found::Unreadable(e.to_string()),
-        };
-        if !names.iter().any(|n| n == name) {
-            let wanted = name.to_string_lossy();
-            return match names
-                .iter()
-                .find(|n| n.to_string_lossy().eq_ignore_ascii_case(&wanted))
-            {
-                Some(on_disk) => Found::Unreadable(format!(
-                    "`{wanted}` is `{}` on disk; write it with the same capitals, so every system finds it alike",
-                    on_disk.to_string_lossy()
-                )),
-                None => Found::Nothing,
-            };
-        }
-        here.push(part);
-        match std::fs::symlink_metadata(&here) {
-            Ok(m) if m.file_type().is_symlink() => {
-                return Found::Unreadable(format!(
-                    "`{}` is a symbolic link, which archgram does not follow; name the file it leads to",
-                    name.to_string_lossy()
-                ));
-            }
-            Ok(_) => {}
-            Err(e) => return Found::Unreadable(e.to_string()),
+    }
+    Ok(root.to_path_buf())
+}
+
+/// Looks a spec's sources up under its project (docs/SPEC.md, Sources),
+/// each folder listed once however many sources pass through it.
+pub struct Lookup {
+    root: PathBuf,
+    folder: PathBuf,
+    listings: RefCell<BTreeMap<PathBuf, Option<BTreeSet<OsString>>>>,
+}
+
+/// Whether a folder holds a name.
+enum Holds {
+    Yes,
+    /// Only with other capitals: the name on disk.
+    AsOther(OsString),
+    /// No, or the folder is not there.
+    No,
+}
+
+impl Lookup {
+    /// Sources written from `folder` (the spec's), under `root` (the
+    /// project's); both real paths.
+    pub fn new(root: PathBuf, folder: PathBuf) -> Self {
+        Lookup {
+            root,
+            folder,
+            listings: RefCell::new(BTreeMap::new()),
         }
     }
-    match std::fs::symlink_metadata(&here) {
-        Ok(m) if m.is_dir() => Found::Folder,
-        Ok(m) if m.is_file() && !words => Found::File(None),
-        Ok(m) if m.is_file() => Found::File(Some(
-            read_regular(&here).map(|bytes| String::from_utf8_lossy(&bytes).into_owned()),
-        )),
-        Ok(_) => Found::Unreadable("it is neither a file nor a folder".into()),
-        Err(e) => Found::Unreadable(e.to_string()),
+
+    /// Whether `dir` holds `name`, from its listing, read once and kept.
+    fn holds(&self, dir: &Path, name: &OsStr) -> Result<Holds, String> {
+        let mut listings = self.listings.borrow_mut();
+        if !listings.contains_key(dir) {
+            let names = match std::fs::read_dir(dir) {
+                Ok(entries) => Some(entries.flatten().map(|e| e.file_name()).collect()),
+                Err(e)
+                    if matches!(
+                        e.kind(),
+                        std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
+                    ) =>
+                {
+                    None
+                }
+                Err(e) => return Err(e.to_string()),
+            };
+            listings.insert(dir.to_path_buf(), names);
+        }
+        let Some(names) = &listings[dir] else {
+            return Ok(Holds::No);
+        };
+        if names.contains(name) {
+            return Ok(Holds::Yes);
+        }
+        let wanted = name.to_string_lossy();
+        Ok(names
+            .iter()
+            .find(|n| n.to_string_lossy().eq_ignore_ascii_case(&wanted))
+            .map_or(Holds::No, |n| Holds::AsOther(n.clone())))
+    }
+
+    /// What is at a source's `path` (`..` only at its start): only under
+    /// the project, judged by the path's text before the disk is looked at;
+    /// through no symbolic link; each name with the capitals it has on
+    /// disk. A file is read only to look for `words`, once, and is not
+    /// kept: only whether it holds each of them.
+    pub fn find(&self, path: &str, words: &[&str]) -> Found {
+        let at = lexical(&self.folder.join(path));
+        let Ok(below) = at.strip_prefix(&self.root) else {
+            return Found::Unreadable(format!(
+                "it is outside {}, the project's folder (the nearest above the spec that holds `.git`, else the folder archgram runs in), and archgram reads sources only under it",
+                self.root.display()
+            ));
+        };
+        let mut here = self.root.clone();
+        for part in below.components() {
+            let name = part.as_os_str();
+            // The folder's own names, so a system that ignores capitals
+            // (macOS, Windows) answers as one that does not.
+            match self.holds(&here, name) {
+                Ok(Holds::Yes) => {}
+                Ok(Holds::AsOther(on_disk)) => {
+                    return Found::Unreadable(format!(
+                        "`{}` is `{}` on disk; write it with the same capitals, so every system finds it alike",
+                        name.to_string_lossy(),
+                        on_disk.to_string_lossy()
+                    ));
+                }
+                Ok(Holds::No) => return Found::Nothing,
+                Err(why) => return Found::Unreadable(why),
+            }
+            here.push(part);
+            match std::fs::symlink_metadata(&here) {
+                Ok(m) if m.file_type().is_symlink() => {
+                    return Found::Unreadable(format!(
+                        "`{}` is a symbolic link, which archgram does not follow; name the file it leads to",
+                        name.to_string_lossy()
+                    ));
+                }
+                Ok(_) => {}
+                Err(e) => return Found::Unreadable(e.to_string()),
+            }
+        }
+        match std::fs::symlink_metadata(&here) {
+            Ok(m) if m.is_dir() => Found::Folder,
+            Ok(m) if m.is_file() && words.is_empty() => Found::File(Ok(Vec::new())),
+            Ok(m) if m.is_file() => Found::File(read_regular(&here).map(|bytes| {
+                let text = String::from_utf8_lossy(&bytes);
+                words.iter().map(|w| text.contains(w)).collect()
+            })),
+            Ok(_) => Found::Unreadable("it is neither a file nor a folder".into()),
+            Err(e) => Found::Unreadable(e.to_string()),
+        }
     }
 }
 

@@ -244,27 +244,32 @@ fn located(errors: Vec<SpecError>, positions: Option<&Positions>) -> Vec<SpecErr
 }
 
 /// Each source the code does not have (docs/SPEC.md, Sources), its path
-/// looked up from the spec's folder, only under the folder archgram runs
-/// in (`files::find_source`). A file is read only to look for a source's
-/// words, and nothing of it is printed.
+/// looked up from the spec's folder, only under the project's folder
+/// (`files::project`, `files::Lookup`). A file is read only to look for a
+/// source's words, and nothing of it is printed or kept.
 fn missing_sources(path: &str, spec: &Spec, positions: Option<&Positions>) -> Vec<SpecError> {
     if archgram_core::sources::count(spec) == 0 {
         return Vec::new();
     }
-    // Both by their real paths, so they compare alike where the system's
-    // own paths go through a link (macOS's /tmp) or take a prefix (Windows'
-    // `\\?\`). The spec's folder is the command line's, and `read` has
-    // already refused a spec reached through a link under the root.
+    // Real paths, so they compare alike where the system's own paths go
+    // through a link (macOS's /tmp) or take a prefix (Windows' `\\?\`).
+    // The spec's folder is the command line's, and `read` has already
+    // refused a spec reached through a link under the folder archgram runs in.
     let real = |p: &Path| std::fs::canonicalize(p).ok();
-    let root = std::env::current_dir().ok().and_then(|cwd| real(&cwd));
+    let cwd = std::env::current_dir().ok().and_then(|cwd| real(&cwd));
     let folder = Path::new(path)
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
-    let folder = real(folder);
-    let find = |source: &str, words: bool| match (&root, &folder) {
-        (Some(root), Some(folder)) => files::find_source(root, folder, source, words),
-        _ => Found::Unreadable("the folder archgram runs in cannot be found".into()),
+    let lookup = match (real(folder), cwd) {
+        (Some(folder), Some(cwd)) => {
+            files::project(&folder, &cwd).map(|root| files::Lookup::new(root, folder))
+        }
+        _ => Err("the spec's folder or the folder archgram runs in cannot be found".into()),
+    };
+    let find = |source: &str, words: &[&str]| match &lookup {
+        Ok(lookup) => lookup.find(source, words),
+        Err(why) => Found::Unreadable(why.clone()),
     };
     located(archgram_core::sources::check(spec, &find), positions)
 }
@@ -484,6 +489,9 @@ fn read_under(folder: &Path, written: &Path, name: &str) -> Result<String, Strin
             "the file is outside the mapping file's folder, and archgram reads only the files under it"
                 .into(),
         );
+    }
+    if let Some(why) = archgram_core::sources::private_part(name) {
+        return Err(why);
     }
     if files::link_to(written, Path::new(name)).is_some() {
         return Err(
