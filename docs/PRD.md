@@ -2,16 +2,19 @@
 
 | Field   | Value      |
 |---------|------------|
-| Version | 0.19       |
-| Date    | 2026-10-01 |
+| Version | 0.20       |
+| Date    | 2026-10-02 |
 | Status  | Draft      |
 | Owner   | Abas Turabli |
 
 This document describes what archgram is and why it exists. How it is built
 lives in `ARCHITECTURE.md`, the input format in `docs/SPEC.md`, the visual
 rules in `DESIGN.md` and the values in `design-system/tokens/`. Each fact
-lives in one of them; the others refer to it. If a requirement changes,
-this document changes first.
+lives in one of them; the others refer to it. A feature that needs more
+than a few lines here has its own document in `docs/features/`, with its
+problem, requirements, limits and success criteria; this one says what it
+is and points there. If a requirement changes, this document, or the
+feature's own, changes first.
 
 ## 1. Problem
 
@@ -26,6 +29,13 @@ format, it stays in the repository, but the output is generic: no visual
 vocabulary for what a box is, weak layout for nested groups such as a VPC
 or a trust boundary, no dark mode of its own, no way to show the order in
 which things happen.
+
+A diagram kept as text beside the code is cheap to change, but nothing
+says when it must change. A box still names a module deleted a month
+ago, a line still shows a call no longer made, and the diagram stays
+plausible and wrong. With coding agents changing a project many times a
+day, a diagram goes stale faster than anyone reads it closely enough to
+notice.
 
 AI coding agents hit the same wall from the other side. Asked for a
 diagram, an agent spends most of its time placing coordinates by hand. In
@@ -79,6 +89,8 @@ same file every time.
 | 0.3 | Flows and their animation, timed automatically; importing a project's DTCG design tokens as a theme; the `archgram` command on npm for Node, a native binary per platform; open-source release under MIT |
 | 0.4 | An edge's label lights with its signal; an optional "by archgram" credit; a spec named `<name>.archgram.yaml` draws `<name>.svg`, into a folder created when missing; `archgram spec`, the format the command reads; the `archgram` skill for Claude Code, which draws a project's architecture from its code |
 | 0.5 | A flow may stop at a step, and the refusal goes back to where the flow began; a card's border is drawn from the arrow that reaches it, in a colour for passing and one for a refusal, in one of four styles; only a signal glows, faintly |
+| 0.6 | A step's number lights as its signal passes it; the skill works with any coding agent that reads the Agent Skills format |
+| 0.7 | A node or an edge names the code behind it, and archgram says when that code is gone ([docs/features/sources.md](features/sources.md)) |
 | Later | The WASM package, for the browser; the PNG module, drawn from the same scene as the SVG by archgram's own rasterizer |
 
 ## 6. Functional requirements
@@ -90,6 +102,10 @@ same file every time.
   location, never ignored.
 - The spec holds no coordinates. It may carry layout hints: direction,
   which nodes share a column or a row, and the order of nodes within one.
+- A node or an edge may name the code behind it. `archgram check` fails
+  and `archgram build` warns when that code is not there; it is never
+  drawn. It finds what the code lost, not what it gained
+  ([docs/features/sources.md](features/sources.md), Limit).
 
 ### 6.2 Layout and routing
 - Edges flow in one main direction, left to right or top to bottom.
@@ -282,6 +298,8 @@ guidelines for them.
 - The core WASM module, when there is one, stays under 350 KB gzipped.
 - With archgram, an agent produces an approved diagram in less than half
   the time it took without it (baseline: 9.3 minutes on average).
+- Each feature with a document of its own meets the criteria there:
+  [the code behind a diagram](features/sources.md#success-criteria).
 
 ## 9. Non-goals
 
@@ -320,3 +338,4 @@ None.
 | 0.17    | 2026-09-29 | The skill recognises the system's style of architecture, merges parts with the same relations into one node, and keeps a drawing to about ten nodes and twelve edges; its evaluations cover a pipeline, ports and adapters, and a plugin host (§6.6). |
 | 0.18    | 2026-10-01 | The skill is for any coding agent that reads the Agent Skills format, not Claude Code alone: written to the format's fields, asked for in words, and installed with the `skills` command into each agent's folder; archgram needs no installer of its own (§6.5, §6.6). |
 | 0.19    | 2026-10-01 | A step's number sits above the signals and lights as a signal reaches it, traced in the passing colour from where the line enters; the still image keeps the plain number; a number keeps clear of a refusal's ✕ (§6.4). |
+| 0.20    | 2026-10-02 | Features with more than a few lines of requirements get their own document in `docs/features/`, which this one points to. The problem names a stale diagram nobody notices (§1). 0.6 is in the scope; 0.7 names the code behind each node and edge, checked by `check` and `build`, with its limit (§5, §6.1, `docs/features/sources.md`). Each feature's own success criteria count here (§8). |

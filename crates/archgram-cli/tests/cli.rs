@@ -359,3 +359,74 @@ fn spec_prints_the_format_it_reads() {
     let spec = read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/SPEC.md"));
     assert_eq!(String::from_utf8_lossy(&run.stdout), spec);
 }
+
+/// A project whose spec, in `docs/diagrams/`, names the code behind its
+/// parts and lines (docs/SPEC.md, Sources); `gone` adds a source the code
+/// does not have.
+fn project_with_sources(test: &str, gone: &str) -> PathBuf {
+    let dir = scratch(test);
+    std::fs::create_dir_all(dir.join("src")).unwrap();
+    std::fs::create_dir_all(dir.join("docs/diagrams")).unwrap();
+    std::fs::write(
+        dir.join("src/worker.rs"),
+        "fn count(click: Click) {\n    links.insert(click);\n}\n",
+    )
+    .unwrap();
+    let spec = dir.join("docs/diagrams/clicks.archgram.yaml");
+    std::fs::write(
+        &spec,
+        format!(
+            "archgram: 1\ntitle: t\ndescription: d\nnodes:\n  - {{ id: worker, kind: service, label: Worker, source: ../../src/worker.rs }}\n  - {{ id: links, kind: database, label: links, source: ../../src }}\nedges:\n  - {{ from: worker, to: links, source: \"../../src/worker.rs#links.insert(\" }}\n{gone}"
+        ),
+    )
+    .unwrap();
+    spec
+}
+
+#[test]
+fn check_holds_each_source_to_the_code_from_the_spec_folder() {
+    let spec = project_with_sources("sources-found", "");
+    let run = archgram(&["check", spec.to_str().unwrap()]);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    assert!(String::from_utf8_lossy(&run.stdout).contains("(2 nodes, 1 edges, 3 sources found)"));
+
+    let spec = project_with_sources(
+        "sources-gone",
+        "  - { from: links, to: worker, source: \"../../src/worker.rs#links.delete(\" }\n",
+    );
+    let run = archgram(&["check", spec.to_str().unwrap()]);
+    assert_eq!(run.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&run.stderr);
+    assert!(
+        stderr.contains(
+            "clicks.archgram.yaml:9:40: edge links \u{2192} worker: `../../src/worker.rs` does not hold `links.delete(`"
+        ),
+        "{stderr}"
+    );
+}
+
+#[test]
+fn build_draws_and_warns_of_each_source_the_code_lacks() {
+    let spec = project_with_sources(
+        "sources-build",
+        "  - { from: links, to: worker, source: ../../src/reader.rs }\n",
+    );
+    let run = archgram(&["build", spec.to_str().unwrap()]);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&run.stderr).contains("archgram: warning: ")
+            && String::from_utf8_lossy(&run.stderr)
+                .contains("`../../src/reader.rs` does not exist"),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+    assert!(spec.with_file_name("clicks.svg").is_file());
+}

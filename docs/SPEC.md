@@ -89,6 +89,7 @@ Examples.
 | `tech` | no | A technology, by its Simple Icons slug (`postgresql`, `redis`, `react`); shows its logo. Lowercase letters, digits and `_` |
 | `variant` | no | `single` (default), `multi` (several instances), `external` (not ours) |
 | `frame` | no | The id of the frame the node sits in |
+| `source` | no | The code behind the node: a path, or a list of paths for a node that stands for several parts (Sources, below) |
 
 Kinds, by category:
 
@@ -122,6 +123,7 @@ child frames is an error.
 | `from`, `to` | yes | Node ids; the edge points from `from` to `to` |
 | `label` | no | A few words on the line |
 | `style` | no | `solid` (default) or `dashed`, for a path taken only sometimes |
+| `source` | no | The code that makes the edge, usually a path with the words of its line after `#` (Sources, below) |
 
 An edge means data or a call moving in the direction of the arrow. Two
 edges between the same pair in the same direction are an error; use one
@@ -184,6 +186,39 @@ The layout needs no help, but it accepts some.
 A hint that contradicts the edges (a node placed before the node that
 feeds it) is an error, reported with both nodes named.
 
+## Sources
+
+A node or an edge may name the code behind it, so archgram can say when
+that code is gone. Sources are never drawn: a spec gives the same SVG
+with or without them. Why, and what the check cannot find, is in
+`docs/features/sources.md`.
+
+```yaml
+nodes:
+  - { id: worker, kind: service, label: Worker, source: ../../src/worker.rs }
+  - { id: billing, kind: service, label: Billing, source: [../../src/charge.ts, ../../src/refund.ts] }
+edges:
+  - { from: worker, to: links, source: "../../src/worker.rs#links.insert(" }
+```
+
+A source is a path to a file or a folder, from the folder the spec is in,
+with its folders separated by `/` on every system; it is never absolute.
+After the first `#`, it may carry a few words copied from one line of
+that file: the line that makes the edge, or that defines the part. The
+words are looked for as written, anywhere in the file, so the source
+holds while the file changes around them. `source` is one source or a
+list of them, never an empty list.
+
+`archgram check` reports, as problems, each path with nothing there,
+each file that does not hold its source's words, and each folder given
+words to look for; `archgram build` warns of the same and still draws.
+Only a regular file is read, and nothing of it is printed. A spec
+without sources reads no file.
+
+In YAML, quote a source whose words hold ` #` or `: `: unquoted, YAML
+reads the first as the start of a comment, dropping the rest of the
+words, and the second as a key.
+
 ## Validation
 
 A spec is rejected, with every problem listed at once and each located by
@@ -209,7 +244,11 @@ its JSON pointer (or its line and column in YAML), when:
 - a flow's `stop` names no node, or a node that is not its last step, or
   its last step is a branch;
 - `tech` names a logo archgram does not carry (the error suggests the
-  nearest slugs).
+  nearest slugs);
+- a `source` is empty, absolute, holds `\`, has nothing after its `#` or
+  more than one line there, or is an empty list.
+
+`archgram check` then holds each source to the code (Sources).
 
 ## Theme file
 

@@ -4,6 +4,16 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A node or an edge may name the code behind it, `source`: a path from
+  the spec's folder, with a few words of the line that makes it after
+  `#`. `archgram check` fails, and `archgram build` warns, when that code
+  is not there, so a diagram cannot drift from the code unnoticed.
+  Sources are never drawn.
+
 ## [0.6.1] - 2026-10-01
 
 0.6.0 was tagged but never reached npm: its packages were staged and
@@ -169,6 +179,7 @@ same release.
   subset of Geist.
 - `archgram build` and `archgram check`.
 
+[Unreleased]: https://github.com/byAbas/archgram/compare/v0.6.1...HEAD
 [0.6.1]: https://github.com/byAbas/archgram/compare/v0.5.0...v0.6.1
 [0.5.0]: https://github.com/byAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/byAbas/archgram/compare/v0.3.0...v0.4.0

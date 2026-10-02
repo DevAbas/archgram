@@ -7,10 +7,12 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use archgram_core::SpecError;
 use archgram_core::render::{Mode, Options};
+use archgram_core::sources::Found;
 use archgram_core::tokens::Role;
+use archgram_core::{Spec, SpecError};
 use archgram_icons::Icons;
+use archgram_yaml::Positions;
 
 const USAGE: &str = "\
 archgram: architecture diagrams from a spec
@@ -19,7 +21,8 @@ Usage:
   archgram build <spec> [-o <out.svg>] [--theme auto|light|dark | --split-themes] [--system-font]
                      [--theme-file <archgram.theme.json>]
                                Draw the diagram (default output: the spec's name with .svg)
-  archgram check <spec>        Check a spec and list every problem
+  archgram check <spec>        Check a spec and list every problem, a source the code
+                               no longer has among them
   archgram spec                Print the spec format this archgram reads (docs/SPEC.md)
   archgram theme check <archgram.theme.json>
                                Read a project's design tokens as the theme and show each role's colour
@@ -39,7 +42,11 @@ Themes: auto (light, dark under the reader's dark mode; the default), light, dar
   overflow a card; embedding (the default) draws exactly what was measured.
 --theme-file draws in a project's own colours: a mapping file names the
   project's DTCG resolver, its light and dark inputs, and the token for each
-  role (docs/SPEC.md, Theme file).";
+  role (docs/SPEC.md, Theme file).
+
+A node or an edge may name the code behind it (source, a path from the spec's
+folder). check fails, and build warns, when that code is not there
+(docs/SPEC.md, Sources).";
 
 /// The spec format this archgram reads, carried in the binary so a spec's
 /// writer, a person or an agent, reads the format of the very command that
@@ -190,32 +197,64 @@ fn format_of(path: &str) -> Result<Format, ExitCode> {
 }
 
 /// Reads and checks a spec in its format, each `tech` against the logos
-/// archgram carries; a YAML spec's problems are at its lines and columns.
-fn parse(text: &str, format: Format) -> Result<archgram_core::Spec, Vec<SpecError>> {
-    let icons = Icons::load();
-    match format {
-        Format::Json => {
-            let spec = archgram_core::parse_spec(text)?;
-            let errors = archgram_core::check_logos(&spec, &icons);
-            if errors.is_empty() {
-                Ok(spec)
-            } else {
-                Err(errors)
-            }
-        }
+/// archgram carries; a YAML spec's problems are at its lines and columns,
+/// and its positions are kept for the problems found later.
+fn parse(text: &str, format: Format) -> Result<(Spec, Option<Positions>), Vec<SpecError>> {
+    let (spec, positions) = match format {
+        Format::Json => (archgram_core::parse_spec(text)?, None),
         Format::Yaml => {
             let (spec, positions) = archgram_yaml::parse(text)?;
-            let errors: Vec<SpecError> = archgram_core::check_logos(&spec, &icons)
-                .into_iter()
-                .map(|e| positions.locate(e))
-                .collect();
-            if errors.is_empty() {
-                Ok(spec)
-            } else {
-                Err(errors)
-            }
+            (spec, Some(positions))
         }
+    };
+    let errors = located(
+        archgram_core::check_logos(&spec, &Icons::load()),
+        positions.as_ref(),
+    );
+    if errors.is_empty() {
+        Ok((spec, positions))
+    } else {
+        Err(errors)
     }
+}
+
+/// The problems, each at its line and column when the spec is YAML.
+fn located(errors: Vec<SpecError>, positions: Option<&Positions>) -> Vec<SpecError> {
+    errors
+        .into_iter()
+        .map(|e| match positions {
+            Some(p) => p.locate(e),
+            None => e,
+        })
+        .collect()
+}
+
+/// Each source the code does not have (docs/SPEC.md, Sources), its path
+/// looked up from the spec's folder. Only a regular file is read, to look
+/// for a source's text, and nothing of it is printed.
+fn missing_sources(path: &str, spec: &Spec, positions: Option<&Positions>) -> Vec<SpecError> {
+    let folder = Path::new(path).parent().unwrap_or(Path::new(""));
+    let find = |source: &str| {
+        let at = folder.join(source);
+        match std::fs::metadata(&at) {
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
+                ) =>
+            {
+                Found::Nothing
+            }
+            Err(e) => Found::Unreadable(e.to_string()),
+            Ok(m) if m.is_dir() => Found::Folder,
+            Ok(m) if m.is_file() => match std::fs::read(&at) {
+                Ok(bytes) => Found::File(String::from_utf8_lossy(&bytes).into_owned()),
+                Err(e) => Found::Unreadable(e.to_string()),
+            },
+            Ok(_) => Found::Unreadable("it is neither a file nor a folder".into()),
+        }
+    };
+    located(archgram_core::sources::check(spec, &find), positions)
 }
 
 fn check(path: &str) -> ExitCode {
@@ -227,17 +266,25 @@ fn check(path: &str) -> ExitCode {
         Ok(t) => t,
         Err(code) => return code,
     };
-    match parse(&text, format) {
-        Ok(spec) => {
-            println!(
-                "{path}: valid ({} nodes, {} edges)",
-                spec.nodes.len(),
-                spec.edges.len()
-            );
-            ExitCode::SUCCESS
-        }
-        Err(errors) => report(path, &errors),
+    let (spec, positions) = match parse(&text, format) {
+        Ok(read) => read,
+        Err(errors) => return report(path, &errors),
+    };
+    let missing = missing_sources(path, &spec, positions.as_ref());
+    if !missing.is_empty() {
+        return report(path, &missing);
     }
+    let sources = match archgram_core::sources::count(&spec) {
+        0 => String::new(),
+        1 => ", 1 source found".into(),
+        n => format!(", {n} sources found"),
+    };
+    println!(
+        "{path}: valid ({} nodes, {} edges{sources})",
+        spec.nodes.len(),
+        spec.edges.len()
+    );
+    ExitCode::SUCCESS
 }
 
 fn build(
@@ -264,7 +311,13 @@ fn build(
         Err(code) => return code,
     };
     let spec = match parse(&text, format) {
-        Ok(spec) => spec,
+        Ok((spec, positions)) => {
+            // The drawing is still worth having; `check` is what fails.
+            for e in missing_sources(path, &spec, positions.as_ref()) {
+                eprintln!("archgram: warning: {path}:{}", printable(&e.to_string()));
+            }
+            spec
+        }
         Err(errors) => return report(path, &errors),
     };
     if options.embed_font {

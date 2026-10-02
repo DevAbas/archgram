@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::error::SpecError;
-use crate::spec::{Flow, Spec, Step};
+use crate::spec::{Flow, Sources, Spec, Step};
 
 use crate::tokens::PALETTES;
 
@@ -25,6 +25,7 @@ pub fn validate(spec: &Spec) -> Vec<SpecError> {
     v.nodes(&ids);
     v.frames(&ids);
     v.edges(&ids);
+    v.sources();
     v.flows(&ids);
     v.hints(&ids);
     // The hints are held against the edges' order only when every edge and
@@ -279,6 +280,43 @@ impl<'a> Validator<'a> {
                         e.from, e.to
                     ),
                 );
+            }
+        }
+    }
+
+    /// Each node's and edge's `source`, checked for its form; whether the
+    /// code is there is for the caller, who can read it (`sources::check`).
+    fn sources(&mut self) {
+        let s = self.spec;
+        let nodes = s
+            .nodes
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (format!("/nodes/{i}/source"), &n.source));
+        let edges = s
+            .edges
+            .iter()
+            .enumerate()
+            .map(|(i, e)| (format!("/edges/{i}/source"), &e.source));
+        for (pointer, sources) in nodes.chain(edges) {
+            match sources {
+                None => {}
+                Some(Sources::One(source)) => {
+                    if let Some(message) = crate::sources::form(source) {
+                        self.error(pointer, message);
+                    }
+                }
+                Some(Sources::Many(list)) if list.is_empty() => self.error(
+                    pointer,
+                    "the list names no source; leave `source` out instead".into(),
+                ),
+                Some(Sources::Many(list)) => {
+                    for (j, source) in list.iter().enumerate() {
+                        if let Some(message) = crate::sources::form(source) {
+                            self.error(format!("{pointer}/{j}"), message);
+                        }
+                    }
+                }
             }
         }
     }

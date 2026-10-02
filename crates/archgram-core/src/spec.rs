@@ -208,6 +208,9 @@ pub struct Node {
     /// The id of the frame the node sits in.
     #[serde(default)]
     pub frame: Option<String>,
+    /// The code behind the node (docs/SPEC.md, Sources). Never drawn.
+    #[serde(default)]
+    pub source: Option<Sources>,
 }
 
 /// What a node is. Decides its icon and its category.
@@ -290,6 +293,29 @@ pub struct Edge {
     pub label: Option<String>,
     #[serde(default)]
     pub style: EdgeStyle,
+    /// The code that makes the edge (docs/SPEC.md, Sources). Never drawn.
+    #[serde(default)]
+    pub source: Option<Sources>,
+}
+
+/// The code behind a node or an edge: one source, or several for a node
+/// that stands for several parts (docs/SPEC.md, Sources).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum Sources {
+    One(String),
+    Many(Vec<String>),
+}
+
+impl Sources {
+    /// Every source, in order.
+    #[must_use]
+    pub fn all(&self) -> &[String] {
+        match self {
+            Sources::One(source) => std::slice::from_ref(source),
+            Sources::Many(sources) => sources,
+        }
+    }
 }
 
 /// Solid for the usual path, dashed for one taken only sometimes.

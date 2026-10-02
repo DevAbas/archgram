@@ -11,6 +11,7 @@ mod math;
 pub mod measure;
 pub mod motion;
 pub mod render;
+pub mod sources;
 pub mod spec;
 pub mod theme;
 pub mod tokens;

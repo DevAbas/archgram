@@ -206,6 +206,7 @@ mod tests {
             tech: None,
             variant: Variant::Single,
             frame: None,
+            source: None,
         }
     }
 
