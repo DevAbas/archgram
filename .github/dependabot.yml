@@ -1,12 +1,19 @@
 # Pull requests that keep the pinned actions and the Rust dependencies up to
-# date, once a week; each is reviewed like any other change.
+# date, once a week; each is reviewed like any other change. Each commit
+# message, and so each pull request's title, starts with one of the types
+# in CONTRIBUTING.md (How changes land): `ci` for the actions, `build` for
+# the crates.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: ci
   - package-ecosystem: cargo
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: build
