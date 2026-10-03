@@ -365,7 +365,11 @@ These hold for every output and are checked by tests on every change.
 - CI checks the whole tree with cargo-deny against `deny.toml`, the one
   list of what a dependency may be: every package's licence, its source
   (crates.io only) and every version in `Cargo.lock` against the RustSec
-  advisory database. Any finding fails the check.
+  advisory database. A licence or a source outside the list fails any
+  change. An advisory fails a change that touches `Cargo.toml`,
+  `Cargo.lock` or `deny.toml`, and only warns on any other, since one can
+  be published at any time; main is checked against the database every
+  week (`.github/workflows/advisories.yml`).
 - Cargo's own `cargo tree` shows where each indirect dependency comes from.
 - Logo data is pinned like a dependency: `archgram-icons/data/RELEASE`
   names the Simple Icons tag and commit, `cargo xtask icons <tag> <commit>`

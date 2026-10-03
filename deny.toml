@@ -1,6 +1,5 @@
 # What a dependency may be (ARCHITECTURE.md, Dependencies and supply
-# chain), checked by cargo-deny in CI:
-# `cargo deny check licenses advisories sources`.
+# chain), checked by cargo-deny in CI (ci.yml, advisories.yml).
 
 [licenses]
 # We want really high confidence when inferring licenses from text
