@@ -342,7 +342,7 @@ one of four places, chosen per diagram:
 - **Chip** (`logo-chip`): in a small round chip on the icon badge's lower
   right corner, edged like a card.
 - **Icon** (`logo-icon`): in the badge, in place of the kind's icon, at
-  the icon's size and in its category's hue, as the icon would be.
+  the icon's size.
 
 In every place the logo is in its brand's own colour (the logo's `hex` in
 Simple Icons), whether or not a flow's signal lights its card, so a reader
@@ -350,7 +350,8 @@ knows the technology at a glance; the kind's icon still says which kind of
 thing, except in the fourth place, where the logo says both. A brand
 colour below 3:1 against the card in a theme (a black logo on a dark card)
 shows as `color.text` in that theme instead, and a logo whose brand gives
-no colour is in `color.text-muted`.
+no colour is in `color.text-muted`, or, in place of the icon, in its
+category's hue, as the icon would be.
 
 ### Frame
 

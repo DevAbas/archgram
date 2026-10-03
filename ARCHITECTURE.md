@@ -260,12 +260,13 @@ the spec and laid out below the diagram (`layout::legend`), in rows no
 wider than the diagram; its text is part of the text runs, so the font subset
 carries it. A technology logo is its Simple Icons path scaled from the
 24 by 24 grid into one of four places: the card's corner, the start of
-its second line, a round chip on the badge (all in `color.text-muted`),
-or the badge in place of the icon, in the category's hue. A card whose
-logo goes in the corner keeps its width of room beside the title; an
-inline logo widens the second line, which without a note shows the
-technology's name from the logo set. The set also carries each brand's
-colour, which every logo is drawn in. `tech` is checked against the logos given, with
+its second line, a round chip on the badge, or the badge in place of the
+icon. A card whose logo goes in the corner keeps its width of room beside
+the title; an inline logo widens the second line, which without a note
+shows the technology's name from the logo set. The set also carries each
+brand's colour, which a class per technology gives its logos in each
+theme; which colour a logo takes is in DESIGN.md (Components: Technology
+logo). `tech` is checked against the logos given, with
 the nearest slugs suggested; with none given it is neither checked nor
 drawn.
 
