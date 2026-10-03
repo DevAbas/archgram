@@ -1,6 +1,6 @@
 # Tests on every push to main and every pull request: the Rust workspace on
-# macOS, Linux and Windows (archgram promises the same bytes on each), the
-# licenses of its dependencies, and the npm launcher on the Node versions
+# macOS, Linux and Windows (archgram promises the same bytes on each), its
+# dependencies against deny.toml, and the npm launcher on the Node versions
 # still supported.
 name: CI
 
@@ -29,16 +29,60 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
 
-  licenses:
-    name: Licenses
+  dependencies:
+    name: Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: EmbarkStudios/cargo-deny-action@5bb39ff5d5a0e94dc9e2dc94eced0c6129743a57 # v2
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
-          command: check licenses
+          command: check licenses sources
+
+  # A new advisory can be published against a dependency at any time, so
+  # it fails only the change that touches the dependencies; any other
+  # change gets a warning. advisories.yml checks main every week. The job
+  # always runs: a job skipped by `if` would reach `passed` as `skipped`.
+  advisories:
+    name: Advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Whether this change touches the dependencies
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            files=$(git diff --name-only "$BASE" HEAD -- ':(glob)**/Cargo.toml' Cargo.lock deny.toml)
+          else
+            files="(no base to compare with)"
+          fi
+          if [ -n "$files" ]; then
+            echo "$files"
+            echo "dependencies=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dependencies=false" >> "$GITHUB_OUTPUT"
+          fi
+      - id: advisories
+        continue-on-error: true
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check advisories
+      - name: Fail only a change to the dependencies
+        if: steps.advisories.outcome == 'failure'
+        env:
+          DEPENDENCIES: ${{ steps.changed.outputs.dependencies }}
+        run: |
+          if [ "$DEPENDENCIES" = "true" ]; then
+            echo "::error::A dependency this change touches has an advisory; see the step above."
+            exit 1
+          fi
+          echo "::warning::A dependency has an advisory, though this change does not touch the dependencies; see the step above."
 
   launcher:
     name: npm launcher (${{ matrix.os }}, Node ${{ matrix.node }})
@@ -64,7 +108,7 @@ jobs:
   passed:
     name: CI passed
     if: always()
-    needs: [rust, licenses, launcher]
+    needs: [rust, dependencies, advisories, launcher]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed
