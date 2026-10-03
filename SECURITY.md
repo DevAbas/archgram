@@ -2,12 +2,8 @@
 
 ## Supported versions
 
-Only the latest release gets security fixes.
-
-| Version | Supported |
-|---|---|
-| 0.3.x | yes |
-| below 0.3 | no |
+Only the [latest release](https://github.com/byAbas/archgram/releases/latest)
+gets security fixes; an earlier release gets none.
 
 ## Reporting a vulnerability
 
