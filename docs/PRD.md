@@ -115,54 +115,26 @@ same file every time.
   faint and hidden from screen readers; the spec turns it off.
 
 ### 6.4 Animation
-- Off by default. A flow in the spec turns it on for that path. A flow
-  may branch: one step may reach several nodes at once.
-- A signal travelling a flow takes the colour of the node it leaves. The
-  spec picks how it is drawn from a fixed set of styles; by default the
-  line fills with that colour. An arrowhead takes the colour of the signal
-  that reaches it.
-- Only a signal glows, faintly, under its line, and more softly in dark,
-  where a light line needs less; the spec may turn it off. Nothing else
-  glows.
-- A card is lit from the moment a signal reaches its arrowhead until every
-  signal it sends has arrived. Its border takes the passing colour, drawn
-  from the point where the arrow meets the card, both ways round, closing
-  on the far side, no faster than the shortest hop. The first card of a
-  flow, which no arrow reaches, closes its border where its signal leaves,
-  as it leaves. The border keeps the card's own width; the card takes no
-  fill, and the icon and the text keep their colours. Then the card
-  returns to its usual look.
-- The spec picks how the border is drawn: by default a bright head rides
-  each growing end (spark); instead it may drain out through the arrow
-  that leaves the card (drain), sweep once around from the arrowhead
-  (ring), or fade back to the card's own edge while the card is lit
-  (afterglow).
-- A flow may stop at a step: the node there refuses the signal. A small ✕
-  sits on the edge just before the refusing card's arrowhead, and the
-  arrowhead and the card's border take the refusal colour. The refusal
-  then travels back along the flow to the node where it began, whose
-  border takes the refusal colour too. The refusing card keeps it until a
-  later flow passes it, which draws its border in the passing colour.
-  The spec may show that wait as a slow dashed border instead (pending).
-- The passing and the refusal colours hold the contrast any graphic does,
-  in both themes, against what they are drawn on (DESIGN.md, Colors).
-- An edge's label is lit while its signal travels the edge: it takes the
-  signal's colour, or the theme's text colour where the signal's colour
-  would fall short of text contrast.
-- Where the still image numbers the steps, the numbers sit above the
-  signals, so a line passes under them. While the flows play, a number
-  lights as its signal reaches it: its edge takes the passing colour,
-  drawn from where the line enters, both ways round, and then fades as an
-  arrowhead does. The still image keeps the plain number. A number keeps
-  clear of a refusal's ✕, so both stay readable.
+- Off by default. A flow in the spec turns it on for that path, so a
+  reader sees in what order things happen. A flow may branch: one step
+  may reach several nodes at once.
+- A signal travels each step of a flow, drawn in a style the spec picks
+  from a fixed set, and a card is lit while the signals it sends are on
+  their way, so the reader can follow where the flow is.
+- A flow may stop at a step whose node refuses it. The refusal travels
+  back to where the flow began, and the refusing card stays marked until
+  a later flow passes it.
+- An edge's label lights with its signal, and where the still image
+  numbers the steps, a step's number lights as its signal reaches it.
 - archgram computes the timeline: branches start together, converging
   paths arrive together, the last node of a flow lights last.
 - Native SMIL only; every animation stops under
   `prefers-reduced-motion`, and the still image shows what the spec
   chooses: nothing more, the flows in words under the legend, or each
-  step's number on its lines. A refused step keeps its ✕ and the refusing
-  card its border in the refusal colour. A screen reader hears each flow
-  in words, a refused step included.
+  step's number on its lines. A screen reader hears each flow in words, a
+  refused step included.
+- How each of these is drawn, in which colours and with what timing, is
+  in DESIGN.md (Components: Signal, Refusal; Layout: Motion).
 
 ### 6.5 Outputs and interfaces
 - A command-line tool, one native binary per platform, installed from npm
@@ -255,17 +227,12 @@ a dashed border).
 | Clients | browser, mobile, desktop |
 
 A node may name its technology (`tech: postgresql`, a Simple Icons slug);
-archgram then shows the technology's logo, in one of four places the
-diagram chooses: the card's corner, before the note (or the technology's
-name) on the card's second line, a chip on the icon, or in place of the
-kind's icon. Logos come from
-a pinned Simple Icons release, CC0 data; a logo under a licence of its
-own is left out. Each is drawn in its brand's own colour, in every place
-and whether or not a flow lights its card, so a reader knows the
-technology at a glance; a brand colour that would not show on the card in
-a theme is the text colour there. The brands' guidelines stay with
-whoever publishes a diagram, and archgram records each logo's source and
-guidelines for them.
+archgram then shows the technology's logo, so a reader knows the
+technology at a glance. Where the logo goes and in what colour is in
+DESIGN.md (Components: Technology logo). Logos come from a pinned Simple
+Icons release, CC0 data; a logo under a licence of its own is left out.
+The brands' guidelines stay with whoever publishes a diagram, and
+archgram records each logo's source and guidelines for them.
 
 ## 8. Success criteria
 

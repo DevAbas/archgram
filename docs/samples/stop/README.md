@@ -1,7 +1,8 @@
 # Samples: a refused step, and how a card's border is drawn
 
-Hand-made samples that chose the design in [docs/PRD.md](../../PRD.md)
-§6.4, kept so the other options can be compared later. They are not
+Hand-made samples that chose the design in [DESIGN.md](../../../DESIGN.md)
+(Components: Signal, Refusal), kept so the other options can be compared
+later. They are not
 archgram's output: each is `gates-retry.archgram.yaml` drawn by archgram
 0.4.0, with the new animation added by hand on top.
 
