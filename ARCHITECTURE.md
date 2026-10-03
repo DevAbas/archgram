@@ -425,7 +425,7 @@ spec generator are small helpers inside the workspace.
   SLSA Build Level 2) and a `SHA256SUMS`. The command itself ships only on
   npm. The workflow drafts the release and a maintainer publishes it;
   releases are immutable once published.
-- The skill is one folder the user copies into a skills directory. It runs
+- The skill is one folder, installed as docs/PRD.md (6.5) says. It runs
   `npx archgram` and reads the spec format from `archgram spec`, the text
   of docs/SPEC.md carried in the binary, so it keeps no copy of the format.
 - Later: a WASM package for the browser, and the PNG module as a
