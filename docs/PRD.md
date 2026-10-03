@@ -7,11 +7,9 @@
 | Status  | Draft      |
 | Owner   | Abas Turabli |
 
-This document describes what archgram is and why it exists. How it is built
-lives in `ARCHITECTURE.md`, the input format in `docs/SPEC.md`, the visual
-rules in `DESIGN.md` and the values in `design-system/tokens/`. Each fact
-lives in one of them; the others refer to it. If a requirement changes,
-this document changes first.
+This document describes what archgram is and why it exists; which
+document holds every other fact is in `CONTRIBUTING.md` (Each fact lives
+in one document). If a requirement changes, this document changes first.
 
 ## 1. Problem
 
