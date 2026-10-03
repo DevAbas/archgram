@@ -10,4 +10,4 @@
 
 ## How it was checked
 
-<!-- The checks in CONTRIBUTING.md (Before a pull request) pass; anything else you ran or looked at, such as the goldens' diff. -->
+<!-- The checks in CONTRIBUTING.md (Before a pull request) pass; anything else you ran or looked at, such as the goldens' diff. When the change alters what archgram does, say that its old wording is gone (CONTRIBUTING.md, Each fact lives in one document). -->
