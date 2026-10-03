@@ -361,8 +361,8 @@ These hold for every output and are checked by tests on every change.
 - `Cargo.lock` is committed and versions are pinned; builds run with
   `--locked`, so no dependency updates itself.
 - Each crate enables only the features it needs.
-- Adding or updating a dependency needs the owner's approval, after reading
-  its licence, its owner and its advisories.
+- How a dependency is added or updated is in CONTRIBUTING.md (No new
+  dependency without an issue first).
 - CI checks the whole tree with cargo-deny against `deny.toml`, the one
   list of what a dependency may be: every package's licence, its source
   (crates.io only) and every version in `Cargo.lock` against the RustSec
