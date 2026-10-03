@@ -85,9 +85,9 @@ core finds comes back to the YAML: a JSON line maps to its key's position,
 a JSON pointer to its value's. So every rule lives once, in the core, and
 a YAML author still sees `line:column`. The tree is the crate's own, not
 saphyr's loader, because the loader keeps the last of two equal keys and
-expands aliases without limit: here a key twice, a second document, a tag
-outside the core schema, nesting past 64 levels and aliases expanding
-past 10 000 values are errors. Plain scalars follow the core schema
+expands aliases without limit; the YAML a spec may not use, these among
+it, is in docs/SPEC.md (Formats), and the crate's `MAX_DEPTH` and
+`MAX_EXPANDED` hold its limits. Plain scalars follow the core schema
 (null, booleans, integers, floats; the rest is text); a plain number
 where text belongs is reported with the advice to quote it.
 
