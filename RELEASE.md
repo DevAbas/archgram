@@ -36,17 +36,24 @@ version goes in by a pull request and the tag follows the merge.
 5. On npmjs.com, in the **Staged Packages** tab, approve the seven staged
    packages: the six `@archgram/cli-*` first, `archgram` last, so the
    launcher never points at a version that is not public yet. Each approval
-   asks for two-factor authentication.
+   asks for two-factor authentication. Approve only version X.Y.Z: the tab
+   can still hold packages of an earlier release that failed, and
+   approving one makes that version public and its `latest` (four
+   `@archgram/cli-*` at 0.6.0, approved after 0.6.1).
 6. The workflow drafts the GitHub release: an archive of the skill, its
    checksum, a signed record of the build that made it, and the version's
    section of the changelog as its notes. Read it, then publish it;
    published, an immutable release keeps its tag and files as they are.
-7. Check that the release is whole: every package at the new version on
-   npm, and the skill's archive verified.
+7. Check that the release is whole: each of the seven packages public at
+   the new version and tagged `latest` on npm (each prints X.Y.Z twice),
+   and the skill's archive verified.
 
    ```sh
-   npm view archgram@X.Y.Z version
-   npm view @archgram/cli-linux-x64@X.Y.Z version
+   for package in archgram @archgram/cli-darwin-arm64 @archgram/cli-darwin-x64 \
+     @archgram/cli-linux-arm64 @archgram/cli-linux-x64 \
+     @archgram/cli-win32-arm64 @archgram/cli-win32-x64; do
+     echo "$package $(npm view "$package@X.Y.Z" version) $(npm view "$package" dist-tags.latest)"
+   done
    gh attestation verify archgram-skill-X.Y.Z.tar.gz -R byAbas/archgram
    ```
 
@@ -63,7 +70,13 @@ What to do depends on whether anything has reached users.
   previously published version", 0.6.0).
 - **Some packages are public:** an npm version can never be published
   again. If the public packages are sound, approve the rest; if not, fix
-  through a pull request and release the next patch version.
+  through a pull request and release the next patch version. A version
+  left with only some of its packages public is never whole: deprecate
+  each of them with the reason
+  (`npm deprecate @archgram/cli-<platform>@X.Y.Z "<reason>"`).
+- **`latest` points at the wrong version** (step 7): move it back to the
+  newest whole release, package by package
+  (`npm dist-tag add <package>@X.Y.Z latest`).
 - **A public version is broken:** deprecate it on npm with the reason
   (`npm deprecate archgram@X.Y.Z "<reason>"`), and release the next patch
   version with the fix. A published GitHub release stays as it is.
