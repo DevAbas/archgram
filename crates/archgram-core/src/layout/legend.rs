@@ -1,9 +1,6 @@
-//! The legend (DESIGN.md, Components: Legend): generated from what the
-//! diagram uses, one entry per category present in a fixed order, then one
-//! per variant present. It is drawn when the spec asks for it and it says
-//! something: two categories or more, or a variant beyond the single one.
-//! Its entries run left to right under the diagram, `spacing.legend` below
-//! it, and wrap into rows no wider than the diagram.
+//! The legend (DESIGN.md, Components: Legend): its entries, from what the
+//! diagram uses, run left to right under the diagram, `spacing.legend`
+//! below it, and wrap into rows no wider than the diagram.
 
 use crate::font::text_width;
 use crate::geometry::{Rect, Size};
@@ -77,8 +74,8 @@ pub fn stack_step() -> f64 {
     LEGEND_SWATCH / 6.0
 }
 
-/// A swatch's size: a square for a category; a card half as wide again as
-/// it is tall for a variant, with its copies' reach for several instances.
+/// A swatch's size: a card half as wide again as it is tall, with its
+/// copies' reach for several instances.
 fn swatch_size(s: Swatch) -> Size {
     match s {
         Swatch::External => Size {

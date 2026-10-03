@@ -255,9 +255,9 @@ The SVG writer (`render::svg`) turns the scene into a string with fixed
 number formatting (two decimals) and a fixed attribute order, the second
 half of determinism. Each node kind has a shape function; the theme becomes CSS custom properties, with
 the dark values under `prefers-color-scheme`, or one file per theme on
-request. The legend is generated from the categories and variants the
-diagram uses and laid out below it (`layout::legend`), in rows no wider
-than the diagram; its text is part of the text runs, so the font subset
+request. The legend (DESIGN.md, Components: Legend) is generated from
+the spec and laid out below the diagram (`layout::legend`), in rows no
+wider than the diagram; its text is part of the text runs, so the font subset
 carries it. A technology logo is its Simple Icons path scaled from the
 24 by 24 grid into one of four places: the card's corner, the start of
 its second line, a round chip on the badge (all in `color.text-muted`),
