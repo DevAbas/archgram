@@ -1,0 +1,14 @@
+#!/bin/sh
+# Before each push: every branch pushed is named as CONTRIBUTING.md (How
+# changes land) says, and none is main (scripts/check-change). Git gives
+# one line per ref: <local ref> <local sha> <remote ref> <remote sha>. A
+# deleted ref, whose sha is all zeros, and a tag carry no branch to check.
+check="$(git rev-parse --show-toplevel)/scripts/check-change"
+status=0
+while read -r _ local_sha remote_ref _; do
+  case $local_sha in *[!0]*) ;; *) continue ;; esac
+  case $remote_ref in
+    refs/heads/*) sh "$check" branch "${remote_ref#refs/heads/}" || status=1 ;;
+  esac
+done
+exit "$status"
