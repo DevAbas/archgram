@@ -146,8 +146,8 @@ same file every time.
   border takes the refusal colour too. The refusing card keeps it until a
   later flow passes it, which draws its border in the passing colour.
   The spec may show that wait as a slow dashed border instead (pending).
-- The passing and the refusal colours each hold 3:1 against the card, in
-  both themes, as any graphic does.
+- The passing and the refusal colours hold the contrast any graphic does,
+  in both themes, against what they are drawn on (DESIGN.md, Colors).
 - An edge's label is lit while its signal travels the edge: it takes the
   signal's colour, or the theme's text colour where the signal's colour
   would fall short of text contrast.
