@@ -59,7 +59,7 @@ drawing keeps a plain name; any other spec draws its own name with `.svg`.
 | `card` | no | `horizontal`, `vertical` | `horizontal` | The card style for every node |
 | `logo` | no | `corner`, `inline`, `chip`, `icon` | `corner` | Where technology logos go: the card's corner, before the note (or the technology's name), a chip on the icon, or in place of the icon |
 | `palette` | no | a palette name | `mono` | The palette; light and dark are chosen when rendering |
-| `legend` | no | `true`, `false` | `true` | Whether to draw the legend; drawn only when it tells something apart: two categories or more, or a node with several instances or not ours |
+| `legend` | no | `true`, `false` | `true` | Whether to draw the legend, when the diagram has one (DESIGN.md, Components: Legend) |
 | `signal` | no | `wire`, `spark`, `arc`, `comet`, `dot`, `pulse`, `current` | `wire` | How a flow's signal is drawn along the lines (DESIGN.md, Components: Signal) |
 | `still` | no | `none`, `legend`, `numbers` | `none` | What the still image shows of the flows, where nothing moves: nothing more, each flow in words under the legend, or each step's number on its lines |
 | `border` | no | `spark`, `drain`, `ring`, `afterglow` | `spark` | How a lit card's border is drawn from the arrow that reaches it: both ways round with a dot on each growing end, then draining toward the arrow that leaves, once round clockwise, or fading while the card is lit (DESIGN.md, Components: Signal) |

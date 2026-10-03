@@ -242,10 +242,10 @@ lists a fallback stack.
   column of an unrelated flow.
 - A frame contains its nodes with `spacing.frame-padding` on every side
   and room at the top for its name (`spacing.frame-label`).
-- The legend sits under the diagram, `spacing.legend` below it,
-  left-aligned, and lists only the variants and categories the diagram
-  uses, `spacing.legend-entry` apart, in rows `spacing.legend-row` apart
-  no wider than the diagram.
+- The legend (Components: Legend) sits under the diagram,
+  `spacing.legend` below it, left-aligned, its entries
+  `spacing.legend-entry` apart, in rows `spacing.legend-row` apart no
+  wider than the diagram.
 - `spacing.margin` surrounds everything.
 
 Motion:
