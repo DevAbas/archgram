@@ -403,8 +403,6 @@ spec generator are small helpers inside the workspace.
 
 ## Distribution
 
-- Native binaries for macOS, Linux and Windows, built in CI and attached
-  to each release.
 - On npm, the binaries as Turborepo and Biome ship theirs: one package per
   platform, `@archgram/cli-<os>-<cpu>` for macOS, Linux and Windows on x64
   and arm64, each declaring its `os` and `cpu` so npm installs only the
