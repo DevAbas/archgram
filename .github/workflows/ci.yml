@@ -33,6 +33,8 @@ jobs:
         shell: bash
       - run: sh scripts/git-hooks.test
         shell: bash
+      - run: sh scripts/claude-hooks.test
+        shell: bash
 
   dependencies:
     name: Dependencies
