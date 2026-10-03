@@ -8,9 +8,10 @@ anything larger than a fix, open an issue first and describe the problem.
 
 You need Rust, through [rustup](https://rustup.rs): the toolchain is pinned
 in `rust-toolchain.toml` and installs itself on the first `cargo` command.
-Node is needed only for the npm launcher's tests. Work on Node 24, pinned
-in `.nvmrc`, the version the release builds with; the launcher itself still
-supports Node 22 or later, which CI checks.
+Node is needed only for the npm launcher's tests. Work on the version in
+`.nvmrc`. The launcher itself supports the versions `engines` allows in
+`packages/archgram/package.json`, and CI tests it on several of them
+(`.github/workflows/ci.yml`).
 
 ## Build and try a change
 
