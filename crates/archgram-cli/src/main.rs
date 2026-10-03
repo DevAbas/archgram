@@ -4,13 +4,17 @@
 //! Exit codes: 0 success, 1 the spec has problems, 2 the command itself is
 //! wrong or a file cannot be read or written.
 
+mod files;
+
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use archgram_core::SpecError;
 use archgram_core::render::{Mode, Options};
+use archgram_core::sources::Found;
 use archgram_core::tokens::Role;
+use archgram_core::{Spec, SpecError};
 use archgram_icons::Icons;
+use archgram_yaml::Positions;
 
 const USAGE: &str = "\
 archgram: architecture diagrams from a spec
@@ -19,7 +23,8 @@ Usage:
   archgram build <spec> [-o <out.svg>] [--theme auto|light|dark | --split-themes] [--system-font]
                      [--theme-file <archgram.theme.json>]
                                Draw the diagram (default output: the spec's name with .svg)
-  archgram check <spec>        Check a spec and list every problem
+  archgram check <spec>        Check a spec and list every problem, a source the code
+                               no longer has among them
   archgram spec                Print the spec format this archgram reads (docs/SPEC.md)
   archgram theme check <archgram.theme.json>
                                Read a project's design tokens as the theme and show each role's colour
@@ -39,7 +44,11 @@ Themes: auto (light, dark under the reader's dark mode; the default), light, dar
   overflow a card; embedding (the default) draws exactly what was measured.
 --theme-file draws in a project's own colours: a mapping file names the
   project's DTCG resolver, its light and dark inputs, and the token for each
-  role (docs/SPEC.md, Theme file).";
+  role (docs/SPEC.md, Theme file).
+
+A node or an edge may name the code behind it (source, a path from the spec's
+folder). check fails, and build warns, when that code is not there
+(docs/SPEC.md, Sources).";
 
 /// The spec format this archgram reads, carried in the binary so a spec's
 /// writer, a person or an agent, reads the format of the very command that
@@ -138,11 +147,23 @@ fn build_options(rest: &[&str]) -> Result<Build, String> {
     })
 }
 
+/// The text of a spec or theme file given on the command line, read as
+/// `files` reads every file: not through a symbolic link, a regular file,
+/// within the size limit.
 fn read(path: &str) -> Result<String, ExitCode> {
-    std::fs::read_to_string(path).map_err(|e| {
-        eprintln!("archgram: cannot read {path}: {e}");
+    let cannot = |why: String| {
+        eprintln!("archgram: cannot read {path}: {}", printable(&why));
         ExitCode::from(2)
-    })
+    };
+    let root = std::env::current_dir().unwrap_or_default();
+    if let Some(link) = files::link_to(&root, Path::new(path)) {
+        return Err(cannot(format!(
+            "{} is a symbolic link, which archgram does not follow; give the file it leads to",
+            link.display()
+        )));
+    }
+    let bytes = files::read_regular(Path::new(path)).map_err(cannot)?;
+    String::from_utf8(bytes).map_err(|_| cannot("it is not UTF-8 text".into()))
 }
 
 fn report(path: &str, errors: &[SpecError]) -> ExitCode {
@@ -190,32 +211,67 @@ fn format_of(path: &str) -> Result<Format, ExitCode> {
 }
 
 /// Reads and checks a spec in its format, each `tech` against the logos
-/// archgram carries; a YAML spec's problems are at its lines and columns.
-fn parse(text: &str, format: Format) -> Result<archgram_core::Spec, Vec<SpecError>> {
-    let icons = Icons::load();
-    match format {
-        Format::Json => {
-            let spec = archgram_core::parse_spec(text)?;
-            let errors = archgram_core::check_logos(&spec, &icons);
-            if errors.is_empty() {
-                Ok(spec)
-            } else {
-                Err(errors)
-            }
-        }
+/// archgram carries; a YAML spec's problems are at its lines and columns,
+/// and its positions are kept for the problems found later.
+fn parse(text: &str, format: Format) -> Result<(Spec, Option<Positions>), Vec<SpecError>> {
+    let (spec, positions) = match format {
+        Format::Json => (archgram_core::parse_spec(text)?, None),
         Format::Yaml => {
             let (spec, positions) = archgram_yaml::parse(text)?;
-            let errors: Vec<SpecError> = archgram_core::check_logos(&spec, &icons)
-                .into_iter()
-                .map(|e| positions.locate(e))
-                .collect();
-            if errors.is_empty() {
-                Ok(spec)
-            } else {
-                Err(errors)
-            }
+            (spec, Some(positions))
         }
+    };
+    let errors = located(
+        archgram_core::check_logos(&spec, &Icons::load()),
+        positions.as_ref(),
+    );
+    if errors.is_empty() {
+        Ok((spec, positions))
+    } else {
+        Err(errors)
     }
+}
+
+/// The problems, each at its line and column when the spec is YAML.
+fn located(errors: Vec<SpecError>, positions: Option<&Positions>) -> Vec<SpecError> {
+    errors
+        .into_iter()
+        .map(|e| match positions {
+            Some(p) => p.locate(e),
+            None => e,
+        })
+        .collect()
+}
+
+/// Each source the code does not have (docs/SPEC.md, Sources), its path
+/// looked up from the spec's folder, only under the project's folder
+/// (`files::project`, `files::Lookup`). A file is read only to look for a
+/// source's words, and nothing of it is printed or kept.
+fn missing_sources(path: &str, spec: &Spec, positions: Option<&Positions>) -> Vec<SpecError> {
+    if archgram_core::sources::count(spec) == 0 {
+        return Vec::new();
+    }
+    // Real paths, so they compare alike where the system's own paths go
+    // through a link (macOS's /tmp) or take a prefix (Windows' `\\?\`).
+    // The spec's folder is the command line's, and `read` has already
+    // refused a spec reached through a link under the folder archgram runs in.
+    let real = |p: &Path| std::fs::canonicalize(p).ok();
+    let cwd = std::env::current_dir().ok().and_then(|cwd| real(&cwd));
+    let folder = Path::new(path)
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let lookup = match (real(folder), cwd) {
+        (Some(folder), Some(cwd)) => {
+            files::project(&folder, &cwd).map(|root| files::Lookup::new(root, folder))
+        }
+        _ => Err("the spec's folder or the folder archgram runs in cannot be found".into()),
+    };
+    let find = |source: &str, words: &[&str]| match &lookup {
+        Ok(lookup) => lookup.find(source, words),
+        Err(why) => Found::Unreadable(why.clone()),
+    };
+    located(archgram_core::sources::check(spec, &find), positions)
 }
 
 fn check(path: &str) -> ExitCode {
@@ -227,17 +283,25 @@ fn check(path: &str) -> ExitCode {
         Ok(t) => t,
         Err(code) => return code,
     };
-    match parse(&text, format) {
-        Ok(spec) => {
-            println!(
-                "{path}: valid ({} nodes, {} edges)",
-                spec.nodes.len(),
-                spec.edges.len()
-            );
-            ExitCode::SUCCESS
-        }
-        Err(errors) => report(path, &errors),
+    let (spec, positions) = match parse(&text, format) {
+        Ok(read) => read,
+        Err(errors) => return report(path, &errors),
+    };
+    let missing = missing_sources(path, &spec, positions.as_ref());
+    if !missing.is_empty() {
+        return report(path, &missing);
     }
+    let sources = match archgram_core::sources::count(&spec) {
+        0 => String::new(),
+        1 => ", 1 source found".into(),
+        n => format!(", {n} sources found"),
+    };
+    println!(
+        "{path}: valid ({} nodes, {} edges{sources})",
+        spec.nodes.len(),
+        spec.edges.len()
+    );
+    ExitCode::SUCCESS
 }
 
 fn build(
@@ -264,7 +328,13 @@ fn build(
         Err(code) => return code,
     };
     let spec = match parse(&text, format) {
-        Ok(spec) => spec,
+        Ok((spec, positions)) => {
+            // The drawing is still worth having; `check` is what fails.
+            for e in missing_sources(path, &spec, positions.as_ref()) {
+                eprintln!("archgram: warning: {path}:{}", printable(&e.to_string()));
+            }
+            spec
+        }
         Err(errors) => return report(path, &errors),
     };
     if options.embed_font {
@@ -389,7 +459,7 @@ fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
         eprintln!("archgram: {path} is not a file in a folder");
         return Err(ExitCode::from(2));
     };
-    let from_disk = |p: &str| read_under(folder, &written.join(p));
+    let from_disk = |p: &str| read_under(folder, written, p);
     archgram_core::theme::import(name, &from_disk).map_err(|errors| {
         for e in &errors {
             eprintln!("{}", printable(&e.to_string()));
@@ -403,11 +473,34 @@ fn load_theme(path: &str) -> Result<archgram_core::theme::Imported, ExitCode> {
     })
 }
 
-/// The text of the file at `path` when its real path is under `folder`, as
-/// Turborepo keeps a workspace's files within its repository: neither `..`
-/// nor an absolute path nor a symlink leads a theme out of its project, and
-/// only a regular file is read, never a device.
-fn read_under(folder: &Path, path: &Path) -> Result<String, String> {
+/// The text of the file at `name`, from the mapping file's folder as
+/// written (`written`), when its real path is under `folder`, as Turborepo
+/// keeps a workspace's files within its repository: neither `..` nor an
+/// absolute path nor a symbolic link leads a theme out of its project, no
+/// link under the folder is followed at all, and only a regular file is
+/// read, within the size limit (SECURITY.md, What archgram reads).
+fn read_under(folder: &Path, written: &Path, name: &str) -> Result<String, String> {
+    // Outside by its text alone, before the disk is looked at: whether a
+    // file is there or not, the answer is the same. From an absolute base,
+    // so a mapping in the current folder (written as "") is held too.
+    let written = &std::env::current_dir().unwrap_or_default().join(written);
+    if !files::lexical(&written.join(name)).starts_with(files::lexical(written)) {
+        return Err(
+            "the file is outside the mapping file's folder, and archgram reads only the files under it"
+                .into(),
+        );
+    }
+    if let Some(why) = archgram_core::sources::private_part(name) {
+        return Err(why);
+    }
+    if files::link_to(written, Path::new(name)).is_some() {
+        return Err(
+            "the file is reached through a symbolic link under the mapping file's folder, which archgram does not follow"
+                .into(),
+        );
+    }
+    let path = written.join(name);
+    let path = path.as_path();
     let cannot = |_| "the file cannot be read".to_owned();
     let real = std::fs::canonicalize(path).map_err(cannot)?;
     if !real.starts_with(folder) {
@@ -418,10 +511,8 @@ fn read_under(folder: &Path, path: &Path) -> Result<String, String> {
                 .into(),
         );
     }
-    if !real.is_file() {
-        return Err("not a file".into());
-    }
-    std::fs::read_to_string(&real).map_err(cannot)
+    let bytes = files::read_regular(&real)?;
+    String::from_utf8(bytes).map_err(|_| "the file is not UTF-8 text".into())
 }
 
 fn theme_check(path: &str) -> ExitCode {

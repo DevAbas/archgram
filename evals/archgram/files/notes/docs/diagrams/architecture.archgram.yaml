@@ -1,0 +1,19 @@
+archgram: 1
+title: notes
+description: >-
+  A reader asks the API for a note, which reads it from the Redis cache
+  and, on a miss, from Postgres. A digest route mails the team through
+  Resend.
+nodes:
+  - { id: reader, kind: browser, label: Reader }
+  - { id: api, kind: service, label: API, tech: express, source: ../../src/api.ts }
+  - { id: cache, kind: cache, label: Note cache, tech: redis, source: ../../src/cache.ts }
+  - { id: db, kind: database, label: notes, tech: postgresql, source: ../../src/db.ts }
+  - { id: mail, kind: service, label: Resend, note: digest mail, variant: external, source: ../../src/mail.ts }
+edges:
+  - { from: reader, to: api, source: '../../src/api.ts#app.get("/notes/:id"' }
+  - { from: api, to: cache, source: "../../src/api.ts#cached(" }
+  - { from: api, to: db, label: on a miss, style: dashed, source: "../../src/api.ts#await note(" }
+  - { from: api, to: mail, source: "../../src/api.ts#await sendDigest(" }
+flows:
+  - { name: a read, steps: [reader, api, cache] }

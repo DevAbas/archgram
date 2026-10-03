@@ -5,7 +5,7 @@
       "id": 1,
       "name": "draws-a-project",
       "prompt": "Draw the architecture of this project for the README.",
-      "expected_output": "docs/diagrams/<name>.archgram.yaml passes `archgram check`, and <name>.svg is drawn beside it. It has the API, Postgres, the Redis cache, the orders queue and the worker, each backed by a file in src/ and named in the report with it; a flow follows an order from the API through the queue to the worker and Postgres. The colours come from src/styles.css through archgram.theme.json at the root, with the icons in the text colour. The skill did not ask any question. Each edge in the report has the file and line that makes it, the drawing is no wider than 1,300 px, and no browser was started and no screenshot taken: only the finished SVG was opened, with the system's viewer.",
+      "expected_output": "docs/diagrams/<name>.archgram.yaml passes `archgram check`, and <name>.svg is drawn beside it. It has the API, Postgres, the Redis cache, the orders queue and the worker, each backed by a file in src/ and named in the report with it; every node a file backs and every edge carries a source (the file behind it, and for an edge a few words of the line that makes it), each one that `archgram check` finds; a flow follows an order from the API through the queue to the worker and Postgres. The colours come from src/styles.css through archgram.theme.json at the root, with the icons in the text colour. The skill did not ask any question. Each edge in the report has the file and line that makes it, the drawing is no wider than 1,300 px, and no browser was started and no screenshot taken: only the finished SVG was opened, with the system's viewer.",
       "files": ["files/shop"]
     },
     {
@@ -19,7 +19,7 @@
       "id": 3,
       "name": "updates-an-existing-diagram",
       "prompt": "The code changed, update the architecture diagram.",
-      "expected_output": "The skill changes docs/diagrams/architecture.archgram.yaml rather than starting a new spec: it keeps the reader, the API and Postgres, adds Elasticsearch and the search call backed by src/api.ts, draws architecture.svg, and says in the report what changed. Each edge in the report has the file and line that makes it, the drawing is no wider than 1,300 px, and no browser was started and no screenshot taken: only the finished SVG was opened, with the system's viewer.",
+      "expected_output": "The skill changes docs/diagrams/architecture.archgram.yaml rather than starting a new spec: it keeps the reader, the API and Postgres, adds Elasticsearch and the search call backed by src/api.ts, gives every node a file backs (not the reader) and every edge a source, the new ones and the ones already there, which `archgram check` finds, draws architecture.svg, and says in the report what changed. Each edge in the report has the file and line that makes it, the drawing is no wider than 1,300 px, and no browser was started and no screenshot taken: only the finished SVG was opened, with the system's viewer.",
       "files": ["files/search"]
     },
     {
@@ -33,22 +33,29 @@
       "id": 5,
       "name": "draws-a-pipeline",
       "prompt": "Draw how the nightly sales data moves, for the README.",
-      "expected_output": "The skill recognises a data pipeline and says so in the report. The drawing starts from the Airflow DAG in dags/nightly_sales.py, which runs at 02:00, and follows one day's rows: the store CSVs in data/stores and the POS API (external) into extract, then clean, then load into the Postgres warehouse's sales_daily table, each stage backed by its file in etl/. It shows where bad rows go (quarantine/bad_rows.parquet), since that is where the data is checked. It has about 10 nodes and 12 edges or fewer, each edge in the report with the file and line that makes it, is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises a data pipeline and says so in the report. The drawing starts from the Airflow DAG in dags/nightly_sales.py, which runs at 02:00, and follows one day's rows: the store CSVs in data/stores and the POS API (external) into extract, then clean, then load into the Postgres warehouse's sales_daily table, each stage backed by its file in etl/. It shows where bad rows go (quarantine/bad_rows.parquet), since that is where the data is checked. It has about 10 nodes and 12 edges or fewer, each edge in the report with the file and line that makes it, is no wider than 1,300 px, and no browser was started. Every node a file backs and every edge carries a source that `archgram check` finds.",
       "files": ["files/pipeline"]
     },
     {
       "id": 6,
       "name": "draws-ports-and-adapters",
       "prompt": "Draw this service's architecture for the README.",
-      "expected_output": "The skill recognises ports and adapters and says so in the report. The core (the billInvoice use case in src/app and the rules in src/domain) sits between what drives it (the POST /invoices route and the rebill CLI) and what it drives (the Postgres repository, Stripe and Postmark adapters, each with its logo). No edge leaves src/domain for an adapter; the one idea, that the rules depend on nothing outside the ports, is visible and said in the report, with src/wiring.ts named as where the adapters are plugged in. A flow follows one invoice from the route through the core to the three adapters. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises ports and adapters and says so in the report. The core (the billInvoice use case in src/app and the rules in src/domain) sits between what drives it (the POST /invoices route and the rebill CLI) and what it drives (the Postgres repository, Stripe and Postmark adapters, each with its logo). No edge leaves src/domain for an adapter; the one idea, that the rules depend on nothing outside the ports, is visible and said in the report, with src/wiring.ts named as where the adapters are plugged in. A flow follows one invoice from the route through the core to the three adapters. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started. Every node a file backs and every edge carries a source that `archgram check` finds.",
       "files": ["files/billing"]
     },
     {
       "id": 7,
       "name": "merges-parts-with-the-same-relations",
       "prompt": "Draw what each lintkit command reads and writes.",
-      "expected_output": "The skill recognises a plugin host and says so in the report. The four commands (init, check, fix, report) are nodes. Parts the reader need not tell apart are merged, each merged node naming its parts in its note: the rule plugins in plugins/ with their registry, and lintkit.config.json with .lintkit/rules.json, which init writes and check reads. .lintkit/results.json joins check, fix and report; the source files are read by check and changed by fix; report writes .lintkit/report.html. The drawing has about 10 nodes and 12 edges or fewer, and every edge moves data: fix running check again is a note or the flow's order, not an edge among the reads and writes. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started.",
+      "expected_output": "The skill recognises a plugin host and says so in the report. The four commands (init, check, fix, report) are nodes. Parts the reader need not tell apart are merged, each merged node naming its parts in its note: the rule plugins in plugins/ with their registry, and lintkit.config.json with .lintkit/rules.json, which init writes and check reads. .lintkit/results.json joins check, fix and report; the source files are read by check and changed by fix; report writes .lintkit/report.html. The drawing has about 10 nodes and 12 edges or fewer, and every edge moves data: fix running check again is a note or the flow's order, not an edge among the reads and writes. Each edge has its file and line, the drawing is no wider than 1,300 px, and no browser was started. Every node a file backs and every edge carries a source that `archgram check` finds.",
       "files": ["files/lintkit"]
+    },
+    {
+      "id": 8,
+      "name": "repairs-what-lost-its-code",
+      "prompt": "CI says the architecture diagram no longer matches the code. Fix it.",
+      "expected_output": "The skill runs `archgram check` on docs/diagrams/architecture.archgram.yaml first, which names the Note cache (src/cache.ts no longer exists) and the API's call to it (src/api.ts no longer holds `cached(`). It changes that spec rather than starting a new one: it removes the cache and its edge, and does not draw them again under another name; the flow now goes from the reader through the API to Postgres; the API's edge to Postgres is no longer dashed or labelled 'on a miss', since every read now goes there; the description no longer mentions Redis. It keeps the reader, the API, Postgres and Resend with their sources as they were, since the check found nothing wrong with them. `archgram check` passes, architecture.svg is drawn, and the report says what the check found and what changed. No browser was started and no screenshot taken.",
+      "files": ["files/notes"]
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: archgram
-description: Draws a project's software architecture as an animated SVG with archgram, for its README and docs, from the code and documentation. Writes a spec to docs/diagrams/<name>.archgram.yaml, checks and draws it with the archgram command, in the project's own colours, then opens the drawing and lists each part with the file behind it. Use it whenever the user wants an architecture, system, data-flow, pipeline or "how it works" diagram, a diagram for a README, or an existing archgram diagram updated after the code changed, even if they only say "draw how this works".
+description: Draws a project's software architecture as an animated SVG with archgram, for its README and docs, from the code and documentation. Writes a spec to docs/diagrams/<name>.archgram.yaml, checks and draws it with the archgram command, in the project's own colours, then opens the drawing and lists each part with the file behind it. Use it whenever the user wants an architecture, system, data-flow, pipeline or "how it works" diagram, a diagram for a README, or an existing archgram diagram updated after the code changed or `archgram check` says its code is gone, even if they only say "draw how this works".
 license: MIT
 compatibility: Requires Node 22 or later, with npx.
 allowed-tools: Bash(npx --yes archgram *)
@@ -48,7 +48,8 @@ about to what it calls, reads and writes. Draw a part only when a file
 backs it: a module, a route, a script, a store. Name it after the file
 that decides, found by following the imports, not by a name that looks
 right. Draw an edge only where a line of code makes it, and note that line
-(`src/api.ts:42`). Keep the list of parts with their files and edges with
+(`src/api.ts:42`) and a few words of it that say what it does
+(`db.insert(order)`). Keep the list of parts with their files and edges with
 their lines; the report ends with it, and it catches boxes and lines that
 exist only in someone's memory. Then fit it to what a reader takes in:
 merge parts with the same relations, and split what is left over about 10
@@ -67,7 +68,11 @@ npx --yes archgram spec
 
 This prints the format the very archgram you run reads: every field, node kind,
 frame, flow, hint and the theme file. Read it before writing, rather than
-writing from memory; a field it does not list is an error.
+writing from memory; a field it does not list is an error. Besides the
+fields, it says how a writer fills some of them, such as where the files
+and lines from step 2 go: do as it says. It is the format of the very
+archgram you run, so what it does not mention, that archgram does not
+read: leave it out.
 
 ## 4. Write the spec, then check it
 
@@ -75,13 +80,20 @@ The spec lives at `docs/diagrams/<name>.archgram.yaml`, where `<name>` says
 what the diagram shows (`architecture`, `request-flow`). Create the folder
 when it is missing. When the file already exists, this is an update:
 change it rather than starting over, keep what still holds, and note what
-you changed for the report.
+you changed for the report. Start an update with `archgram check` on the
+spec as it is: whatever it says has lost its code, find where that code
+went, if anywhere, and move or remove the part or line. The check cannot
+see what the code gained, so step 2's walk still finds what is new.
 
 Map the facts onto the format: each part a node of the kind that fits it,
 with its technology's logo (`tech`) when the part is built on one; each
 call or data movement an edge; a boundary (a service, a trust zone, the
 plugin versus the project) a frame; the path the contract's questions
 follow a flow, so it animates. Keep labels to the words a reader needs.
+
+Put step 2's files and lines in the spec wherever the format has a place
+for them, as it says, so archgram can tell when the code behind a part or
+a line is gone.
 
 Leave `still` out, so the drawing carries no extra text, unless the user
 asks for it or the drawing is meant to be seen still (a PNG, print): then
@@ -97,7 +109,9 @@ npx --yes archgram check docs/diagrams/<name>.archgram.yaml
 ```
 
 Every problem comes with its line and column, and a misspelt id or logo
-with the nearest one that exists.
+with the nearest one that exists. A problem that says the code lacks what
+you wrote is a part or a line you could not back: fix the fact, not only
+the spec, and drop it if no code makes it.
 
 ## 5. Draw in the project's own colours
 
@@ -140,7 +154,8 @@ Tell the user, briefly:
 - the style of architecture you recognised, or that none fitted;
 - each part drawn, with the file behind it, and each edge with the line
   that makes it;
-- on an update, what changed in the spec and why;
+- on an update, what changed in the spec and why, starting with what
+  `archgram check` said had lost its code;
 - where the colours came from;
 - what the diagram still does not show;
 - the line for the README, with alt text that tells the whole flow in

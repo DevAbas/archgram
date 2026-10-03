@@ -30,7 +30,7 @@ The repository is one Cargo workspace.
 
 | Crate | Holds | Depends on |
 |---|---|---|
-| `archgram-core` | Spec types, validation, IR, measuring, layout, routing, SVG, themes and their import from DTCG tokens, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
+| `archgram-core` | Spec types, validation, the check of each source against the code, IR, measuring, layout, routing, SVG, themes and their import from DTCG tokens, the flows' timing and animation, the embedded font and its subsetter | `serde`, `serde_json`, `skrifa` |
 | `archgram-icons` | Technology logos: a pinned release of Simple Icons as data, written by `cargo xtask icons <tag> <commit>`, through the core's `Logos` trait | `archgram-core` |
 | `archgram-yaml` | YAML to the core's `Spec`, with line and column in errors | `archgram-core`, `saphyr-parser` |
 | `archgram-png` (later) | The scene to PNG, one theme at a time, with archgram's own rasterizer | `archgram-core` |
@@ -77,6 +77,19 @@ a misspelt field is an error, not a silent default. Validation then checks
 what types cannot express: every edge names existing nodes, frame nesting
 has no cycles, flows follow existing edges. Errors carry a JSON pointer in
 the core and a line and column through `archgram-yaml`.
+
+A node's or an edge's `source` (docs/SPEC.md, Sources) is checked here
+for its form only. Whether the code is there is `sources::check`, which
+reads no file either: the caller looks each file up once, by its path in
+one spelling, with every word any source wants from it, and hands back
+what is there (a file, with whether it holds each word; a folder;
+nothing; or why it is not read). The CLI's `files` module is the one
+place the command reads a file, a spec, a theme or a source, under the
+rules in SECURITY.md (What archgram reads): it finds the project's
+folder, lists each folder once, reads a file only for its words and
+keeps no text. The check runs in `check`, as problems, and in `build`,
+as warnings. The drawing never sees a source, so the SVG is the same
+with or without them.
 
 `archgram-yaml` reads `saphyr-parser`'s events (YAML 1.2) into its own
 tree, each value with its line and column, writes the tree as JSON, one

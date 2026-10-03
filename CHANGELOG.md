@@ -4,6 +4,40 @@ Each release's changes, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A node or an edge may name the code behind it, `source`: a path from
+  the spec's folder, with a few words of the line that makes it after
+  `#`. `archgram check` fails, and `archgram build` warns, when that code
+  is not there: a part or a line whose code was removed is reported.
+  Sources are looked up only under the project's folder (the nearest
+  above the spec that holds `.git`), and are never drawn.
+- The `archgram` skill writes a source for every node a file backs and
+  every edge it draws, and starts an update from what `archgram check`
+  says has lost its code.
+
+### Changed
+
+- A spec or theme file reached through a symbolic link under the folder
+  archgram runs in is refused, where before it was followed: give
+  archgram the file the link leads to.
+
+### Security
+
+- archgram reads a spec, a theme file and the files a theme names only if
+  each is a regular file of at most 4 MiB, reached through no symbolic
+  link that may have come with it; a FIFO or a device is never opened.
+  Before, a spec in a pull request that CI checks could make archgram
+  read a file outside the project, or wait or use memory without end.
+- A problem with a spec no longer quotes a text from it: a file read as
+  a spec by mistake is not printed back.
+- A theme's path that leads out of its folder is refused by its text,
+  whether a file is there or not, so a theme cannot learn which files
+  exist outside its project; nor does a theme read `.git` or a file that
+  commonly holds secrets.
+
 ## [0.6.1] - 2026-10-01
 
 0.6.0 was tagged but never reached npm: its packages were staged and
@@ -169,6 +203,7 @@ same release.
   subset of Geist.
 - `archgram build` and `archgram check`.
 
+[Unreleased]: https://github.com/byAbas/archgram/compare/v0.6.1...HEAD
 [0.6.1]: https://github.com/byAbas/archgram/compare/v0.5.0...v0.6.1
 [0.5.0]: https://github.com/byAbas/archgram/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/byAbas/archgram/compare/v0.3.0...v0.4.0

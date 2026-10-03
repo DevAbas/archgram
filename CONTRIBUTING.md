@@ -47,6 +47,9 @@ node --test packages/archgram/lib/platform.test.js
   done: the next one starts a new branch from `main`.
 - **A new feature starts in the PRD.** What it does and why goes into
   [docs/PRD.md](docs/PRD.md) first, then the spec, the design and the code.
+  A feature that needs more than a few lines there gets its own document
+  in `docs/features/` (its problem, who it serves, requirements, limits,
+  success criteria and changelog), and the PRD points to it.
 - **Every change reaches `main` through a pull request** whose checks
   pass (`CI passed`), merged with **Squash and merge**: the pull request
   becomes one commit.
@@ -70,7 +73,8 @@ node --test packages/archgram/lib/platform.test.js
   change to the drawing is intended, run `ARCHGRAM_BLESS=1 cargo test`, look
   at the diff of the goldens and include it in the pull request.
 - **Each fact lives in one document.** What archgram does and why is
-  [docs/PRD.md](docs/PRD.md); the spec is [docs/SPEC.md](docs/SPEC.md); the
+  [docs/PRD.md](docs/PRD.md), and a feature's details its document in
+  `docs/features/`; the spec is [docs/SPEC.md](docs/SPEC.md); the
   visual rules are [DESIGN.md](DESIGN.md), their values the tokens in
   `design-system/tokens/`; how it works inside is
   [ARCHITECTURE.md](ARCHITECTURE.md). Change the document that owns a fact,

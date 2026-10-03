@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::error::SpecError;
-use crate::spec::{Flow, Spec, Step};
+use crate::spec::{Flow, Sources, Spec, Step};
 
 use crate::tokens::PALETTES;
 
@@ -25,6 +25,7 @@ pub fn validate(spec: &Spec) -> Vec<SpecError> {
     v.nodes(&ids);
     v.frames(&ids);
     v.edges(&ids);
+    v.sources();
     v.flows(&ids);
     v.hints(&ids);
     // The hints are held against the edges' order only when every edge and
@@ -279,6 +280,57 @@ impl<'a> Validator<'a> {
                         e.from, e.to
                     ),
                 );
+            }
+        }
+    }
+
+    /// Each node's and edge's `source`, checked for its form; whether the
+    /// code is there is for the caller, who can read it (`sources::check`).
+    fn sources(&mut self) {
+        let s = self.spec;
+        let named = crate::sources::count(s);
+        if named > crate::sources::MOST_SOURCES {
+            self.error(
+                String::new(),
+                format!(
+                    "the spec names {named} sources; a spec names at most {}",
+                    crate::sources::MOST_SOURCES
+                ),
+            );
+        }
+        let nodes = s.nodes.iter().enumerate().map(|(i, n)| {
+            (
+                format!("/nodes/{i}/source"),
+                format!("node {}", n.id),
+                &n.source,
+            )
+        });
+        let edges = s.edges.iter().enumerate().map(|(i, e)| {
+            (
+                format!("/edges/{i}/source"),
+                format!("edge {} \u{2192} {}", e.from, e.to),
+                &e.source,
+            )
+        });
+        for (pointer, owner, sources) in nodes.chain(edges) {
+            match sources {
+                None => {}
+                Some(Sources::One(source)) => {
+                    if let Some(message) = crate::sources::form(source) {
+                        self.error(pointer, format!("{owner}: {message}"));
+                    }
+                }
+                Some(Sources::Many(list)) if list.is_empty() => self.error(
+                    pointer,
+                    format!("{owner}: the list names no source; leave `source` out instead"),
+                ),
+                Some(Sources::Many(list)) => {
+                    for (j, source) in list.iter().enumerate() {
+                        if let Some(message) = crate::sources::form(source) {
+                            self.error(format!("{pointer}/{j}"), format!("{owner}: {message}"));
+                        }
+                    }
+                }
             }
         }
     }

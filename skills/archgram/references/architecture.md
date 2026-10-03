@@ -63,7 +63,9 @@ the first file you opened:
 An edge is drawn only where the code makes it: a call, an import used at
 run time, a read or a write of a store, a message sent. For each edge,
 note the file and line that makes it (`src/api.ts:42`); the report lists
-them. An edge you cannot point at is removed, however likely it seems.
+them, and the spec keeps them wherever its format has a place for them
+(SKILL.md, steps 3 and 4). An edge you cannot point at is removed, however
+likely it seems.
 
 Every edge in one diagram means one kind of thing. When most edges move
 data (reads and writes), one part starting another is a note or a flow's
