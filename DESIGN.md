@@ -164,7 +164,7 @@ outcome: green where a signal passes a card, red where a step refuses it.
   `color.icon-client`): the stroke of a node's icon, by its category. In
   `mono` all four are `color.text`; a project's own tokens may give each
   category a hue of its own. Nothing else takes these colours except a
-  flow's signal and the card it lights.
+  flow's signal and the edge label it lights.
 - **Signal core** (`color.signal-core`): the bright centre of a signal's
   dot, in the styles that have one. Only the signal takes it.
 - **Signal pass** (`color.signal-pass`): the border of a card a flow's
