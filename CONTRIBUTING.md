@@ -60,11 +60,14 @@ sh scripts/git-hooks.test
 - **The pull request's title is that commit's subject:** `type: subject`,
   the subject in the imperative, lowercase ("if applied, this commit will
   …"), such as `fix: keep an edge label off its arrowhead`. The types are
-  the ones `scripts/check-change types` prints; a check on each pull
-  request holds the title to this.
+  the ones `scripts/check-change types` prints.
 - **Its description is the commit's body:** what changed and why, what it
   does not do, and how it was checked. The pull request template asks for
   these.
+- **CI holds each pull request to these rules** with `scripts/check-change`
+  (`.github/workflows/pr-title.yml`): its branch's name, its title and its
+  description, again whenever the title or the description is edited.
+  Dependabot's pull requests are held to the title's type alone.
 - **Two pull requests that touch the same file** land one after the other:
   once the first merges, the second is rebased on `main`, checked again and
   pushed with `--force-with-lease`.

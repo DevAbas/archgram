@@ -1,7 +1,10 @@
-# A pull request is squashed into one commit on main, and its title becomes
-# that commit's subject (CONTRIBUTING.md, How changes land): the title must
-# be `type: subject`, a known type and a lowercase subject, as Turborepo
-# checks its own.
+# A pull request is squashed into one commit on main: its title becomes
+# that commit's subject and its description the body (CONTRIBUTING.md, How
+# changes land). This holds the branch's name, the title and the
+# description to those rules with scripts/check-change, as the git hooks
+# do, and the title to the types it lists with the title action too. It
+# runs when the title or the description is edited, which ci.yml does not.
+# The job keeps its name, `PR title`, the check the ruleset requires.
 name: PR title
 
 on:
@@ -9,6 +12,7 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 permissions:
+  contents: read
   pull-requests: read
 
 jobs:
@@ -17,24 +21,45 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The types, from scripts/check-change
+        id: types
+        run: |
+          {
+            echo 'list<<EOF'
+            sh scripts/check-change types
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          types: |
-            feat
-            fix
-            docs
-            ci
-            build
-            chore
-            refactor
-            style
-            test
-            perf
-            design
-          # No scopes: the subject names what changed.
-          scopes: ""
-          subjectPattern: ^[a-z].*$
+          types: ${{ steps.types.outputs.list }}
+          # A title takes no scope: any one given is refused.
+          disallowScopes: .+
+          # Dependabot writes its own subjects, "Bump serde from …".
+          subjectPattern: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && '^.+$' || '^[a-z].*$' }}
           subjectPatternError: |
             The subject "{subject}" in "{title}" should start with a lowercase letter, in the imperative: "fix: keep an edge label off its arrowhead".
+      # Dependabot names its branches dependabot/<ecosystem>/<dependency>
+      # and writes its own description, which no setting changes. A branch
+      # in a fork is the contributor's own; only the title and description
+      # reach main.
+      - name: The branch, title and description (scripts/check-change)
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
+        env:
+          BRANCH: ${{ github.head_ref }}
+          FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$BODY" > "$RUNNER_TEMP/description.md"
+          status=0
+          if [ "$FROM_FORK" = false ]; then
+            sh scripts/check-change branch "$BRANCH" || status=1
+          fi
+          sh scripts/check-change title "$TITLE" || status=1
+          sh scripts/check-change body "$RUNNER_TEMP/description.md" || status=1
+          exit "$status"
