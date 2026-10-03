@@ -29,7 +29,8 @@ Open `target/linkshort.svg` in a browser, in light and in dark mode.
 
 ## Before a pull request
 
-Each of these must pass; CI runs them on macOS, Linux and Windows.
+Each of these must pass, and CI runs them on every pull request;
+`.github/workflows/ci.yml` says on which systems.
 
 ```sh
 cargo fmt --check
