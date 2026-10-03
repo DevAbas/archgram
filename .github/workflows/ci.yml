@@ -31,6 +31,8 @@ jobs:
       # On Windows, bash is Git for Windows', which runs the git hooks there.
       - run: sh scripts/check-change.test
         shell: bash
+      - run: sh scripts/git-hooks.test
+        shell: bash
 
   dependencies:
     name: Dependencies

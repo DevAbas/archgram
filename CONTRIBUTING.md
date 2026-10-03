@@ -8,6 +8,10 @@ anything larger than a fix, open an issue first and describe the problem.
 
 You need Rust, through [rustup](https://rustup.rs): the toolchain is pinned
 in `rust-toolchain.toml` and installs itself on the first `cargo` command.
+Switch on the git hooks once in each clone, `git config core.hooksPath
+.githooks`: before each commit and push they check the branch's name
+(`scripts/check-change`). A Claude Code session switches them on itself
+(`.claude/settings.json`).
 Node is needed only for the npm launcher's tests. Work on the version in
 `.nvmrc`. The launcher itself supports the versions `engines` allows in
 `packages/archgram/package.json`, and CI tests it on several of them
@@ -38,6 +42,7 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 node --test packages/archgram/lib/platform.test.js
 sh scripts/check-change.test
+sh scripts/git-hooks.test
 ```
 
 ## How changes land

@@ -1,0 +1,53 @@
+#!/bin/sh
+# Tests for .githooks: in a scratch repository with a scratch remote, what
+# each hook lets through and what it stops.
+# Run from the repository's root: sh scripts/git-hooks.test
+set -u
+
+root=$(pwd)
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+failed=0
+
+git init -q "$work/repo"
+git init -q --bare "$work/remote.git"
+mkdir -p "$work/repo/scripts"
+cp -R "$root/.githooks" "$work/repo/.githooks"
+cp "$root/scripts/check-change" "$work/repo/scripts/check-change"
+cd "$work/repo" || exit 1
+git config user.email test@example.com
+git config user.name test
+git config core.hooksPath .githooks
+git remote add origin "$work/remote.git"
+git commit -q --allow-empty --no-verify -m start
+git branch -M main
+
+expect() {
+  want=$1
+  what=$2
+  shift 2
+  if "$@" >/dev/null 2>"$work/err"; then got=pass; else got=fail; fi
+  if [ "$got" != "$want" ]; then
+    printf 'expected %s, got %s: %s\n' "$want" "$got" "$what"
+    sed 's/^/  /' "$work/err"
+    failed=1
+  fi
+}
+
+expect fail 'a commit on main' git commit -q --allow-empty -m x
+git switch -q -c feature/login
+expect fail 'a commit on feature/login' git commit -q --allow-empty -m x
+git switch -q -c fix/stage-paths
+expect pass 'a commit on fix/stage-paths' git commit -q --allow-empty -m x
+git switch -q --detach
+expect pass 'a commit with no branch, as in a rebase' git commit -q --allow-empty -m x
+git switch -q fix/stage-paths
+expect pass 'a push of fix/stage-paths' git push -q origin fix/stage-paths
+expect fail 'a push to main' git push -q origin fix/stage-paths:main
+expect fail 'a push as wip/x' git push -q origin fix/stage-paths:wip/x
+expect pass 'a branch deleted on the remote' git push -q origin :fix/stage-paths
+git tag v0.0.1
+expect pass 'a tag pushed' git push -q origin v0.0.1
+
+[ "$failed" -eq 0 ] && echo 'git hooks: every case as expected'
+exit "$failed"

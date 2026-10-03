@@ -1,0 +1,6 @@
+#!/bin/sh
+# Before each commit: the branch is named as CONTRIBUTING.md (How changes
+# land) says, and is not main (scripts/check-change). With no branch, as
+# in the middle of a rebase, there is no name to check.
+name=$(git symbolic-ref --quiet --short HEAD) || exit 0
+exec sh "$(git rev-parse --show-toplevel)/scripts/check-change" branch "$name"
