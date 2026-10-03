@@ -167,9 +167,9 @@ same file every time.
   in words, a refused step included.
 
 ### 6.5 Outputs and interfaces
-- A command-line tool, one native binary per platform, installed by hand
-  or from npm (`npm install archgram`), so a Node project's scripts run
-  it with no Rust toolchain.
+- A command-line tool, one native binary per platform, installed from npm
+  (README.md, Install), so a Node project's scripts run it with no Rust
+  toolchain.
 - A spec named `<name>.archgram.yaml` (or `.yml`, `.json`) draws `<name>.svg`
   beside it, so a project keeps each spec next to its drawing; a folder
   given for the output is created when it does not exist.
