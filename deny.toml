@@ -16,9 +16,12 @@ allow = [
 ]
 
 # Every version in Cargo.lock against the RustSec advisory database,
-# cargo-deny's default; its defaults fail on any vulnerability and any
-# unmaintained crate.
+# cargo-deny's default. Any vulnerability fails. An unmaintained crate
+# fails too, set here rather than left to the default, so a new version
+# of cargo-deny cannot change it; one that cannot be replaced goes in
+# `ignore`, with a `reason`.
 [advisories]
+unmaintained = "all"
 
 # Every package outside the workspace comes from crates.io, the only
 # registry allowed by default; any other registry or git source fails.
