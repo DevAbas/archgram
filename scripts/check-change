@@ -1,0 +1,113 @@
+#!/bin/sh
+# How a change lands (CONTRIBUTING.md, How changes land), checked one way
+# wherever it is checked: by the git hooks, by CI and by hand.
+#
+#   scripts/check-change types           the types, one per line
+#   scripts/check-change branch [name]   a branch's name; the current one
+#                                        when none is given
+#   scripts/check-change title <title>   a pull request's title
+#   scripts/check-change body <file>     a pull request's description
+#
+# It prints what is wrong and exits 1, or prints nothing and exits 0. It
+# is POSIX sh, so it runs as is on macOS, Linux and Git for Windows.
+set -eu
+
+# The types a branch and a title may take. This list is the only one.
+TYPES='feat fix docs ci build chore refactor style test perf design'
+
+fail() {
+  printf 'check-change: %s\n' "$*" >&2
+  exit 1
+}
+
+# sh has no local variables, so each function keeps names of its own.
+is_type() {
+  for candidate in $TYPES; do
+    [ "$candidate" = "$1" ] && return 0
+  done
+  return 1
+}
+
+types_in_a_line() {
+  printf '%s' "$TYPES" | sed 's/ /, /g'
+}
+
+branch() {
+  name=$1
+  if [ -z "$name" ]; then
+    name=$(git symbolic-ref --quiet --short HEAD) ||
+      fail "not on a branch; start one: <type>/<what-it-changes>"
+  fi
+  case $name in
+    main)
+      fail "main takes changes only through a pull request; start a branch: <type>/<what-it-changes>, such as fix/stage-paths"
+      ;;
+    release/*)
+      printf '%s\n' "${name#release/}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' ||
+        fail "a release's branch is release/X.Y.Z (RELEASE.md), not $name"
+      ;;
+    */?*)
+      is_type "${name%%/*}" ||
+        fail "\`${name%%/*}\` in $name is not a type; a branch is <type>/<what-it-changes>, its type one of: $(types_in_a_line)"
+      ;;
+    *)
+      fail "a branch is named <type>/<what-it-changes>, such as fix/stage-paths; $name is not"
+      ;;
+  esac
+}
+
+title() {
+  t=$1
+  type=${t%%: *}
+  [ "$type" != "$t" ] ||
+    fail "a title is \`type: subject\`, such as \`fix: keep an edge label off its arrowhead\`; \"$t\" is not"
+  case $type in
+    *'('* | *'!'*)
+      fail "a title is \`type: subject\`, with no scope and no \`!\`; \"$t\" has \`$type\`"
+      ;;
+  esac
+  is_type "$type" ||
+    fail "\`$type\` is not a type; a title's type is one of: $(types_in_a_line)"
+  subject=${t#*: }
+  # The letters spelt out: in bash under a UTF-8 locale, macOS's /bin/sh
+  # among them, the range [a-z] matches capitals too.
+  case $subject in
+    [abcdefghijklmnopqrstuvwxyz]*) ;;
+    *) fail "the subject starts with a lowercase letter, in the imperative (\"if applied, this commit will …\"): \"$subject\"" ;;
+  esac
+}
+
+# Whether the description's section holds any text but the template's
+# hints, which are HTML comments.
+has_text() {
+  tr -d '\r' <"$2" | awk -v want="$1" '
+    /^## / { here = (substr($0, 4) == want); next }
+    here { line = $0; gsub(/<!--.*-->/, "", line); if (line ~ /[^[:space:]]/) found = 1 }
+    END { exit !found }'
+}
+
+body() {
+  file=$1
+  [ -r "$file" ] || fail "cannot read $file"
+  # "Not in this change" is there only if anything is left out, as the
+  # template says; the other two always are.
+  for section in 'What and why' 'How it was checked'; do
+    tr -d '\r' <"$file" | grep -qx "## $section" ||
+      fail "the description has no \"## $section\" section (.github/pull_request_template.md)"
+    has_text "$section" "$file" ||
+      fail "the description's \"## $section\" section is empty"
+  done
+}
+
+usage() {
+  sed -n '5,9p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+case ${1:-} in
+  types) [ $# -eq 1 ] || usage; printf '%s\n' $TYPES ;;
+  branch) [ $# -le 2 ] || usage; branch "${2:-}" ;;
+  title) [ $# -eq 2 ] || usage; title "$2" ;;
+  body) [ $# -eq 2 ] || usage; body "$2" ;;
+  *) usage ;;
+esac

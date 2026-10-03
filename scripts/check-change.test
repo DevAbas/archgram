@@ -1,0 +1,64 @@
+#!/bin/sh
+# Tests for scripts/check-change: each case, and whether it passes.
+# Run from the repository's root: sh scripts/check-change.test
+set -u
+
+check=scripts/check-change
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+failed=0
+
+expect() {
+  want=$1
+  shift
+  if sh "$check" "$@" >/dev/null 2>"$work/err"; then got=pass; else got=fail; fi
+  if [ "$got" != "$want" ]; then
+    printf 'expected %s, got %s: check-change %s\n' "$want" "$got" "$*"
+    sed 's/^/  /' "$work/err"
+    failed=1
+  fi
+}
+
+# Branches: <type>/<what-it-changes>, or release/X.Y.Z.
+expect pass branch feat/source-check
+expect pass branch chore/node-24
+expect pass branch release/0.6.1
+expect fail branch main
+expect fail branch feature/x
+expect fail branch fixstuff
+expect fail branch feat/
+expect fail branch release/next
+
+# Titles: `type: subject`, a known type, no scope, a lowercase subject.
+expect pass title 'docs: name a branch after one of the types'
+expect fail title 'feat(api): add a route'
+expect fail title 'feat!: drop a field'
+expect fail title 'wip: try a thing'
+expect fail title 'fix keep a label clear'
+expect fail title 'fix: Keep a label clear'
+expect fail title 'fix: 2 labels kept clear'
+expect fail title 'fix: élan'
+
+# Descriptions: "What and why" and "How it was checked", each with text;
+# "Not in this change" only when anything is left out.
+printf '## What and why\n\nIt does x.\n\n## Not in this change\n\n- y.\n\n## How it was checked\n\nTests pass.\n' >"$work/full.md"
+printf '## What and why\n\nIt does x.\n\n## How it was checked\n\nTests pass.\n' >"$work/no-left-out.md"
+printf '## What and why\r\n\r\nIt does x.\r\n\r\n## How it was checked\r\n\r\nTests pass.\r\n' >"$work/crlf.md"
+printf '## What and why\n\nIt does x.\n' >"$work/unchecked.md"
+printf '## What and why\n\n<!-- What this changes. -->\n\n## How it was checked\n\nTests pass.\n' >"$work/hint-only.md"
+expect pass body "$work/full.md"
+expect pass body "$work/no-left-out.md"
+expect pass body "$work/crlf.md"
+expect fail body .github/pull_request_template.md
+expect fail body "$work/unchecked.md"
+expect fail body "$work/hint-only.md"
+expect fail body "$work/missing.md"
+
+# The types: one list, one per line.
+[ "$(sh "$check" types | wc -l | tr -d ' ')" = 11 ] || {
+  echo 'expected 11 types'
+  failed=1
+}
+
+[ "$failed" -eq 0 ] && echo 'check-change: every case as expected'
+exit "$failed"

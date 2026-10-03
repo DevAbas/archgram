@@ -37,6 +37,7 @@ cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 node --test packages/archgram/lib/platform.test.js
+sh scripts/check-change.test
 ```
 
 ## How changes land
@@ -54,9 +55,8 @@ node --test packages/archgram/lib/platform.test.js
 - **The pull request's title is that commit's subject:** `type: subject`,
   the subject in the imperative, lowercase ("if applied, this commit will
   …"), such as `fix: keep an edge label off its arrowhead`. The types are
-  `feat`, `fix`, `docs`, `ci`, `build`, `chore`, `refactor`, `style`,
-  `test`, `perf` and `design`; a check on each pull request holds the title
-  to this.
+  the ones `scripts/check-change types` prints; a check on each pull
+  request holds the title to this.
 - **Its description is the commit's body:** what changed and why, what it
   does not do, and how it was checked. The pull request template asks for
   these.

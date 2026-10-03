@@ -28,6 +28,9 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      # On Windows, bash is Git for Windows', which runs the git hooks there.
+      - run: sh scripts/check-change.test
+        shell: bash
 
   dependencies:
     name: Dependencies
