@@ -101,11 +101,11 @@ with the nearest one that exists.
 
 ## 5. Draw in the project's own colours
 
-archgram draws in black and white by default, and colour belongs to the
-technology logos. When the project has its own design, draw in it: read
-`references/theme.md`, which says where to look (design tokens, then the
-styling code, then colours the user gave) and how to hand them to
-archgram with `--theme-file`. With none of these, keep archgram's own and
+archgram draws in black and white by default. When the project has its
+own design, draw in it: read `references/theme.md`, which says where
+archgram's colour goes, where to look (design tokens, then the styling
+code, then colours the user gave) and how to hand them to archgram with
+`--theme-file`. With none of these, keep archgram's own and
 say so in the report.
 
 ## 6. Draw, critique, open
