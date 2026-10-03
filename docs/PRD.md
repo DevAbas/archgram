@@ -217,14 +217,8 @@ same file every time.
 
 Every kind has three variants: single, multi-node (several instances,
 drawn as stacked boxes) and external (a system we do not own, drawn with
-a dashed border).
-
-| Group | Kinds |
-|---|---|
-| Core | service, database, queue, cache, storage, users |
-| AI and LLM | model, vector store, tool, agent |
-| Build and tooling | file, script, generated file, check |
-| Clients | browser, mobile, desktop |
+a dashed border). The kinds, in four categories, are in docs/SPEC.md
+(Nodes).
 
 A node may name its technology (`tech: postgresql`, a Simple Icons slug);
 archgram then shows the technology's logo, so a reader knows the

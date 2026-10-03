@@ -46,6 +46,98 @@ fn kinds_belong_to_their_categories() {
     assert_eq!(Kind::Mobile.category(), Category::Client);
 }
 
+/// Every kind the code has. The match lists each one, so a kind added to
+/// the code and not here fails to compile.
+fn every_kind() -> Vec<Kind> {
+    let all = [
+        Kind::Service,
+        Kind::Database,
+        Kind::Queue,
+        Kind::Cache,
+        Kind::Storage,
+        Kind::Users,
+        Kind::Model,
+        Kind::VectorStore,
+        Kind::Tool,
+        Kind::Agent,
+        Kind::File,
+        Kind::Script,
+        Kind::Generated,
+        Kind::Check,
+        Kind::Browser,
+        Kind::Mobile,
+        Kind::Desktop,
+    ];
+    for kind in all {
+        match kind {
+            Kind::Service
+            | Kind::Database
+            | Kind::Queue
+            | Kind::Cache
+            | Kind::Storage
+            | Kind::Users
+            | Kind::Model
+            | Kind::VectorStore
+            | Kind::Tool
+            | Kind::Agent
+            | Kind::File
+            | Kind::Script
+            | Kind::Generated
+            | Kind::Check
+            | Kind::Browser
+            | Kind::Mobile
+            | Kind::Desktop => {}
+        }
+    }
+    all.to_vec()
+}
+
+/// docs/SPEC.md (Nodes) is the one list of kinds, and what `archgram spec`
+/// prints: each kind it names is one the code reads, in the category the
+/// code gives it, and it names every kind the code has.
+#[test]
+fn the_spec_lists_every_kind_in_its_category() {
+    let path = format!("{}/../../docs/SPEC.md", env!("CARGO_MANIFEST_DIR"));
+    let doc = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let table = doc
+        .split("Kinds, by category:")
+        .nth(1)
+        .expect("docs/SPEC.md has a table of kinds, by category");
+    let rows = table
+        .lines()
+        .skip_while(|line| !line.starts_with('|'))
+        .take_while(|line| line.starts_with('|'))
+        .skip(2);
+    let mut listed = Vec::new();
+    for row in rows {
+        let cells: Vec<&str> = row.trim_matches('|').split('|').map(str::trim).collect();
+        let category = match cells[0] {
+            "Core" => Category::Core,
+            "AI and LLM" => Category::Ai,
+            "Build and tooling" => Category::Build,
+            "Clients" => Category::Client,
+            other => panic!("docs/SPEC.md names a category the code has not: {other}"),
+        };
+        for id in cells[1].split(',').map(|id| id.trim().trim_matches('`')) {
+            let kind: Kind = serde_json::from_str(&format!("\"{id}\""))
+                .unwrap_or_else(|e| panic!("docs/SPEC.md lists `{id}`, which is no kind: {e}"));
+            assert_eq!(
+                kind.category(),
+                category,
+                "docs/SPEC.md lists `{id}` under {}",
+                cells[0]
+            );
+            listed.push(kind);
+        }
+    }
+    for kind in every_kind() {
+        assert!(
+            listed.contains(&kind),
+            "docs/SPEC.md does not list {kind:?}"
+        );
+    }
+}
+
 #[test]
 fn malformed_json_is_located_by_line_and_column() {
     let e = errors("{\n  \"archgram\": 1,\n  \"title\": \n}");

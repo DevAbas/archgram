@@ -302,14 +302,15 @@ with an icon in a badge (`icon-badge`, `icon-badge-vertical`), a title and
 an optional subtitle (`node-subtitle`).
 
 The icon says what the thing is; the category says which icon role its
-lines take (in `mono`, one colour for all).
+lines take (in `mono`, one colour for all). Which kinds each category
+holds is in docs/SPEC.md (Nodes).
 
-| Category | Kinds | Icon role |
-|---|---|---|
-| Core | service, database, queue, cache, storage, users | `icon-core` |
-| AI and LLM | model, vector store, tool, agent | `icon-ai` |
-| Build and tooling | file, script, generated file, check | `icon-build` |
-| Clients | browser, mobile, desktop | `icon-client` |
+| Category | Icon role |
+|---|---|
+| Core | `icon-core` |
+| AI and LLM | `icon-ai` |
+| Build and tooling | `icon-build` |
+| Clients | `icon-client` |
 
 Each kind has one icon, drawn for archgram as line art on a square grid:
 a code window for a service, a cylinder for a database, a segmented pill
