@@ -80,7 +80,9 @@ node --test packages/archgram/lib/platform.test.js
   release is made [RELEASE.md](RELEASE.md); the security policy is
   [SECURITY.md](SECURITY.md); what only a coding agent must do is
   [AGENTS.md](AGENTS.md). Change the document that owns a fact, and only
-  that one; elsewhere, link to it.
+  that one; elsewhere, link to it. A change to what archgram does
+  searches for the old wording and leaves none of it in a document, a
+  comment or a test name, and its pull request says so.
 - **No new dependency without an issue first.** Every dependency is a
   supply-chain decision: adding or updating one needs the owner's
   approval, after reading its licence, its owner and its advisories. What
