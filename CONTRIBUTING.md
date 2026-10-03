@@ -74,7 +74,11 @@ node --test packages/archgram/lib/platform.test.js
   [docs/PRD.md](docs/PRD.md); the spec is [docs/SPEC.md](docs/SPEC.md); the
   visual rules are [DESIGN.md](DESIGN.md), their values the tokens in
   `design-system/tokens/`; how it works inside is
-  [ARCHITECTURE.md](ARCHITECTURE.md); what only a coding agent must do is
+  [ARCHITECTURE.md](ARCHITECTURE.md); how to install and use it is
+  [README.md](README.md); each release's changes are
+  [CHANGELOG.md](CHANGELOG.md); how a change lands is this file, and how a
+  release is made [RELEASE.md](RELEASE.md); the security policy is
+  [SECURITY.md](SECURITY.md); what only a coding agent must do is
   [AGENTS.md](AGENTS.md). Change the document that owns a fact, and only
   that one; elsewhere, link to it.
 - **No new dependency without an issue first.** Every dependency is a

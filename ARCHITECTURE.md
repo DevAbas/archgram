@@ -1,8 +1,8 @@
 # Architecture
 
-How archgram is built and why it is built that way. What it does is in
-`docs/PRD.md`; the input format is in `docs/SPEC.md`; the visual rules are
-in `DESIGN.md`; the design values are in `design-system/tokens/`.
+How archgram is built and why it is built that way. Which document holds
+every other fact is in `CONTRIBUTING.md` (Each fact lives in one
+document).
 
 ## Bird's eye view
 

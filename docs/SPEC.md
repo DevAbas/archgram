@@ -1,8 +1,9 @@
 # The archgram spec
 
 The input format: what a diagram is made of and the rules a spec must
-follow. Why the format looks like this is in `docs/PRD.md`; how archgram
-reads it is in `ARCHITECTURE.md`; how each part is drawn is in `DESIGN.md`.
+follow. Why the format looks like this, and every other fact about
+archgram, is in its repository's other documents; `CONTRIBUTING.md` (Each
+fact lives in one document) says which holds what.
 
 A spec describes the system, never the drawing. It has no coordinates, no
 sizes and no colours. It names things, groups them and connects them;
