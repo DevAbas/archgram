@@ -4,7 +4,7 @@
 # (ci.yml, Advisories). GitHub sends a failed scheduled run's notice to
 # whoever last changed its cron line, and stops scheduled runs in a public
 # repository after 60 days with no activity.
-name: Advisories
+name: Weekly advisories
 
 on:
   schedule:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   advisories:
-    name: Advisories
+    name: Advisories on main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
