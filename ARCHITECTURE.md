@@ -36,7 +36,7 @@ The repository is one Cargo workspace.
 | `archgram-png` (later) | The scene to PNG, one theme at a time, with archgram's own rasterizer | `archgram-core` |
 | `archgram-cli` | The `archgram` binary: files, flags, exit codes | the crates above |
 | `archgram-wasm` (later) | The WASM package, for the browser | `archgram-core`, `archgram-yaml`, `wasm-bindgen` |
-| `xtask` | Repository tasks run with `cargo xtask`: the dependency check, the logos, the embedded fonts; never shipped | `archgram-core`, `serde_json` |
+| `xtask` | Repository tasks run with `cargo xtask`: the logos, the embedded fonts, the npm packages; never shipped | `archgram-core`, `serde_json` |
 
 `archgram-core` does no I/O. Anything that touches the file system or the
 terminal lives in `archgram-cli`. The core carries no logos either: it
@@ -362,13 +362,10 @@ These hold for every output and are checked by tests on every change.
 - Each crate enables only the features it needs.
 - Adding or updating a dependency needs the owner's approval, after reading
   its licence, its owner and its advisories.
-- `cargo xtask deps` checks the whole tree without third-party tools: the
-  licence of every package, from `cargo metadata`, against the allowed
-  list (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-3.0,
-  OFL-1.1 for fonts); the source of every package outside the workspace,
-  which must be crates.io; and every version in `Cargo.lock` against the
-  RustSec advisory database, fetched as a git repository. Any finding fails
-  the check.
+- CI checks the whole tree with cargo-deny against `deny.toml`, the one
+  list of what a dependency may be: every package's licence, its source
+  (crates.io only) and every version in `Cargo.lock` against the RustSec
+  advisory database. Any finding fails the check.
 - Cargo's own `cargo tree` shows where each indirect dependency comes from.
 - Logo data is pinned like a dependency: `archgram-icons/data/RELEASE`
   names the Simple Icons tag and commit, `cargo xtask icons <tag> <commit>`

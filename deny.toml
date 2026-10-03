@@ -1,3 +1,7 @@
+# What a dependency may be (ARCHITECTURE.md, Dependencies and supply
+# chain), checked by cargo-deny in CI:
+# `cargo deny check licenses advisories sources`.
+
 [licenses]
 # We want really high confidence when inferring licenses from text
 confidence-threshold = 0.93
@@ -11,3 +15,14 @@ allow = [
   # archgram-core: the embedded Geist fonts
   "OFL-1.1",
 ]
+
+# Every version in Cargo.lock against the RustSec advisory database,
+# cargo-deny's default; its defaults fail on any vulnerability and any
+# unmaintained crate.
+[advisories]
+
+# Every package outside the workspace comes from crates.io, the only
+# registry allowed by default; any other registry or git source fails.
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

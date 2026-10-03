@@ -1,6 +1,6 @@
 # Tests on every push to main and every pull request: the Rust workspace on
-# macOS, Linux and Windows (archgram promises the same bytes on each), the
-# licenses of its dependencies, and the npm launcher on the Node versions
+# macOS, Linux and Windows (archgram promises the same bytes on each), its
+# dependencies against deny.toml, and the npm launcher on the Node versions
 # still supported.
 name: CI
 
@@ -29,8 +29,8 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
 
-  licenses:
-    name: Licenses
+  dependencies:
+    name: Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
       - uses: EmbarkStudios/cargo-deny-action@5bb39ff5d5a0e94dc9e2dc94eced0c6129743a57 # v2
         with:
-          command: check licenses
+          command: check licenses advisories sources
 
   launcher:
     name: npm launcher (${{ matrix.os }}, Node ${{ matrix.node }})
@@ -64,7 +64,7 @@ jobs:
   passed:
     name: CI passed
     if: always()
-    needs: [rust, licenses, launcher]
+    needs: [rust, dependencies, launcher]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed

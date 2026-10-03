@@ -34,7 +34,6 @@ Each of these must pass; CI runs them on macOS, Linux and Windows.
 cargo fmt --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo xtask deps
 node --test packages/archgram/lib/platform.test.js
 ```
 
@@ -77,8 +76,7 @@ node --test packages/archgram/lib/platform.test.js
   [AGENTS.md](AGENTS.md). Change the document that owns a fact, and only
   that one; elsewhere, link to it.
 - **No new dependency without an issue first.** Every dependency is a
-  supply-chain decision; `cargo xtask deps` and `deny.toml` check the ones
-  there are.
+  supply-chain decision; CI checks the ones there are against `deny.toml`.
 
 ## Reporting a vulnerability
 

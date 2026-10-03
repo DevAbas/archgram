@@ -1,5 +1,5 @@
 [alias]
-# Repository tasks (ARCHITECTURE.md, Code map): `cargo xtask deps`.
+# Repository tasks (ARCHITECTURE.md, Code map): `cargo xtask icons`, `fonts`, `npm`.
 xtask = "run --quiet --package xtask --"
 
 # LLVM's linker, shipped with the Rust toolchain, on every platform the
