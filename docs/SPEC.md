@@ -15,8 +15,9 @@ the same spec, so every example below can be written either way; the
 command line tells them apart by the file's extension (`.json`, `.yaml`,
 `.yml`). Unknown fields are errors, not ignored, so a misspelt field is
 caught instead of silently changing the diagram. In YAML, a key written
-twice, a second document, and a tag outside YAML's core schema are errors
-too, and a plain word that reads as a number or a boolean (`title: 2026`)
+twice, a second document, a tag outside YAML's core schema, nesting deeper
+than 64 levels and aliases that expand to more than 10 000 values are
+errors too, and a plain word that reads as a number or a boolean (`title: 2026`)
 must be quoted to stay text.
 
 A spec named `<name>.archgram.yaml` (or `.archgram.yml`, `.archgram.json`) draws

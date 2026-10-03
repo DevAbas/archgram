@@ -4,7 +4,7 @@
 use std::fmt::Write as _;
 
 use archgram_core::SpecError;
-use archgram_yaml::{MAX_DEPTH, parse_spec};
+use archgram_yaml::{MAX_DEPTH, MAX_EXPANDED, parse_spec};
 
 fn root() -> String {
     format!("{}/../..", env!("CARGO_MANIFEST_DIR"))
@@ -102,4 +102,29 @@ fn nesting_has_a_floor() {
 fn a_foreign_tag_is_refused() {
     let e = errors("archgram: 1\ntitle: !secret t\n");
     assert!(e[0].message.contains("core schema"), "{}", e[0].message);
+}
+
+#[test]
+fn the_spec_gives_the_crate_s_limits() {
+    // docs/SPEC.md is what `archgram spec` prints, so it names the limits
+    // as numbers; they must be the ones this crate holds a spec to.
+    let doc = std::fs::read_to_string(format!("{}/docs/SPEC.md", root())).unwrap();
+    let doc = doc.split_whitespace().collect::<Vec<_>>().join(" ");
+    let grouped = |n: usize| {
+        let digits = n.to_string();
+        let mut out = String::new();
+        for (i, c) in digits.chars().enumerate() {
+            if i > 0 && (digits.len() - i).is_multiple_of(3) {
+                out.push(' ');
+            }
+            out.push(c);
+        }
+        out
+    };
+    for limit in [
+        format!("nesting deeper than {MAX_DEPTH} levels"),
+        format!("expand to more than {} values", grouped(MAX_EXPANDED)),
+    ] {
+        assert!(doc.contains(&limit), "docs/SPEC.md should say \"{limit}\"");
+    }
 }
