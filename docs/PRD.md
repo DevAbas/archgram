@@ -102,13 +102,11 @@ same file every time.
 ### 6.3 Rendering
 - Each node kind has its own shape, so a reader recognises it before
   reading its label.
-- The diagram is monochrome: every icon, a flow's signal and a lit card are
-  in the text colour, black on light and white on dark, and the icon's
-  shape tells a node's kind. Colour belongs to the technology logos and to
-  what happens on a flow: one colour where a signal passes a card, another
-  where a step refuses it (§6.4); cards, frames and connectors stay neutral
-  otherwise. A project's own tokens may still give each category a hue of
-  its own.
+- The diagram is monochrome: the icon's shape, not a colour, tells a
+  node's kind. Colour belongs to the technology logos and to what happens
+  on a flow: one colour where a signal passes a card, another where a step
+  refuses it (§6.4). A project's own tokens may still give each category a
+  hue of its own. Which part takes which colour is in DESIGN.md (Colors).
 - One SVG carries both themes and follows `prefers-color-scheme`; on
   request archgram writes one file per theme.
 - On request, a project's own DTCG design tokens fill archgram's colour
