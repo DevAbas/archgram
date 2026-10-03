@@ -82,7 +82,10 @@ node --test packages/archgram/lib/platform.test.js
   [AGENTS.md](AGENTS.md). Change the document that owns a fact, and only
   that one; elsewhere, link to it.
 - **No new dependency without an issue first.** Every dependency is a
-  supply-chain decision; CI checks the ones there are against `deny.toml`.
+  supply-chain decision: adding or updating one needs the owner's
+  approval, after reading its licence, its owner and its advisories. What
+  CI checks of every dependency is in ARCHITECTURE.md (Dependencies and
+  supply chain).
 
 ## Reporting a vulnerability
 
