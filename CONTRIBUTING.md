@@ -40,9 +40,11 @@ node --test packages/archgram/lib/platform.test.js
 
 ## How changes land
 
-- **One short-lived branch per change,** named for its kind: `fix/…`,
-  `feat/…`, `docs/…`, `ci/…`. A change that has merged is done: the next
-  one starts a new branch from `main`.
+- **One short-lived branch per change,** named `<type>/<what-it-changes>`,
+  where the type is one of the pull request title's types below:
+  `fix/stage-paths`, `docs/readme-geo`. A release's branch is
+  `release/X.Y.Z` ([RELEASE.md](RELEASE.md)). A change that has merged is
+  done: the next one starts a new branch from `main`.
 - **A new feature starts in the PRD.** What it does and why goes into
   [docs/PRD.md](docs/PRD.md) first, then the spec, the design and the code.
 - **Every change reaches `main` through a pull request** whose checks
