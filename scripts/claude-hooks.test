@@ -1,0 +1,43 @@
+#!/bin/sh
+# Tests for .claude/hooks/no-hook-bypass.sh: the tool calls it refuses and
+# those it lets through, given as Claude Code gives them, JSON on stdin.
+# Run from the repository's root: sh scripts/claude-hooks.test
+set -u
+
+hook=.claude/hooks/no-hook-bypass.sh
+failed=0
+
+# expect <exit code> <the command, as a JSON string>
+expect() {
+  printf '{"tool_name":"Bash","tool_input":{"command":%s,"description":"d"}}' "$2" |
+    sh "$hook" 2>/dev/null
+  got=$?
+  if [ "$got" != "$1" ]; then
+    printf 'expected exit %s, got %s: %s\n' "$1" "$got" "$2"
+    failed=1
+  fi
+}
+
+expect 0 '"git commit -m \"fix: keep a label clear\""'
+expect 0 '"git commit -m \"use -n here\""'
+expect 0 '"git push -u origin fix/stage-paths"'
+expect 0 '"git config core.hooksPath .githooks"'
+expect 0 '"ls -la"'
+expect 2 '"git commit --no-verify -m \"fix: x\""'
+expect 2 '"git push --no-verify origin fix/x"'
+expect 2 '"git commit -nm \"fix: x\""'
+expect 2 '"git commit -a -n -m x"'
+expect 2 '"cd sub && git commit --no-verify -m x"'
+expect 2 '"git -c core.hooksPath=/dev/null commit -m x"'
+expect 2 '"git config --unset core.hooksPath"'
+
+# Pretty-printed JSON, over several lines, reads the same.
+printf '{\n  "tool_name": "Bash",\n  "tool_input": {\n    "command": "git push --no-verify"\n  }\n}\n' |
+  sh "$hook" 2>/dev/null
+[ $? = 2 ] || {
+  echo 'expected exit 2 for JSON over several lines'
+  failed=1
+}
+
+[ "$failed" -eq 0 ] && echo 'claude hooks: every case as expected'
+exit "$failed"
