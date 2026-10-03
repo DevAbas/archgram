@@ -73,8 +73,9 @@ node --test packages/archgram/lib/platform.test.js
   [docs/PRD.md](docs/PRD.md); the spec is [docs/SPEC.md](docs/SPEC.md); the
   visual rules are [DESIGN.md](DESIGN.md), their values the tokens in
   `design-system/tokens/`; how it works inside is
-  [ARCHITECTURE.md](ARCHITECTURE.md). Change the document that owns a fact,
-  and only that one.
+  [ARCHITECTURE.md](ARCHITECTURE.md); what only a coding agent must do is
+  [AGENTS.md](AGENTS.md). Change the document that owns a fact, and only
+  that one; elsewhere, link to it.
 - **No new dependency without an issue first.** Every dependency is a
   supply-chain decision; `cargo xtask deps` and `deny.toml` check the ones
   there are.

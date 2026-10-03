@@ -1,13 +1,9 @@
 # Agents
 
-Rules for a coding agent working on this repository. Every other fact lives
-in the document that owns it ([CONTRIBUTING.md](CONTRIBUTING.md), What to
-keep in mind): what archgram does and why in [docs/PRD.md](docs/PRD.md),
-the spec in [docs/SPEC.md](docs/SPEC.md), the visual rules in
-[DESIGN.md](DESIGN.md), how it works inside in
-[ARCHITECTURE.md](ARCHITECTURE.md), and how a change lands in
-[CONTRIBUTING.md](CONTRIBUTING.md). Read them there; this file does not
-repeat them.
+What a coding agent must do on this repository, beyond what a person does.
+How to build, test and land a change, and which document owns each fact,
+are in [CONTRIBUTING.md](CONTRIBUTING.md), imported at the end of this
+file; this file does not repeat them.
 
 ## Sources
 
@@ -17,3 +13,5 @@ repeat them.
 - Anything without such a source is labelled as unverified, or as the
   agent's own proposal.
 - Nothing unverified is stated as a fact.
+
+@CONTRIBUTING.md
